@@ -1,72 +1,124 @@
-/* Palabraventura · recompensas: estrellas, cofres, accesorios, insignias y nivel del jugador. */
+/* Palabraventura · recompensas: estrellas (experiencia), monedas, cofres, colección, accesorios, insignias y evolución del compañero. */
 PV.recompensas = (function () {
+  const U = PV.util;
   const ANIMALES = [
-    { id: "zorro", icono: "🦊", nombre: "Zorro" }, { id: "panda", icono: "🐼", nombre: "Panda" },
-    { id: "rana", icono: "🐸", nombre: "Rana" }, { id: "buho", icono: "🦉", nombre: "Búho" },
-    { id: "dragon", icono: "🐲", nombre: "Dragón" }, { id: "gato", icono: "🐱", nombre: "Gato" },
-    { id: "perro", icono: "🐶", nombre: "Perro" }, { id: "tortuga", icono: "🐢", nombre: "Tortuga" }
+    { id: "zorro", icono: "🦊", nombre: "Zorro", nombreDefecto: "Chispa" }, { id: "panda", icono: "🐼", nombre: "Panda", nombreDefecto: "Bambú" },
+    { id: "rana", icono: "🐸", nombre: "Rana", nombreDefecto: "Saltarina" }, { id: "buho", icono: "🦉", nombre: "Búho", nombreDefecto: "Sabio" },
+    { id: "dragon", icono: "🐲", nombre: "Dragón", nombreDefecto: "Brasa" }, { id: "gato", icono: "🐱", nombre: "Gato", nombreDefecto: "Bigotes" },
+    { id: "perro", icono: "🐶", nombre: "Perro", nombreDefecto: "Trufa" }, { id: "tortuga", icono: "🐢", nombre: "Tortuga", nombreDefecto: "Rocas" }
   ];
   const ACCESORIOS = [
-    { id: "corona", icono: "👑", nombre: "Corona" }, { id: "chistera", icono: "🎩", nombre: "Chistera" },
-    { id: "gafas", icono: "🕶️", nombre: "Gafas de sol" }, { id: "lazo", icono: "🎀", nombre: "Lazo" },
-    { id: "gorra", icono: "🧢", nombre: "Gorra" }, { id: "flor", icono: "🌼", nombre: "Flor" },
-    { id: "birrete", icono: "🎓", nombre: "Birrete" }, { id: "casco", icono: "⛑️", nombre: "Casco de explorador" },
-    { id: "pluma", icono: "🪶", nombre: "Pluma mágica" }, { id: "estrella", icono: "🌟", nombre: "Estrella brillante" }
+    { id: "lazo", icono: "🎀", nombre: "Lazo", precio: 15 }, { id: "flor", icono: "🌼", nombre: "Flor", precio: 15 },
+    { id: "gorra", icono: "🧢", nombre: "Gorra", precio: 20 }, { id: "gafas", icono: "🕶️", nombre: "Gafas de sol", precio: 25 },
+    { id: "pluma", icono: "🪶", nombre: "Pluma mágica", precio: 25 }, { id: "casco", icono: "⛑️", nombre: "Casco de explorador", precio: 30 },
+    { id: "birrete", icono: "🎓", nombre: "Birrete", precio: 35 }, { id: "chistera", icono: "🎩", nombre: "Chistera", precio: 40 },
+    { id: "estrella", icono: "🌟", nombre: "Estrella brillante", precio: 50 }, { id: "corona", icono: "👑", nombre: "Corona", precio: 60 }
   ];
   const INSIGNIAS = [
-    { id: "primera", icono: "🗺️", nombre: "Primera aventura", desc: "Completa tu primera aventura." },
+    { id: "primera", icono: "🗺️", nombre: "Primera aventura", desc: "Completa tu primera misión." },
     { id: "maestro-bv", icono: "🐝", nombre: "Maestro de la B/V", desc: "Domina la B y la V.", hab: "bv" },
     { id: "explorador-h", icono: "🧭", nombre: "Explorador de la H", desc: "Domina la H.", hab: "h" },
     { id: "guardian-lly", icono: "🛡️", nombre: "Guardián de la LL/Y", desc: "Domina la LL y la Y.", hab: "lly" },
     { id: "cazador-tildes", icono: "🏹", nombre: "Cazador de tildes", desc: "Domina las tildes básicas.", hab: "tildes" },
     { id: "constancia", icono: "📅", nombre: "Constancia", desc: "Juega en 3 días distintos." },
-    { id: "superacion", icono: "💪", nombre: "Superación", desc: "Supera 5 palabras de tu lista de repaso." }
+    { id: "superacion", icono: "💪", nombre: "Superación", desc: "Supera 5 palabras de tu lista de repaso." },
+    { id: "coleccionista", icono: "🖼️", nombre: "Coleccionista", desc: "Reúne 10 objetos del álbum." },
+    { id: "rey-castillo", icono: "🏰", nombre: "Héroe del castillo", desc: "Supera el Gran Desafío del castillo." }
   ];
   const ESTRELLAS_POR_NIVEL = 25;
-  const BONUS_SESION = 3;
+  const BONUS = { mision: { estrellas: 3, monedas: 5 }, jefe: { estrellas: 5, monedas: 10 }, decision: 6 };
 
   function nivelJugador(p) { return 1 + Math.floor(p.estrellas / ESTRELLAS_POR_NIVEL); }
   function progresoNivel(p) { return (p.estrellas % ESTRELLAS_POR_NIVEL) / ESTRELLAS_POR_NIVEL; }
 
   function revisarInsignias(p) {
     const nuevas = [];
-    const dias = Object.keys(p.actividad).length;
     INSIGNIAS.forEach(ins => {
       if (p.insignias.includes(ins.id)) return;
       let ok = false;
       if (ins.id === "primera") ok = p.sesiones.length >= 1;
       else if (ins.hab) ok = PV.motor.estadoHabilidad(p, ins.hab) === "dominada";
-      else if (ins.id === "constancia") ok = dias >= 3;
+      else if (ins.id === "constancia") ok = Object.keys(p.actividad).length >= 3;
       else if (ins.id === "superacion") ok = (p.consolidadas || 0) >= 5;
+      else if (ins.id === "coleccionista") ok = p.coleccion.length >= 10;
+      else if (ins.id === "rey-castillo") ok = !!(p.misiones["castillo-jefe"] || {}).completada;
       if (ok) { p.insignias.push(ins.id); nuevas.push(ins); }
     });
     return nuevas;
   }
 
-  /* Al terminar una sesión: bonus de estrellas, un cofre, cofre extra del reto diario e insignias nuevas. */
-  function concederRecompensa(p, resumen) {
-    const hoy = PV.util.hoy();
-    const r = { bonus: BONUS_SESION, cofres: 1, retoDiario: false, insignias: [] };
-    p.estrellas += BONUS_SESION;
+  /* Elige un objeto de colección que aún no se tiene, con probabilidad según su rareza. */
+  function sortearObjeto(p, zonas, soloRaros) {
+    let libres = PV.COLECCION.filter(o => zonas.includes(o.zona) && !p.coleccion.includes(o.id));
+    if (soloRaros && libres.some(o => o.rareza !== "comun")) libres = libres.filter(o => o.rareza !== "comun");
+    if (!libres.length) return null;
+    const total = libres.reduce((s, o) => s + PV.RAREZAS[o.rareza].peso, 0);
+    let r = Math.random() * total;
+    for (const o of libres) { r -= PV.RAREZAS[o.rareza].peso; if (r <= 0) return o; }
+    return libres[libres.length - 1];
+  }
+  function darObjeto(p, o) { if (o && !p.coleccion.includes(o.id)) p.coleccion.push(o.id); return o; }
+
+  function zonasAbiertas(p) { return PV.ZONAS.filter(z => PV.mundo.abierta(p, z)).map(z => z.id); }
+
+  /* Al terminar una misión. eleccion = "hallazgo" | "monedas" (la decisión que tomó el jugador). */
+  function completarMision(p, zona, mision, eleccion, diario) {
+    const hoy = U.hoy();
+    const b = mision && mision.jefe ? BONUS.jefe : BONUS.mision;
+    const r = { estrellas: b.estrellas, monedas: b.monedas, objeto: null, cofres: 1, retoDiario: false, insignias: [], primeraVez: false, etapaNueva: null };
+    p.estrellas += b.estrellas;
+    p.monedas += b.monedas;
     p.cofresPendientes += 1;
-    if (resumen.diario && p.retoDiario.fecha !== hoy) { p.retoDiario.fecha = hoy; p.cofresPendientes += 1; r.cofres++; r.retoDiario = true; }
+    if (eleccion === "hallazgo" && zona) {
+      r.objeto = darObjeto(p, sortearObjeto(p, [zona.id], !!mision.jefe) || sortearObjeto(p, zonasAbiertas(p), false));
+      if (!r.objeto) { p.monedas += BONUS.decision; r.monedas += BONUS.decision; }
+    } else if (eleccion === "monedas") {
+      p.monedas += BONUS.decision; r.monedas += BONUS.decision;
+    }
+    if (mision) {
+      const m = p.misiones[mision.id] || (p.misiones[mision.id] = { completada: false, veces: 0 });
+      r.primeraVez = !m.completada && !mision.infinita;
+      if (!mision.infinita) m.completada = true;
+      m.veces++; m.ultima = hoy;
+    }
+    if (diario && p.retoDiario.fecha !== hoy) { p.retoDiario.fecha = hoy; p.cofresPendientes += 1; r.cofres++; r.retoDiario = true; }
+    const etapa = PV.mundo.etapa(p);
+    if (etapa > (p.etapaVista || 0)) { r.etapaNueva = PV.ETAPAS[etapa]; p.etapaVista = etapa; }
     r.insignias = revisarInsignias(p);
     return r;
   }
 
+  /* Cofre sorpresa: un objeto de colección, un accesorio o monedas. Nunca se queda vacío. */
   function abrirCofre(p) {
     if (p.cofresPendientes <= 0) return null;
     p.cofresPendientes--;
-    const libres = ACCESORIOS.filter(a => !p.accesorios.includes(a.id));
-    if (libres.length) { const a = PV.util.azar(libres); p.accesorios.push(a.id); return { tipo: "accesorio", accesorio: a }; }
-    p.estrellas += 5;
-    return { tipo: "estrellas", cantidad: 5 };
+    const tirada = Math.random();
+    if (tirada < 0.5) {
+      const o = darObjeto(p, sortearObjeto(p, zonasAbiertas(p), false));
+      if (o) return { tipo: "objeto", objeto: o };
+    }
+    if (tirada < 0.7) {
+      const libres = ACCESORIOS.filter(a => !p.accesorios.includes(a.id) && a.precio <= 30);
+      if (libres.length) { const a = U.azar(libres); p.accesorios.push(a.id); return { tipo: "accesorio", accesorio: a }; }
+    }
+    const n = 5 + Math.floor(Math.random() * 6);
+    p.monedas += n;
+    return { tipo: "monedas", cantidad: n };
+  }
+
+  function comprar(p, idAcc) {
+    const a = ACCESORIOS.find(x => x.id === idAcc);
+    if (!a || p.accesorios.includes(a.id) || p.monedas < a.precio) return false;
+    p.monedas -= a.precio; p.accesorios.push(a.id);
+    return true;
   }
 
   function animal(id) { return ANIMALES.find(a => a.id === id) || ANIMALES[0]; }
   function accesorio(id) { return ACCESORIOS.find(a => a.id === id) || null; }
+  function nombreMascota(p) { return (p.mascota && p.mascota.nombre) || animal(p.avatar.animal).nombreDefecto; }
 
-  return { ANIMALES, ACCESORIOS, INSIGNIAS, nivelJugador, progresoNivel, revisarInsignias, concederRecompensa, abrirCofre, animal, accesorio };
+  return { ANIMALES, ACCESORIOS, INSIGNIAS, BONUS, nivelJugador, progresoNivel, revisarInsignias, completarMision,
+           abrirCofre, comprar, animal, accesorio, nombreMascota, sortearObjeto };
 })();
 
 /* Sonidos cortos generados en el navegador (sin archivos ni servicios externos). */
@@ -76,7 +128,8 @@ PV.sonido = (function () {
     acierto: [[660, 0, 0.12], [880, 0.1, 0.2]],
     fallo:   [[392, 0, 0.18], [349, 0.14, 0.24]],
     cofre:   [[523, 0, 0.1], [659, 0.1, 0.1], [784, 0.2, 0.1], [1047, 0.3, 0.3]],
-    fin:     [[523, 0, 0.15], [784, 0.15, 0.3]]
+    fin:     [[523, 0, 0.15], [659, 0.12, 0.15], [784, 0.24, 0.35]],
+    toque:   [[740, 0, 0.06]]
   };
   function play(nombre, activo) {
     if (!activo) return;

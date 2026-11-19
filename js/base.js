@@ -47,8 +47,22 @@ PV.REGLAS = {
 
 PV.TIPOS = {
   detective: { nombre: "Detective de palabras", icono: "🔍" },
-  completa:  { nombre: "Completa la palabra",   icono: "🧩" },
-  robot:     { nombre: "Robot corrector",       icono: "🤖" }
+  completa:  { nombre: "Hechizo de letras",     icono: "🪄" },
+  robot:     { nombre: "Robot corrector",       icono: "🤖" },
+  construye: { nombre: "Construye la palabra",  icono: "🧱" }   // formato de juego: reutiliza ejercicios de tipo "completa"
+};
+
+/* Construye la palabra: parte la palabra en fichas (LL, CH y RR van juntas) y añade como ficha trampa la letra equivocada
+   del ejercicio. Solo se usa con ejercicios "completa" de palabras cortas cuya opción equivocada no es «sin letra». */
+PV.construye = {
+  fichas(palabra) { return palabra.toLowerCase().match(/ll|ch|rr|./g) || []; },
+  apto(e) {
+    if (e.tipo !== "completa") return false;
+    const malas = e.opciones.filter(o => o !== e.correcta);
+    const f = PV.construye.fichas(e.palabra);
+    return malas.length === 1 && malas[0] !== "" && f.length >= 3 && f.length <= 8;
+  },
+  trampa(e) { return e.opciones.find(o => o !== e.correcta); }
 };
 
 /* Normaliza y comprueba el banco. Devuelve la lista de problemas (vacía si todo está bien). */

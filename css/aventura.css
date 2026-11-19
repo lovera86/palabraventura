@@ -1,0 +1,216 @@
+/* Palabraventura · estilos de la evolución «aventura por zonas» (se cargan después de styles.css) */
+:root { --dorado: #ffc83d; --dorado-osc: #e0a100; --alto-nav: 72px; }
+.btn-ancho { width: 100%; margin-top: 10px; }
+.titulo-pantalla { color: #fff; font-size: 1.5rem; margin: 0; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.fondo-adultos .titulo-pantalla { color: var(--tinta); text-shadow: none; }
+.nota-clara { color: #fff; font-weight: 700; margin: 4px 0; text-shadow: 0 1px 0 rgba(0,0,0,.2); }
+.centro { text-align: center; }
+.chip-moneda { background: #ffe9a8; }
+.enlace-discreto.oscuro { color: var(--tinta-suave); padding-left: 0; }
+
+/* Navegación inferior (mobile-first) */
+.con-nav { padding-bottom: calc(var(--alto-nav) + 12px + env(safe-area-inset-bottom)); }
+.nav-inferior {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(4, 1fr);
+  background: #fff; box-shadow: 0 -4px 18px rgba(15,40,80,.18); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0; max-width: 640px; margin: 0 auto;
+}
+.nav-inferior button { border: 0; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 800; font-size: .82rem; color: var(--tinta-suave); padding: 6px 2px; border-radius: 14px; min-height: 56px; }
+.nav-inferior button span { font-size: 1.5rem; line-height: 1; }
+.nav-inferior button.activa { color: var(--mar-oscuro); background: #e8f4ff; }
+
+/* Avatar: tamaños y etapas de evolución */
+.avatar-s { width: 42px; height: 42px; font-size: 1.45rem; border-width: 2px; }
+.etapa-1 { border-color: #e0b07a; box-shadow: 0 4px 0 rgba(0,0,0,.15), 0 0 0 3px #f4d3a8; }
+.etapa-2 { border-color: #c9d6e8; box-shadow: 0 4px 0 rgba(0,0,0,.15), 0 0 0 4px #b8c9e2, 0 0 14px #fff; }
+.etapa-3 { border-color: var(--dorado); box-shadow: 0 4px 0 rgba(0,0,0,.15), 0 0 0 4px var(--dorado), 0 0 22px #ffe58a; animation: brillo 2.4s ease-in-out infinite; }
+@keyframes brillo { 50% { box-shadow: 0 4px 0 rgba(0,0,0,.15), 0 0 0 4px var(--dorado), 0 0 34px #fff1b8; } }
+
+/* Compañero que habla */
+.mascota-dice { display: flex; align-items: flex-end; gap: 10px; margin: 6px 0 14px; }
+.mascota-dice .avatar { flex: none; }
+.bocadillo { position: relative; margin: 0; background: #fff; border-radius: 18px 18px 18px 4px; padding: 10px 14px; font-weight: 700; box-shadow: 0 4px 0 rgba(15,40,80,.15); animation: entrar .3s ease; flex: 1; text-align: left; }
+.bocadillo strong { color: var(--morado-osc); }
+.feedback .mascota-dice, .tarjeta-reto .mascota-dice { margin: 10px 0 4px; }
+.feedback .bocadillo, .tarjeta-reto .bocadillo { background: #f4f1ff; box-shadow: none; }
+.fin-tarjeta .bocadillo { background: var(--crema); box-shadow: none; }
+
+/* Tarjeta de siguiente misión */
+.tarjeta-mision { background: #fff; border-radius: 28px; padding: 18px; box-shadow: var(--sombra); border-top: 10px solid var(--zona); }
+.tm-cabeza { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tm-zona { display: inline-block; font-weight: 900; color: var(--tinta-suave); margin: 0; }
+.tm-etiqueta { margin: 10px 0 0; font-weight: 800; color: var(--morado-osc); font-size: .95rem; }
+.tm-titulo { font-size: clamp(1.5rem, 6vw, 2rem); margin: 2px 0 6px; }
+.tm-intro { margin: 0 0 14px; color: var(--tinta-suave); font-weight: 600; }
+.linternas { display: inline-flex; gap: 5px; align-items: center; }
+.linterna { width: 14px; height: 14px; border-radius: 50%; background: #d7deea; box-shadow: inset 0 -2px 0 rgba(0,0,0,.1); }
+.linterna.encendida { background: radial-gradient(circle at 40% 35%, #fff7c2, var(--dorado)); box-shadow: 0 0 8px var(--dorado); }
+
+/* Mapa */
+.fondo-mapa { background: linear-gradient(180deg, #8fd3ff 0%, #9fe0a8 30%, #7ccf86 70%, #5cb86a 100%); }
+.mapa-pantalla { max-width: 640px; width: 100%; margin: 0 auto; padding: 0 12px 16px; }
+.mapa-pantalla .titulo-pantalla { margin: 0 4px 8px; }
+.mapa-lienzo {
+  position: relative; width: 100%; aspect-ratio: 300 / 520; border-radius: 30px; overflow: hidden;
+  background: radial-gradient(ellipse at 85% 95%, #5ab8e8 0 14%, transparent 15%), radial-gradient(ellipse at 10% 30%, #6fc2ea 0 9%, transparent 10%),
+              linear-gradient(180deg, #d9f0ff 0%, #c7ecc0 18%, #a9dd9a 55%, #94d185 100%);
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,.5), 0 10px 26px rgba(0,0,0,.18);
+}
+.mapa-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.camino-futuro { fill: none; stroke: #fff; stroke-width: 5; stroke-dasharray: 2 9; stroke-linecap: round; opacity: .8; }
+.camino-hecho { fill: none; stroke: #f2c66d; stroke-width: 9; stroke-linecap: round; }
+.deco { font-size: 18px; opacity: .75; }
+.nodo {
+  position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: 0; padding: 0; cursor: pointer; width: 34%; text-align: center; color: var(--tinta);
+}
+.nodo-circulo {
+  width: clamp(58px, 17vw, 82px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: clamp(1.8rem, 7vw, 2.6rem);
+  background: radial-gradient(circle at 35% 30%, #fff, var(--zona, #ddd)); border: 4px solid #fff; box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  transition: transform .15s;
+}
+button.nodo:hover .nodo-circulo { transform: scale(1.06); }
+.nodo-nombre { background: #fff; border-radius: 12px; padding: 2px 8px; font-weight: 900; font-size: clamp(.72rem, 2.8vw, .9rem); box-shadow: 0 3px 0 rgba(0,0,0,.12); line-height: 1.2; }
+.nodo .linternas { background: rgba(255,255,255,.85); padding: 3px 6px; border-radius: 99px; }
+.nodo .linterna { width: 10px; height: 10px; }
+.nodo-estado { font-size: clamp(.62rem, 2.4vw, .78rem); font-weight: 800; background: rgba(255,255,255,.85); border-radius: 10px; padding: 2px 6px; color: var(--tinta-suave); line-height: 1.2; }
+.nodo.bloqueado { cursor: default; }
+.nodo.bloqueado .nodo-circulo { background: radial-gradient(circle at 35% 30%, #fff, #b8c2d1); filter: grayscale(.6); }
+.nodo.actual .nodo-circulo { animation: latido 1.8s ease-in-out infinite; box-shadow: 0 6px 0 rgba(0,0,0,.18), 0 0 0 6px rgba(255,255,255,.7); }
+.nodo.completa .nodo-circulo { border-color: var(--dorado); }
+.nodo-medalla { position: absolute; top: -4px; right: 18%; font-size: 1.3rem; }
+.nodo-futuro { cursor: default; width: 26%; opacity: .85; }
+.nodo-futuro .nodo-circulo { width: clamp(42px, 12vw, 56px); font-size: 1.4rem; background: radial-gradient(circle, #fff 30%, #dfe6ef); filter: grayscale(.5); border-style: dashed; }
+.nodo-futuro .nodo-nombre { font-size: .7rem; opacity: .85; }
+.aqui { position: absolute; bottom: calc(100% - 4px); display: flex; flex-direction: column; align-items: center; font-size: .7rem; font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); animation: bote 1.6s ease-in-out infinite; white-space: nowrap; }
+
+/* Zona */
+.zona-pantalla { max-width: 640px; width: 100%; margin: 0 auto; padding: 0 16px 16px; }
+.personaje-tarjeta { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 22px; padding: 14px; box-shadow: var(--sombra); border-left: 10px solid var(--zona); flex-wrap: wrap; }
+.personaje-tarjeta p { margin: 2px 0 0; color: var(--tinta-suave); font-weight: 600; font-size: .95rem; }
+.personaje-tarjeta > div { flex: 1; min-width: 160px; }
+.personaje-icono { font-size: 3rem; }
+.misiones { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 12px; }
+.mision { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; border: 0; border-radius: 22px; padding: 14px 16px; background: #fff; cursor: pointer; box-shadow: 0 5px 0 rgba(15,40,80,.18); }
+button.mision:active { transform: translateY(3px); }
+.mision-icono { width: 52px; height: 52px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem; background: #eef3fb; }
+.mision.disponible .mision-icono { background: var(--verde); color: #fff; animation: latido 2s ease-in-out infinite; }
+.mision.completada .mision-icono { background: #fff4cc; }
+.mision-texto { display: flex; flex-direction: column; }
+.mision-texto small { color: var(--tinta-suave); font-weight: 800; }
+.mision-texto strong { font-size: 1.15rem; }
+.mision-sub { font-size: .9rem; font-weight: 700; color: var(--tinta-suave); }
+.mision.disponible .mision-sub { color: var(--verde-osc); }
+.mision.bloqueada { background: rgba(255,255,255,.6); cursor: default; box-shadow: none; }
+.mision.jefe { border: 3px solid var(--dorado); background: linear-gradient(180deg, #fffbe9, #fff); }
+.mision.jefe.bloqueada { background: rgba(255,251,233,.6); }
+
+/* Presentación de misión */
+.briefing { flex: 1; display: grid; place-items: center; padding: 24px 16px; }
+.briefing-tarjeta { background: #fff; border-radius: 30px; padding: 24px 20px; max-width: 520px; width: 100%; text-align: center; box-shadow: var(--sombra); border-top: 10px solid var(--zona); animation: pop .3s ease; }
+.briefing-personaje { display: block; font-size: 5rem; margin: 6px 0 0; animation: bote 1.6s ease-in-out infinite; }
+.briefing-quien { margin: 0; font-weight: 800; color: var(--tinta-suave); }
+.briefing h1 { font-size: clamp(1.6rem, 7vw, 2.1rem); margin: 10px 0 6px; }
+.briefing-intro { font-size: 1.15rem; font-weight: 600; margin: 0 0 14px; }
+.briefing-datos { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.briefing-datos span { background: var(--crema); border-radius: 99px; padding: 4px 12px; font-weight: 800; font-size: .92rem; }
+
+/* Juego: decisión, pista, construye */
+.punto-decision { font-size: .85rem; line-height: 1; opacity: .7; }
+.punto-decision.hecha { opacity: 1; }
+.btn-pista { margin-top: 14px; border: 2px dashed #c9bdff; background: #f8f6ff; color: var(--morado-osc); font-weight: 800; border-radius: 14px; padding: 10px 14px; cursor: pointer; width: 100%; min-height: 48px; }
+.frase-pequena { font-size: clamp(1.1rem, 4vw, 1.35rem); }
+.casillas { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0 14px; }
+.casilla { min-width: 44px; height: 54px; padding: 0 6px; border-radius: 12px; border: 3px dashed #c9bdff; display: grid; place-items: center; font-size: 1.6rem; font-weight: 900; background: #f8f6ff; }
+.casilla.llena { border-style: solid; border-color: var(--morado); background: #efeaff; }
+.casillas.bien .casilla { border-color: var(--verde); background: #e3f8ec; }
+.casillas.mal .casilla { border-color: var(--naranja); background: #fff3df; }
+.fichas { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 14px; }
+.ficha { min-width: 58px; min-height: 58px; padding: 0 10px; border-radius: 14px; border: 0; background: var(--amarillo); box-shadow: 0 5px 0 var(--dorado-osc); font-size: 1.7rem; font-weight: 900; cursor: pointer; }
+.ficha:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--dorado-osc); }
+.ficha:disabled { opacity: .25; cursor: default; box-shadow: none; }
+.fila-botones { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+.decision { text-align: center; }
+.decision h2 { font-size: 1.5rem; }
+.decision-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+.decision-opcion { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px; border-radius: 22px; border: 3px solid #e2e7f2; background: #f7f9ff; cursor: pointer; box-shadow: 0 5px 0 #dfe4f0; }
+.decision-opcion:hover { border-color: var(--morado); }
+.decision-opcion strong { font-size: 1.1rem; }
+.decision-opcion small { color: var(--tinta-suave); font-weight: 700; }
+.decision-icono { font-size: 3rem; }
+
+/* Resultado */
+.fin-tarjeta h1 { margin-top: 4px; }
+.hallazgo { display: flex; align-items: center; gap: 14px; text-align: left; border-radius: 20px; padding: 12px 16px; margin: 10px 0; border-width: 3px; border-style: solid; animation: pop .5s ease; }
+.hallazgo div { display: flex; flex-direction: column; }
+.hallazgo strong { font-size: 1.2rem; }
+.hallazgo small { font-weight: 700; color: var(--tinta-suave); }
+.hallazgo-icono { font-size: 3rem; }
+.rareza-comun { border-color: #b9e6c6; background: #f1fbf4; }
+.rareza-rara { border-color: #9cc8ff; background: #eef5ff; }
+.rareza-epica { border-color: #c9a6ff; background: linear-gradient(135deg, #f6efff, #fff4dc); }
+.evolucion { display: flex; align-items: center; gap: 14px; text-align: left; background: #fff8d8; border-radius: 20px; padding: 12px 16px; margin: 10px 0; }
+.evolucion div { display: flex; flex-direction: column; }
+.desbloqueo { background: #e8f4ff; border-radius: 16px; padding: 10px 14px; font-weight: 700; margin: 8px 0; animation: pop .5s ease; }
+.progreso-zona { font-weight: 800; color: var(--tinta-suave); margin: 10px 0; display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.teaser { background: linear-gradient(135deg, #2b2f6b, #4b3fa0); color: #fff; border-radius: 20px; padding: 14px 16px; margin: 12px 0 4px; text-align: left; }
+.teaser small { opacity: .85; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; font-size: .75rem; }
+.teaser strong { display: block; font-size: 1.15rem; }
+.teaser p { margin: 4px 0 0; font-style: italic; }
+
+/* Colección, compañero, mercadillo, ajustes */
+.coleccion { max-width: 760px; width: 100%; margin: 0 auto; padding: 0 16px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.coleccion h2 { font-size: 1.2rem; }
+.coleccion h2 small { color: var(--tinta-suave); font-size: .9rem; }
+.pestanas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: rgba(255,255,255,.25); padding: 5px; border-radius: 18px; }
+.pestanas button { border: 0; border-radius: 14px; padding: 10px 4px; font-weight: 800; font-size: .85rem; background: transparent; color: #fff; cursor: pointer; min-height: 48px; }
+.pestanas button.activa { background: #fff; color: var(--tinta); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+.album { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.aviso { bottom: calc(var(--alto-nav) + 24px); }
+.carta { border-width: 3px; border-style: solid; border-radius: 16px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.carta-icono { font-size: 2.2rem; }
+.carta strong { font-size: .85rem; line-height: 1.2; }
+.carta small { font-size: .75rem; color: var(--tinta-suave); font-weight: 700; }
+.carta.oculta { background: #f3f5fa; border-style: dashed; border-color: #cfd6e3; }
+.carta.oculta .carta-icono { color: #b8c2d1; font-weight: 900; }
+.nombre-mascota { font-size: 1.5rem; font-weight: 900; margin: 10px 0 0; }
+.barra-etapa { height: 14px; background: #eef1f7; border-radius: 99px; overflow: hidden; max-width: 320px; margin: 6px auto; }
+.barra-etapa span { display: block; height: 100%; background: linear-gradient(90deg, var(--dorado), var(--naranja)); border-radius: 99px; }
+.fila-campo { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.fila-campo .campo { flex: 1; min-width: 160px; }
+.tienda { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.producto { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; background: var(--crema); border-radius: 18px; padding: 12px 8px; }
+.producto.tenido { background: #eefaf2; }
+.producto-icono { font-size: 2.4rem; }
+.producto small { color: var(--tinta-suave); font-weight: 700; }
+.precio { font-weight: 900; }
+.btn-comprar { min-height: 44px; padding: .5em .8em; font-size: .95rem; width: 100%; }
+.ajustes { display: grid; gap: 10px; }
+.ajustes h2 { margin: 0; }
+.interruptor { display: flex; justify-content: space-between; align-items: center; border: 0; background: var(--crema); border-radius: 16px; padding: 14px 16px; font-weight: 800; font-size: 1.05rem; cursor: pointer; min-height: 56px; }
+.mando { width: 52px; height: 30px; border-radius: 99px; background: #cfd6e3; position: relative; transition: background .2s; flex: none; }
+.mando::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: left .2s; }
+.mando.on { background: var(--verde); }
+.mando.on::after { left: 25px; }
+
+/* Perfiles */
+.rejilla-perfiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+.perfil-tarjeta { display: flex; flex-direction: column; align-items: center; gap: 10px; background: #fff; border: 0; border-radius: 24px; padding: 18px 10px; cursor: pointer; box-shadow: var(--sombra); font-size: 1.15rem; }
+.perfil-nuevo { background: rgba(255,255,255,.7); }
+
+/* Reducir animaciones (ajuste del jugador) */
+.sin-animaciones *, .sin-animaciones *::before, .sin-animaciones *::after { animation: none !important; transition: none !important; }
+
+@media (max-width: 560px) {
+  .decision-opciones { grid-template-columns: 1fr; }
+  .pestanas button { font-size: .75rem; }
+  .fila-botones { grid-template-columns: 1fr 1.6fr; }
+}
+@media (min-width: 900px) {
+  .inicio .fila-tarjetas { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Escritorio: el mapa cabe en la pantalla y el inicio no se estira demasiado */
+.mapa-lienzo { max-width: max(320px, calc((100vh - 190px) * 300 / 520)); margin: 0 auto; }
+.con-nav .inicio { max-width: 720px; }

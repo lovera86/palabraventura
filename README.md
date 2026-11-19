@@ -32,17 +32,35 @@ git init && git add . && git commit -m "Palabraventura MVP" && git branch -M mai
 git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git push -u origin main
 ```
 
+**Actualizar la web publicada:** cualquier cambio que llegue a la rama `main` del repositorio se publica solo en uno o dos minutos.
+
+## Cómo se juega (versión 2: aventura por zonas)
+
+1. **¿Quién juega?** Si hay varios jugadores en el dispositivo, cada uno elige su perfil al entrar. Cada perfil tiene su propio progreso. Sin registro: solo apodo, compañero y nombre del compañero.
+2. **Inicio:** el compañero saluda, y una tarjeta muestra la siguiente misión con el botón «Continuar aventura».
+3. **Mapa del reino:** camino con 5 zonas (Ciudad de B/V → Pantano de la H → Cascada de LL/Y → Montaña de las Tildes → Castillo de los Retos) y zonas futuras en niebla. Cada zona tiene 3 misiones y un desafío final. La siguiente zona se abre al completar 2 misiones de la anterior; el castillo, con 2 misiones en cada zona.
+4. **Misión (5–8 min):** presentación con un personaje → 7 retos (8 en los desafíos finales) → a mitad, una decisión (un camino da un tesoro para el álbum y el otro, monedas) → resultado con recompensas, progreso de la zona y adelanto de la siguiente misión.
+5. **Formatos de reto:** Detective de palabras, Hechizo de letras (completar la letra), Robot corrector y Construye la palabra (ordenar fichas, con una ficha trampa). En cada reto se puede pedir una pista al compañero, sin penalización.
+6. **Recompensas:** estrellas (experiencia; hacen evolucionar al compañero en 4 etapas), monedas (para el mercadillo de accesorios), tesoros de colección con rareza (común, rara, épica), cofres sorpresa e insignias. Acertar lo que antes costaba vale doble. Nunca se pierde nada por no jugar.
+7. **Colección:** álbum de tesoros, compañero (nombre, aspecto, accesorios, evolución), mercadillo e insignias.
+8. **Ajustes:** sonido, reducir animaciones, cambiar o añadir jugador, y acceso a la zona de adultos.
+
+Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva versión, y la clave antigua se conserva como copia (`palabraventura.progreso`).
+
 ## Estructura
 
 ```
 index.html            Página única
-css/styles.css        Estilos (responsive: móvil, tablet, escritorio)
-js/base.js            Utilidades, catálogo de habilidades y reglas, validador del banco
+css/styles.css        Estilos base (responsive: móvil, tablet, escritorio)
+css/aventura.css      Estilos de la versión 2: mapa, misiones, colección, navegación inferior
+js/base.js            Utilidades, catálogo de habilidades, reglas y formatos de reto, validador del banco
 js/datos/*.js         Banco de ejercicios en formato JSON, un archivo por bloque
-js/almacen.js         Guardar / cargar (esquema versionado), exportar / importar copia JSON
+js/mundo.js           Zonas, misiones, decisiones, tesoros, etapas del compañero y pistas (configuración)
+                      + reglas de desbloqueo y de «siguiente misión»
+js/almacen.js         Perfiles, guardar / cargar (esquema 2 con migración desde el 1), copia JSON, PIN
 js/motor.js           Motor adaptativo: registrarRespuesta, actualizarHabilidad, programarRepaso,
-                      seleccionarSesion, buscarComprobacion, estadoHabilidad
-js/recompensas.js     Estrellas, cofres, accesorios, insignias, nivel; sonidos generados en el navegador
+                      seleccionarSesion (con reglas preferidas por misión), buscarComprobacion, estadoHabilidad
+js/recompensas.js     Estrellas, monedas, cofres, tesoros, mercadillo, insignias, evolución; sonidos
 js/app.js             Pantallas e interacción
 ```
 
@@ -73,7 +91,7 @@ Las regularidades con excepciones se presentan con «casi siempre» o «suele»;
 - `tipo`: `detective` (elegir la palabra bien escrita), `completa` (elegir la letra que falta; `""` = sin letra), `robot` (encontrar la palabra mal escrita en `frase`, indicada en `error`, y corregirla).
 - `etiquetas`: opcional; si falta se usa `[habilidad, regla]`.
 - Para añadir un ejercicio basta con añadirlo al archivo de su bloque. Al cargar la app, `PV.validarBanco()` avisa en la consola si algo no cuadra.
-- Para un bloque nuevo: crea `js/datos/nuevo.js`, añádelo en `index.html`, registra la habilidad en `PV.HABILIDADES` y sus reglas en `PV.REGLAS` (`js/base.js`) y pon `hab` en su zona dentro de `MUNDOS` (`js/app.js`).
+- Para un bloque nuevo: crea `js/datos/nuevo.js`, añádelo en `index.html`, registra la habilidad en `PV.HABILIDADES` y sus reglas en `PV.REGLAS` (`js/base.js`), añade sus pistas en `PV.PISTAS` y crea su zona en `PV.ZONAS` (`js/mundo.js`), con posición en el mapa, misiones y tesoros en `PV.COLECCION`. El mapa, el álbum y el progreso se adaptan solos.
 
 ## Cómo aprende la app
 
@@ -85,7 +103,7 @@ Las regularidades con excepciones se presentan con «casi siempre» o «suele»;
 
 ## Zona de adultos
 
-Botón discreto «Zona de adultos» al pie del mapa. Se entra resolviendo una multiplicación o con un PIN configurable. Muestra habilidades, errores frecuentes, palabras en repaso, evolución de 14 días y una recomendación. Permite exportar/importar una copia JSON y borrar el progreso.
+En **Ajustes → Zona de adultos**. Se entra resolviendo una multiplicación o con un PIN (uno para todo el dispositivo). Muestra, para el jugador activo, misiones completadas, habilidades, errores frecuentes, pistas pedidas, palabras en repaso, evolución de 14 días y una recomendación. Permite exportar/importar una copia JSON del jugador y borrar su progreso (los demás jugadores no se tocan).
 
 ## Privacidad
 

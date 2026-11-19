@@ -58,9 +58,11 @@ PV.motor = (function () {
     a.retos++; if (acierto) a.aciertos++;
     Object.keys(p.actividad).forEach(f => { if (U.diasEntre(f, hoy) > 90) delete p.actividad[f]; });
     // Premiamos la mejora: acertar algo que costaba vale doble. Nunca se premia la velocidad.
-    let estrellas = 0;
-    if (acierto) { estrellas = tras_error ? 2 : 1; p.estrellas += estrellas; }
-    return { estrellas, mejora: acierto && veniaDeFallo, sube: cambio.sube, baja: cambio.baja, consolidada: rep.consolidada };
+    if (ctx.pista) it.pistas = (it.pistas || 0) + 1;
+    // Estrellas = experiencia; monedas = moneda de aventura. Acertar algo que costaba vale doble.
+    let estrellas = 0, monedas = 0;
+    if (acierto) { estrellas = tras_error ? 2 : 1; monedas = tras_error ? 2 : 1; p.estrellas += estrellas; p.monedas = (p.monedas || 0) + monedas; }
+    return { estrellas, monedas, mejora: acierto && veniaDeFallo, sube: cambio.sube, baja: cambio.baja, consolidada: rep.consolidada };
   }
 
   function esPendiente(p, e, hoy) {
@@ -72,9 +74,10 @@ PV.motor = (function () {
     return PV.banco.filter(e => (!habilidades || habilidades.includes(e.habilidad)) && esPendiente(p, e, hoy));
   }
 
-  function puntuar(p, e, hoy) {
+  function puntuar(p, e, hoy, preferidas) {
     const nivel = hab(p, e.habilidad).nivel, it = p.items[e.id];
     let s = Math.random();
+    if (preferidas && preferidas.length && preferidas.includes(e.regla)) s += 4; // tema de la misión
     if (e.dificultad === nivel) s += 1.5;
     else if (e.dificultad < nivel) s += 0.6;          // ejercicios ya dominados, para mezclar
     else s -= (e.dificultad - nivel) * 2;             // más difíciles: solo si no queda otra cosa
@@ -82,12 +85,12 @@ PV.motor = (function () {
     else if (it.ultimaFecha === hoy) s -= 2;          // evita repetir lo de hoy
     return s;
   }
-  function ordenarPorPuntos(p, lista) {
+  function ordenarPorPuntos(p, lista, preferidas) {
     const hoy = U.hoy();
-    return lista.map(e => ({ e, s: puntuar(p, e, hoy) })).sort((a, b) => b.s - a.s).map(x => x.e);
+    return lista.map(e => ({ e, s: puntuar(p, e, hoy, preferidas) })).sort((a, b) => b.s - a.s).map(x => x.e);
   }
 
-  /* opciones: { habilidades: [...], n, repasoDe: [...], mezclaDe: [...] } -> [{ ej, tag }] */
+  /* opciones: { habilidades: [...], n, repasoDe: [...], mezclaDe: [...], preferirReglas: [...] } -> [{ ej, tag }] */
   function seleccionarSesion(p, opt) {
     const n = opt.n || 8, repasoDe = opt.repasoDe || opt.habilidades;
     const elegidos = [], usados = new Set();
@@ -99,7 +102,7 @@ PV.motor = (function () {
     if (mezcla.length && n - elegidos.length >= 5) {
       ordenarPorPuntos(p, PV.banco.filter(e => mezcla.includes(e.habilidad) && !usados.has(e.id))).slice(0, 2).forEach(e => add(e, null));
     }
-    for (const e of ordenarPorPuntos(p, PV.banco.filter(e => opt.habilidades.includes(e.habilidad) && !usados.has(e.id)))) {
+    for (const e of ordenarPorPuntos(p, PV.banco.filter(e => opt.habilidades.includes(e.habilidad) && !usados.has(e.id)), opt.preferirReglas)) {
       if (elegidos.length >= n) break;
       add(e, null);
     }
