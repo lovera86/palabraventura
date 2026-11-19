@@ -37,7 +37,7 @@ git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git pu
 ## Cómo se juega (versión 3: camino de lecciones)
 
 1. **¿Quién juega?** Si hay varios jugadores en el dispositivo, cada uno elige su perfil al entrar. Sin registro: solo apodo, compañero y su nombre.
-2. **Aventura (pantalla principal):** un camino de lecciones en zigzag, agrupado en unidades de colores: Ciudad de B/V → Pantano de la H → Cascada de LL/Y → Montaña de las Tildes → Castillo de los Retos, y unidades futuras («Próximamente»). La lección que toca lleva el globo «¡EMPIEZA!». Al tocar un círculo se abre una tarjeta con la historia y el botón EMPEZAR. Cada unidad tiene 3 lecciones y un desafío final (👑). **Todo está abierto desde el principio**: se puede jugar o repetir cualquier lección de cualquier unidad cuando se quiera; «¡EMPIEZA!» solo sugiere por dónde seguir.
+2. **Aventura (pantalla principal):** un camino de lecciones en zigzag, agrupado en unidades de colores: Ciudad de B/V → Pantano de la H → Cascada de LL/Y → Montaña de las Tildes → Cuevas de G/J → Bahía de C/Z/S → Torre de la Puntuación → Castillo de los Retos (mezcla de todo). La lección que toca lleva el globo «¡EMPIEZA!». Al tocar un círculo se abre una tarjeta con la historia y el botón EMPEZAR. Cada unidad tiene 3 lecciones y un desafío final (👑). **Todo está abierto desde el principio**: se puede jugar o repetir cualquier lección de cualquier unidad cuando se quiera; «¡EMPIEZA!» solo sugiere por dónde seguir.
 3. **Lección (5–8 min, 7 retos; 8 en los desafíos):** un reto por pantalla, se elige una respuesta y se pulsa COMPROBAR. Abajo aparece una franja verde (acierto) o naranja (solución, explicación y ánimo) con CONTINUAR. A mitad, una decisión: un camino da un tesoro y el otro, monedas. En el ordenador: teclas 1-3 para elegir e Intro para comprobar o continuar.
 4. **Formatos de reto:** Detective de palabras, Hechizo de letras, Robot corrector y Construye la palabra. Botón «💡 Pista» en cada reto, sin penalización.
 5. **Final de lección:** estrellas, monedas y % de aciertos; tesoros y cofres se abren solos; evolución del compañero, nuevas unidades e insignias; una frase que anticipa la siguiente aventura.
@@ -75,6 +75,9 @@ Los ejercicios están en archivos `.js` (con datos en formato JSON) en lugar de 
 | H / sin H | 25 | hue-/hie-/hui-, hum- + vocal, hacer, hablar, haber (hay, ha), hola/ola, h intercalada, vocabulario, palabras sin h |
 | LL / Y | 23 | -illo/-illa, y final, verbos con y (cayó, leyó), vocabulario |
 | Tildes básicas | 24 | agudas, llanas, esdrújulas (con y sin tilde) |
+| G / J | 20 | verbos en -ger/-gir, -aje, -jero, gen, -gía, verbos con j (dije, trajeron), gue/gui y diéresis, vocabulario |
+| C / Z / S | 21 | c delante de e/i, z delante de a/o/u, plural de -z en -ces, vocabulario |
+| Puntuación y mayúsculas | 20 | ¿? y ¡!, mayúscula al empezar y en nombres propios, días y meses en minúscula, punto final |
 
 Las regularidades con excepciones se presentan con «casi siempre» o «suele»; las palabras sin regla deducible se trabajan como vocabulario.
 

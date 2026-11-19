@@ -278,16 +278,16 @@
         ${r.respondido ? "" : `<div class="fichas">${r.fichas.map((f, i) => `<button type="button" class="ficha" data-accion="ficha" data-valor="${i}" ${r.usadas.includes(i) ? "disabled" : ""}>${esc(f)}</button>`).join("")}</div>
           <p class="nota centro">Toca una ficha colocada para quitarla.</p>`}`;
     } else if (formato === "detective") {
-      pregunta = "¿Cuál está bien escrita?";
+      pregunta = ej.pregunta || "¿Cuál está bien escrita?";
       listo = r.sel !== undefined;
       cuerpo = `${ej.frase ? `<p class="frase">${esc(ej.frase).replace("___", `<span class="hueco">${r.sel !== undefined ? esc(r.sel) : "?"}</span>`)}</p>` : ""}
         <div class="opciones">${r.orden.map((o, i) => opcion(r, o, esc(o), i)).join("")}</div>`;
     } else if (formato === "completa") {
-      pregunta = "¿Qué letra falta?";
+      pregunta = ej.pregunta || "¿Qué letra falta?";
       listo = r.sel !== undefined;
       const partes = ej.hueco.split("_");
       const relleno = r.sel !== undefined ? (r.sel || "·") : "?";
-      const palabra = `<span class="palabra-hueco">${esc(partes[0])}<span class="hueco-letra">${esc(relleno)}</span>${esc(partes[1])}</span>`;
+      const palabra = `<span class="palabra-hueco${ej.hueco.length > 12 ? " larga" : ""}">${esc(partes[0])}<span class="hueco-letra">${esc(relleno)}</span>${esc(partes[1])}</span>`;
       cuerpo = `<p class="frase">${ej.frase ? esc(ej.frase).replace("___", palabra) : palabra}</p>
         <div class="opciones opciones-letras">${r.orden.map((o, i) => opcion(r, o, o === "" ? "<span class='sin-letra'>sin letra</span>" : esc(o), i)).join("")}</div>`;
     } else {

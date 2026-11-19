@@ -31,7 +31,10 @@ PV.HABILIDADES = {
   bv:     { nombre: "B / V",          icono: "🐝" },
   h:      { nombre: "H / sin H",      icono: "🦉" },
   lly:    { nombre: "LL / Y",         icono: "🌧️" },
-  tildes: { nombre: "Tildes básicas", icono: "✨" }
+  tildes: { nombre: "Tildes básicas", icono: "✨" },
+  gj:     { nombre: "G / J",          icono: "🦇" },
+  czs:    { nombre: "C / Z / S",      icono: "🐚" },
+  punt:   { nombre: "Puntuación y mayúsculas", icono: "❓" }
 };
 
 PV.REGLAS = {
@@ -42,7 +45,15 @@ PV.REGLAS = {
   "intercalada": "H en medio de la palabra", "sin-h": "Palabras sin H",
   "illo": "Terminación -illo, -illa", "yfinal": "Y al final de palabra", "ll-vocab": "Palabras con LL para memorizar",
   "y-vocab": "Palabras con Y para memorizar", "verbos-y": "Verbos con Y (cayó, leyó)",
-  "aguda": "Palabras agudas", "llana": "Palabras llanas", "esdrujula": "Palabras esdrújulas"
+  "aguda": "Palabras agudas", "llana": "Palabras llanas", "esdrujula": "Palabras esdrújulas",
+  "ger-gir": "Verbos en -ger, -gir", "aje": "Terminación -aje", "jero": "Terminación -jero, -jera",
+  "gen": "Palabras con gen", "gia": "Terminación -gía", "j-verbos": "Verbos con J (dije, trajeron)",
+  "gue-gui": "Gue, gui y diéresis (gü)", "gj-vocab": "Palabras con G o J para memorizar",
+  "ce-ci": "C delante de E, I", "za": "Z delante de A, O, U", "z-ces": "Plural de palabras en -z (-ces)",
+  "czs-vocab": "Palabras con C, Z o S para memorizar",
+  "pregunta": "Signos de pregunta (¿?)", "exclamacion": "Signos de exclamación (¡!)",
+  "mayus-inicio": "Mayúscula al empezar", "mayus-nombres": "Mayúscula en nombres propios",
+  "dias-meses": "Días y meses en minúscula", "punto": "Punto final"
 };
 
 PV.TIPOS = {

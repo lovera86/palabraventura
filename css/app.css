@@ -456,3 +456,4 @@ body {
 body.sin-animaciones { animation: none; }
 body.sin-animaciones .fondo { display: none; }
 @media (prefers-reduced-motion: reduce) { .fondo { display: none; } }
+.palabra-hueco.larga { white-space: normal; letter-spacing: 0; }
