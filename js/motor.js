@@ -9,7 +9,7 @@ PV.motor = (function () {
   const ACIERTOS_PARA_SUBIR = 4;
 
   function hab(p, id) {
-    return p.habilidades[id] || (p.habilidades[id] = { intentos: 0, aciertos: 0, nivel: 1, racha: 0, ventana: [], ultimas: [], dias: [], ultimaFecha: null });
+    return p.habilidades[id] || (p.habilidades[id] = { intentos: 0, aciertos: 0, nivel: p.tipo === "adulto" ? 2 : 1, racha: 0, ventana: [], ultimas: [], dias: [], ultimaFecha: null });
   }
   function item(p, id) {
     return p.items[id] || (p.items[id] = { intentos: 0, aciertos: 0, fallos: 0, caja: 0, proximo: null, enRefuerzo: false, ultimaFecha: null, ultimoFallo: null });

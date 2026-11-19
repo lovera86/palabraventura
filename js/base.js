@@ -40,7 +40,11 @@ PV.HABILIDADES = {
   homo:   { nombre: "Homófonos", icono: "☕", publico: "adulto" },
   porq:   { nombre: "Porque, sino y expresiones", icono: "🤔", publico: "adulto" },
   gram:   { nombre: "Dudas gramaticales", icono: "📮", publico: "adulto" },
-  tild2:  { nombre: "Tildes avanzadas", icono: "🔭", publico: "adulto" }
+  tild2:  { nombre: "Tildes avanzadas", icono: "🔭", publico: "adulto" },
+  lelo:   { nombre: "Leísmo, laísmo y loísmo", icono: "🗣️", publico: "adulto" },
+  habla:  { nombre: "Así no se dice", icono: "🎙️", publico: "adulto" },
+  paron:  { nombre: "Palabras que confunden", icono: "🌀", publico: "adulto" },
+  dific:  { nombre: "Palabras difíciles de escribir", icono: "🏛️", publico: "adulto" }
 };
 
 PV.REGLAS = {
@@ -68,7 +72,15 @@ PV.REGLAS = {
   "haber-impersonal": "Haber y hacer impersonales", "dequeismo": "Dequeísmo", "queismo": "Queísmo",
   "pronombres": "Detrás de mí, cerca de ti", "imperativo": "Imperativo (id, venid, sentaos)", "laismo": "Laísmo",
   "hiato": "Hiatos (día, maíz)", "diptongo": "Diptongos sin tilde (huir, cuidado)", "mente": "Adverbios en -mente",
-  "mayusculas": "Tilde en mayúsculas", "plurales": "Tildes en los plurales"
+  "mayusculas": "Tilde en mayúsculas", "plurales": "Tildes en los plurales",
+  "lelo-laismo": "Laísmo (la por le)", "lelo-loismo": "Loísmo (lo/los por le/les)",
+  "lelo-leismo-cosa": "Leísmo con cosas", "lelo-leismo-fem": "Leísmo con mujeres",
+  "lelo-leismo-plural": "Leísmo en plural", "lelo-concord": "Le / les: concordancia", "lelo-selos": "Se lo / se los",
+  "verbos-irreg": "Verbos irregulares mal conjugados", "condicional": "Si + condicional",
+  "pronombres-orden": "Orden de pronombres (se me)", "expresiones": "Expresiones no recomendadas",
+  "concord-ustedes": "Ustedes + vosotros", "vulgarismos": "Vulgarismos",
+  "paron-par": "Parónimos", "paron-letra": "Parónimos por una letra", "paron-signif": "Significados que engañan",
+  "dific-hx": "H y X difíciles", "dific-letras": "Letras de más o de menos", "dific-trampa": "Palabras traicioneras"
 };
 
 PV.TIPOS = {

@@ -79,16 +79,18 @@ Los ejercicios están en archivos `.js` (con datos en formato JSON) en lugar de 
 | C / Z / S | 21 | c delante de e/i, z delante de a/o/u, plural de -z en -ces, vocabulario |
 | Puntuación y mayúsculas | 20 | ¿? y ¡!, mayúscula al empezar y en nombres propios, días y meses en minúscula, punto final |
 
-**Ortografía para adultos** (perfil «Adulto»):
+**Ortografía para adultos** (perfil «Adulto», empieza en dificultad 2):
 
 | Unidad | Ejercicios | Contenido |
 |---|---|---|
-| Biblioteca de la tilde diacrítica | 17 | tú/tu, él/el, mí/mi, sí/si, sé/se, té/te, dé/de, más/mas, interrogativos directos e indirectos, solo/fue/ti sin tilde |
-| Café de los homófonos | 16 | a ver/haber, hecho/echo, hay/ahí/ay, vaya/valla/baya, tubo/tuvo, votar/botar, rallar/rayar, hierva/hierba, ojear/hojear |
-| Club del porqué | 15 | porque, por qué, porqué, por que; sino/si no; a veces, sobre todo, o sea, de repente, a lo mejor, tan bien, a gusto |
-| Oficina de dudas | 15 | haber y hacer impersonales, dequeísmo, queísmo, imperativo (id, venid, sentaos), detrás de mí, laísmo |
-| Observatorio de las tildes | 16 | hiatos, huir y cuidado, adverbios en -mente, tilde en mayúsculas, plurales que cambian la tilde |
+| Plaza del le, la, lo | 20 | laísmo («la dije», «la duelen»), loísmo («los dije»), leísmo con cosas, con mujeres y en plural, concordancia «le/les» («le dije a mis padres»), «se lo / se los» |
+| Tertulia del buen hablar | 20 | andé, conducí, satisfació, cabió, preveyó, haiga, dijistes; «si lo sabría»; «me se cayó»; «contra más»; «yo de ti»; «delante mía»; «habíamos diez»; «ves a comprar»; «ustedes vais»; nadien, cocreta, almóndiga |
+| Laberinto de los parónimos | 20 | infringir/infligir, aptitud/actitud, prejuicio/perjuicio, absolver/absorber, apertura/abertura, inerte/inerme, prever/proveer, revelar/rebelar, desecho/deshecho, vasto/basto…; significados: sendos, adolecer, detentar, lívido |
+| Museo de las palabras difíciles | 20 | exhaustivo, exuberante, ahínco, prohíbe, excavar, cónyuge, aeropuerto, inflación, objeción, meteorología, idiosincrasia, desternillarse, dentífrico, espurio, absceso, expectación… |
+| Lo esencial | 79 | repaso de lo básico: tilde diacrítica, homófonos, porque/por qué, dudas gramaticales y tildes avanzadas |
 | Gran Repaso | — | mezcla de todas las anteriores |
+
+Las formas del habla de cada zona se presentan con respeto: se explica dónde se oyen y cuál es la forma de la norma culta.
 
 Criterio: Ortografía de la RAE (2010) y Diccionario panhispánico de dudas.
 

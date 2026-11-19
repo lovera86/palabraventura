@@ -256,7 +256,7 @@
   function cabeceraLeccion() {
     const pct = Math.round(sesion.i / sesion.cola.length * 100);
     return `<header class="leccion-top">
-      <button type="button" class="cerrar" data-accion="salir-leccion" aria-label="Salir de la lección">✕</button>
+      <button type="button" class="cerrar" data-accion="salir-leccion" aria-label="Salir de la lección"><span aria-hidden="true">✕</span><b>Salir</b></button>
       <div class="progreso" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${Math.max(pct, 4)}%"></span></div>
     </header>`;
   }
@@ -264,7 +264,7 @@
   function pantallaReto() {
     const r = sesion.cola[sesion.i], ej = r.ej;
     const formato = r.formato || ej.tipo;
-    const NOMBRES_ADULTO = { completa: { nombre: "Completa la frase", icono: "✍️" }, robot: { nombre: "Encuentra el error", icono: "🔎" } };
+    const NOMBRES_ADULTO = { detective: { nombre: "Elige la correcta", icono: "✅" }, completa: { nombre: "Completa la frase", icono: "✍️" }, robot: { nombre: "Encuentra el error", icono: "🔎" } };
     const tipo = (P.tipo === "adulto" && NOMBRES_ADULTO[formato]) || PV.TIPOS[formato];
     if (!r.orden) r.orden = U.barajar(ej.opciones);
     if (!r.fase) r.fase = ej.tipo === "robot" ? "buscar" : "elegir";
@@ -714,9 +714,16 @@
     "seguir": () => siguiente(),
     "decidir": v => decidir(v),
     "salir-leccion": () => {
-      if (sesion && sesion.contestados > 0 && !confirm("¿Salir de la lección? Lo que has respondido ya está guardado, pero los premios se ganan al terminar.")) return;
+      // Confirmación dentro de la app (algunos navegadores bloquean los avisos del sistema).
+      if (sesion && sesion.contestados > 0) {
+        modal(`<h2>¿Salir de la lección?</h2><p class="nota">Lo que has respondido ya está guardado. Los premios se ganan al terminar la lección.</p>
+          <div class="fila-botones"><button type="button" class="btn btn-verde" data-accion="cerrar" data-foco>Seguir jugando</button>
+          <button type="button" class="btn btn-gris" data-accion="confirmar-salir">Salir</button></div>`);
+        return;
+      }
       sesion = null; pantallaCamino();
     },
+    "confirmar-salir": () => { cerrarModal(); sesion = null; pantallaCamino(); },
     "ir-coleccion": v => pantallaColeccion(v || pestana),
     "elegir-animal": v => { P.avatar.animal = v; guardar(); pantallaColeccion(); },
     "equipar": v => { P.avatar.accesorio = P.avatar.accesorio === v ? null : v; guardar(); pantallaColeccion(); },
@@ -761,6 +768,7 @@
       return;
     }
     if (!sesion || !app.querySelector(".leccion")) return;
+    if (e.key === "Escape") { ACCIONES["salir-leccion"](); return; }
     if (e.key === "Enter") {
       const b = app.querySelector("[data-accion=seguir]") || app.querySelector("[data-accion=comprobar]:not([disabled])");
       if (b) { e.preventDefault(); b.click(); }
