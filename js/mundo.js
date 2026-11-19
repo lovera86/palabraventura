@@ -4,7 +4,7 @@
 
 /* Posición x/y en un lienzo de 300 × 520 (el mapa se escala al ancho de la pantalla). */
 PV.ZONAS = [
-  { id: "bv", nombre: "Ciudad de B/V", icono: "🏘️", color: "#ffb347", habilidades: ["bv"], x: 80, y: 455,
+  { id: "bv", nombre: "Ciudad de B/V", icono: "🏘️", color: "#ffb347", deco: ["🏘️", "📚", "🚲", "🔔", "🌳"], habilidades: ["bv"], x: 80, y: 455,
     personaje: { nombre: "Bruno", icono: "🧙‍♂️", rol: "el bibliotecario" },
     misiones: [
       { id: "bv-1", titulo: "Los carteles revueltos", reglas: ["bl-br", "bu", "bi"],
@@ -24,7 +24,7 @@ PV.ZONAS = [
         gancho: "Más allá de la puerta, una niebla espesa cubre el pantano…",
         decision: { pregunta: "El Guardián te ofrece un regalo:", a: { icono: "🎁", texto: "Su objeto más raro", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Una bolsa de monedas", efecto: "monedas" } } }
     ] },
-  { id: "h", nombre: "Pantano de la H", icono: "🐸", color: "#6cc070", habilidades: ["h"], x: 220, y: 360,
+  { id: "h", nombre: "Pantano de la H", icono: "🐸", color: "#6cc070", deco: ["🐸", "🪷", "🍄", "🌿", "🦆"], habilidades: ["h"], x: 220, y: 360,
     personaje: { nombre: "Hilda", icono: "🐸", rol: "la rana del pantano" },
     misiones: [
       { id: "h-1", titulo: "Huellas en el barro", reglas: ["hue", "hum"],
@@ -44,7 +44,7 @@ PV.ZONAS = [
         gancho: "Cuando la niebla se va, se oye el rugido de una cascada…",
         decision: { pregunta: "La niebla deja algo atrás:", a: { icono: "✨", texto: "Un destello misterioso", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas mojadas", efecto: "monedas" } } }
     ] },
-  { id: "lly", nombre: "Cascada de LL/Y", icono: "💧", color: "#4fb3e8", habilidades: ["lly"], x: 85, y: 265,
+  { id: "lly", nombre: "Cascada de LL/Y", icono: "💧", color: "#4fb3e8", deco: ["💧", "🌈", "🐟", "☔", "🦫"], habilidades: ["lly"], x: 85, y: 265,
     personaje: { nombre: "Yago", icono: "🦫", rol: "el castor constructor" },
     misiones: [
       { id: "lly-1", titulo: "El castillo de -illo", reglas: ["illo"],
@@ -64,7 +64,7 @@ PV.ZONAS = [
         gancho: "Cuando el agua se calma, se ve una montaña muy alta con picos puntiagudos…",
         decision: { pregunta: "El remolino escupe algo:", a: { icono: "🫧", texto: "Una burbuja brillante", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Un chorro de monedas", efecto: "monedas" } } }
     ] },
-  { id: "tildes", nombre: "Montaña de las Tildes", icono: "⛰️", color: "#a68cff", habilidades: ["tildes"], x: 215, y: 170,
+  { id: "tildes", nombre: "Montaña de las Tildes", icono: "⛰️", color: "#a68cff", deco: ["⛰️", "🦅", "❄️", "🪁", "🌲"], habilidades: ["tildes"], x: 215, y: 170,
     personaje: { nombre: "Tilda", icono: "🐐", rol: "la cabra montañera" },
     misiones: [
       { id: "tildes-1", titulo: "La cima aguda", reglas: ["aguda"],
@@ -84,7 +84,7 @@ PV.ZONAS = [
         gancho: "A lo lejos aparece un castillo con cuatro puertas…",
         decision: { pregunta: "El Eco te deja elegir:", a: { icono: "🌠", texto: "Un recuerdo de la cumbre", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas del eco", efecto: "monedas" } } }
     ] },
-  { id: "castillo", nombre: "Castillo de los Retos", icono: "🏰", color: "#ff7aa8", habilidades: ["bv", "h", "lly", "tildes"], x: 150, y: 62,
+  { id: "castillo", nombre: "Castillo de los Retos", icono: "🏰", color: "#ff7aa8", deco: ["🏰", "🐉", "🛡️", "👑", "✨"], habilidades: ["bv", "h", "lly", "tildes"], x: 150, y: 62,
     requiereTodas: true,
     personaje: { nombre: "Ortiga", icono: "🐉", rol: "la dragona guardiana" },
     misiones: [
@@ -181,28 +181,16 @@ PV.mundo = (function () {
   function totalMisiones(zona) { return zona.misiones.filter(m => !m.infinita).length; }
   function completada(P, zona) { return hechas(P, zona) >= totalMisiones(zona); }
 
-  // Una zona se abre al completar 2 misiones de la anterior (no hace falta hacerlo todo perfecto).
-  // El castillo pide 2 misiones en cada una de las demás zonas.
-  // Si el jugador ya había practicado esa habilidad antes de esta versión, la zona también queda abierta.
-  function abierta(P, zona) {
-    const i = PV.ZONAS.indexOf(zona);
-    if (i === 0) return true;
-    if (zona.requiereTodas) return PV.ZONAS.filter(z => !z.requiereTodas).every(z => hechas(P, z) >= 2);
-    if (hechas(P, PV.ZONAS[i - 1]) >= 2) return true;
-    return zona.habilidades.some(h => P.habilidades[h] && P.habilidades[h].intentos > 0);
-  }
+  // Todo está abierto desde el principio: se puede jugar o repasar cualquier lección en cualquier momento.
+  // (La «siguiente misión» solo es una sugerencia de por dónde seguir.)
+  function abierta() { return true; }
   function requisito(P, zona) {
     const i = PV.ZONAS.indexOf(zona);
     if (zona.requiereTodas) return "Completa 2 misiones en cada zona";
     const prev = PV.ZONAS[i - 1];
     return `Completa ${Math.max(0, 2 - hechas(P, prev))} ${2 - hechas(P, prev) === 1 ? "misión" : "misiones"} más en ${prev.nombre}`;
   }
-  function misionDisponible(P, zona, k) {
-    if (!abierta(P, zona)) return false;
-    const m = zona.misiones[k];
-    if (m.infinita) return completada(P, zona);
-    return k === 0 || !!(P.misiones[zona.misiones[k - 1].id] || {}).completada;
-  }
+  function misionDisponible() { return true; }
   function estadoMision(P, zona, k) {
     const m = zona.misiones[k];
     if (!m.infinita && (P.misiones[m.id] || {}).completada) return "completada";

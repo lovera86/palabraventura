@@ -75,6 +75,38 @@
     }
   }
 
+  function confeti() {
+    const colores = ["#ffcc33", "#4cc764", "#3fa9f5", "#ff7aa8", "#9b6cff", "#ff9b2f"];
+    for (let i = 0; i < 60; i++) {
+      const c = document.createElement("span");
+      c.className = "confeti";
+      c.style.left = Math.random() * 100 + "vw";
+      c.style.background = colores[i % colores.length];
+      c.style.animationDelay = Math.random() * 0.8 + "s";
+      c.style.animationDuration = 2.2 + Math.random() * 1.6 + "s";
+      c.style.setProperty("--giro", (Math.random() * 720 - 360) + "deg");
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4800);
+    }
+  }
+  // Fondo animado: letras, estrellas y nubes que flotan despacio. Se crea una sola vez (no se reinicia al cambiar de pantalla).
+  function crearFondo() {
+    const f = document.getElementById("fondo");
+    if (!f || f.childElementCount) return;
+    const cosas = ["A", "b", "ñ", "á", "V", "H", "ll", "Y", "é", "✏️", "⭐", "📚", "✨", "☁️", "🎈", "💬", "ó", "B"];
+    const colores = ["#ffb347", "#6cc070", "#4fb3e8", "#a68cff", "#ff7aa8", "#ffcc33"];
+    for (let i = 0; i < 22; i++) {
+      const e = document.createElement("span");
+      e.textContent = cosas[i % cosas.length];
+      e.style.left = (i * 97 % 100) + "vw";
+      e.style.fontSize = (22 + (i * 37 % 34)) + "px";
+      e.style.color = colores[i % colores.length];
+      e.style.animationDuration = (22 + (i * 13 % 20)) + "s";
+      e.style.animationDelay = -(i * 7 % 30) + "s";
+      f.appendChild(e);
+    }
+  }
+
   /* ---------- Estructura común: menú lateral (ordenador), barra superior, panel derecho, barra inferior (móvil) ---------- */
   const SECCIONES = [["camino", "🗺️", "Aventura"], ["ir-coleccion", "🎒", "Colección"], ["ajustes", "⚙️", "Ajustes"]];
   function marco(contenido, seccion) {
@@ -89,8 +121,8 @@
           <button type="button" class="tb-yo" data-accion="ir-coleccion" data-valor="companero" aria-label="Tu compañero">${avatarHTML("s")}<span>${esc(P.apodo || "Aventurero")}</span></button>
           <div class="tb-stats">
             <span class="tb-stat racha ${n ? "" : "apagada"}" title="Días seguidos jugando">🔥 ${n}</span>
-            <span class="tb-stat" title="Estrellas">⭐ ${P.estrellas}</span>
-            <span class="tb-stat" title="Monedas">🪙 ${P.monedas}</span>
+            <span class="tb-stat estrellas" title="Estrellas">⭐ ${P.estrellas}</span>
+            <span class="tb-stat monedas" title="Monedas">🪙 ${P.monedas}</span>
           </div>
         </header>
         ${contenido}
@@ -101,18 +133,18 @@
   }
   function panelDerecho() {
     const e = W.etapa(P), sig = PV.ETAPAS[e + 1], n = racha();
-    return `<div class="tarjeta">
+    return `<div class="tarjeta t-mascota">
         <div class="centro">${avatarHTML("l")}</div>
         <p class="tarjeta-titulo centro">${esc(R.nombreMascota(P))}</p>
         <p class="nota centro">${PV.ETAPAS[e].nombre}</p>
         ${sig ? `<div class="barra-etapa"><span style="width:${Math.round((P.estrellas - PV.ETAPAS[e].min) / (sig.min - PV.ETAPAS[e].min) * 100)}%"></span></div>
         <p class="nota centro">Con ${sig.min - P.estrellas} ⭐ más, evoluciona.</p>` : ""}
       </div>
-      <div class="tarjeta">
+      <div class="tarjeta t-racha">
         <p class="tarjeta-titulo">🔥 ${n ? `${n} ${n === 1 ? "día seguido" : "días seguidos"}` : "¡Empieza tu racha hoy!"}</p>
         <p class="nota">Una lección al día es suficiente.</p>
       </div>
-      <button type="button" class="tarjeta tarjeta-boton" data-accion="ir-coleccion" data-valor="album">
+      <button type="button" class="tarjeta tarjeta-boton t-album" data-accion="ir-coleccion" data-valor="album">
         <p class="tarjeta-titulo">🖼️ Álbum de tesoros</p><p class="nota">${P.coleccion.length} de ${PV.COLECCION.length} encontrados</p>
       </button>`;
   }
@@ -161,6 +193,7 @@
     PV.ZONAS.forEach((z, ui) => {
       const ab = W.abierta(P, z);
       html += `<section class="unidad ${ab ? "" : "bloqueada"}" style="--c:${z.color}">
+        <div class="adornos" aria-hidden="true">${(z.deco || []).map((d, i) => `<span style="--i:${i}">${d}</span>`).join("")}</div>
         <div class="unidad-cabecera">
           <div><small>UNIDAD ${ui + 1} · ${W.hechas(P, z)}/${W.totalMisiones(z)}</small><h2>${z.nombre}</h2>
           <p>${ab ? `Con ${z.personaje.nombre}, ${z.personaje.rol}` : "🔒 " + esc(W.requisito(P, z))}</p></div>
@@ -171,7 +204,7 @@
         const est = W.estadoMision(P, z, k);
         if (m.infinita && est === "bloqueada") return;
         const esActual = ab && sig.mision === m;
-        const icono = est === "completada" ? (m.jefe ? "🏆" : "✔") : m.jefe ? "👑" : m.infinita ? "🔁" : est === "bloqueada" ? "🔒" : "★";
+        const icono = est === "completada" ? (m.jefe ? "🏆" : "✔") : m.jefe ? "👑" : m.infinita ? "🔁" : "★";
         html += `<div class="nodo-fila" style="--x:${ZIGZAG[k % ZIGZAG.length]}px">
           ${esActual && abierto !== m.id ? `<span class="empieza">¡EMPIEZA!</span>` : ""}
           <button type="button" class="nodo ${est} ${esActual ? "actual" : ""} ${m.jefe ? "jefe" : ""}" data-accion="nodo" data-valor="${m.id}" aria-label="${esc(m.titulo)}" aria-expanded="${abierto === m.id}">${icono}</button>
@@ -280,7 +313,7 @@
       ? burbuja("Pista: " + (PV.PISTAS[ej.regla] || "Lee la palabra despacio, letra a letra."), "s")
       : `<button type="button" class="btn-pista" data-accion="pista">💡 Pista</button>`;
 
-    render(`<div class="leccion">
+    render(`<div class="leccion" style="--c:${sesion.zona.color}">
         ${cabeceraLeccion()}
         <main class="leccion-cuerpo">
           <p class="modo">${tipo.icono} ${tipo.nombre}${etiqueta ? ` <span class="pill">${etiqueta}</span>` : ""}</p>
@@ -379,7 +412,7 @@
     const op = (k, o) => `<button type="button" class="decision-opcion" data-accion="decidir" data-valor="${k}">
       <span class="decision-icono">${o.icono}</span><strong>${esc(o.texto)}</strong>
       <small>${o.efecto === "hallazgo" ? "🔍 Quizá encuentres un tesoro" : "🪙 Monedas extra"}</small></button>`;
-    render(`<div class="leccion">
+    render(`<div class="leccion" style="--c:${sesion.zona.color}">
         ${cabeceraLeccion()}
         <main class="leccion-cuerpo centro">
           <p class="decision-personaje">${z.personaje.icono}</p>
@@ -423,7 +456,7 @@
     nuevas.forEach(z => lineas.push(`<div class="premio azul"><span>🔓</span><div><small>¡Nueva unidad!</small><b>${z.nombre}</b></div></div>`));
     premio.insignias.forEach(n => lineas.push(`<div class="premio"><span>${n.icono}</span><div><small>¡Nueva insignia!</small><b>${n.nombre}</b></div></div>`));
 
-    render(`<div class="leccion">
+    render(`<div class="leccion" style="--c:${s.zona.color}">
         <main class="leccion-cuerpo final centro">
           <div class="final-mascota">${avatarHTML("xl")}</div>
           <h1 class="final-titulo">${s.mision.jefe ? "¡Desafío superado!" : "¡Lección completada!"}</h1>
@@ -442,7 +475,7 @@
         </div></footer>
       </div>`, null);
     actual = () => pantallaCamino();
-    if (animacionesOn()) setTimeout(() => chispas(app.querySelector(".final-mascota")), 200);
+    if (animacionesOn()) { setTimeout(() => chispas(app.querySelector(".final-mascota")), 200); confeti(); }
   }
 
   /* ---------- Colección ---------- */
@@ -727,6 +760,7 @@
 
   /* ---------- Arranque ---------- */
   function arrancar() {
+    crearFondo();
     const lista = A.perfiles();
     if (!lista.length) return pantallaBienvenida();
     if (lista.length > 1) return pantallaPerfiles();

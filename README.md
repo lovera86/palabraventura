@@ -37,7 +37,7 @@ git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git pu
 ## Cómo se juega (versión 3: camino de lecciones)
 
 1. **¿Quién juega?** Si hay varios jugadores en el dispositivo, cada uno elige su perfil al entrar. Sin registro: solo apodo, compañero y su nombre.
-2. **Aventura (pantalla principal):** un camino de lecciones en zigzag, agrupado en unidades de colores: Ciudad de B/V → Pantano de la H → Cascada de LL/Y → Montaña de las Tildes → Castillo de los Retos, y unidades futuras («Próximamente»). La lección que toca lleva el globo «¡EMPIEZA!». Al tocar un círculo se abre una tarjeta con la historia y el botón EMPEZAR. Cada unidad tiene 3 lecciones y un desafío final (👑); la siguiente se abre al completar 2 lecciones de la anterior.
+2. **Aventura (pantalla principal):** un camino de lecciones en zigzag, agrupado en unidades de colores: Ciudad de B/V → Pantano de la H → Cascada de LL/Y → Montaña de las Tildes → Castillo de los Retos, y unidades futuras («Próximamente»). La lección que toca lleva el globo «¡EMPIEZA!». Al tocar un círculo se abre una tarjeta con la historia y el botón EMPEZAR. Cada unidad tiene 3 lecciones y un desafío final (👑). **Todo está abierto desde el principio**: se puede jugar o repetir cualquier lección de cualquier unidad cuando se quiera; «¡EMPIEZA!» solo sugiere por dónde seguir.
 3. **Lección (5–8 min, 7 retos; 8 en los desafíos):** un reto por pantalla, se elige una respuesta y se pulsa COMPROBAR. Abajo aparece una franja verde (acierto) o naranja (solución, explicación y ánimo) con CONTINUAR. A mitad, una decisión: un camino da un tesoro y el otro, monedas. En el ordenador: teclas 1-3 para elegir e Intro para comprobar o continuar.
 4. **Formatos de reto:** Detective de palabras, Hechizo de letras, Robot corrector y Construye la palabra. Botón «💡 Pista» en cada reto, sin penalización.
 5. **Final de lección:** estrellas, monedas y % de aciertos; tesoros y cofres se abren solos; evolución del compañero, nuevas unidades e insignias; una frase que anticipa la siguiente aventura.
@@ -45,7 +45,7 @@ git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git pu
 7. **Colección:** álbum de tesoros, compañero (nombre, animal, accesorios, evolución), tienda de accesorios e insignias.
 8. **Ajustes:** sonido, menos animaciones, cambiar o añadir jugador y acceso a la zona de adultos.
 
-En el móvil la navegación está abajo; en el ordenador hay un menú lateral y un panel con el compañero, la racha y el álbum.
+En el móvil la navegación está abajo; en el ordenador hay un menú lateral y un panel con el compañero, la racha y el álbum. Fondo con letras y estrellas flotando, unidades con su color y adornos animados, lecciones teñidas con el color de su unidad y confeti al terminar (todo se desactiva con «Menos animaciones»).
 
 Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva versión, y la clave antigua se conserva como copia (`palabraventura.progreso`).
 

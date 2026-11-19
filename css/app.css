@@ -354,3 +354,105 @@ th { font-size: .85rem; color: var(--suave); }
   .decision-opciones { grid-template-columns: 1fr; }
   .nodo-mascota { display: none; }
 }
+
+/* =================== Color y movimiento =================== */
+body {
+  background: linear-gradient(135deg, #dff3ff, #fff3d1, #ffe1ef, #e3ffe6, #e9e1ff);
+  background-size: 400% 400%;
+  animation: cielo 40s ease-in-out infinite;
+  background-attachment: fixed;
+}
+@keyframes cielo { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* Letras y estrellas que flotan detrás de todo */
+.fondo { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.fondo span { position: absolute; bottom: -80px; font-weight: 900; opacity: .28; animation: flotar-arriba linear infinite; will-change: transform; }
+@keyframes flotar-arriba {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(24px, -30vh) rotate(25deg); }
+  50% { transform: translate(-18px, -60vh) rotate(-15deg); }
+  75% { transform: translate(20px, -90vh) rotate(20deg); }
+  100% { transform: translate(0, -125vh) rotate(0deg); }
+}
+#app { position: relative; z-index: 1; }
+
+/* Barras: cristal sobre el fondo de color */
+.topbar { background: rgba(255,255,255,.82); border-bottom-color: rgba(255,255,255,.9); box-shadow: 0 4px 18px rgba(80,60,160,.08); }
+.tb-stat { background: #fff; box-shadow: 0 2px 0 rgba(0,0,0,.06); }
+.tb-stat.racha { background: #fff0e0; }
+.tb-stat.racha.apagada { background: #f2f3f7; }
+.tb-stat.estrellas { background: #fff6cf; color: #a87a00; }
+.tb-stat.monedas { background: #ffe9c7; color: #b46a00; }
+.tabbar { background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-top-color: rgba(255,255,255,.9); box-shadow: 0 -4px 18px rgba(80,60,160,.1); }
+.tabbar button:nth-child(1).activa { color: #1f88d6; background: #dff1ff; border-color: #b8defc; }
+.tabbar button:nth-child(2).activa { color: #d63a7a; background: #ffe3ef; border-color: #ffc2da; }
+.tabbar button:nth-child(3).activa { color: #6b47d6; background: #ece5ff; border-color: #d3c4ff; }
+@media (min-width: 900px) {
+  .lateral { border-right: 0; background: rgba(255,255,255,.55); backdrop-filter: blur(8px); }
+  .lateral-item:nth-child(1).activa { color: #1f88d6; background: #dff1ff; border-color: #b8defc; }
+  .lateral-item:nth-child(2).activa { color: #d63a7a; background: #ffe3ef; border-color: #ffc2da; }
+  .lateral-item:nth-child(3).activa { color: #6b47d6; background: #ece5ff; border-color: #d3c4ff; }
+  .lateral-item:hover { background: rgba(255,255,255,.8); }
+  .marca { background: linear-gradient(90deg, #ff7aa8, #ff9b2f, #4cc764, #3fa9f5, #9b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
+
+/* Tarjetas del panel derecho con degradado */
+.tarjeta { box-shadow: 0 4px 0 rgba(0,0,0,.05), 0 8px 24px rgba(80,60,160,.08); border-color: rgba(255,255,255,.9); }
+.t-mascota { background: linear-gradient(160deg, #8f6bff, #4fb3e8); color: #fff; border: 0; }
+.t-mascota .nota, .t-mascota .tarjeta-titulo { color: #fff; }
+.t-mascota .barra-etapa { background: rgba(255,255,255,.35); }
+.t-mascota .avatar { animation: bote 2.4s ease-in-out infinite; }
+.t-racha { background: linear-gradient(160deg, #ffb347, #ff7a59); color: #fff; border: 0; }
+.t-racha .nota, .t-racha .tarjeta-titulo { color: #fff; }
+.t-album { background: linear-gradient(160deg, #ff8fc0, #ff6b9a); color: #fff; border: 0; box-shadow: 0 4px 0 #e0507f; }
+.t-album .nota, .t-album .tarjeta-titulo { color: #fff; }
+
+/* Unidades: cada una con su color y adornos que se balancean */
+.unidad { position: relative; background: color-mix(in srgb, var(--c, #c9ccd6) 26%, rgba(255,255,255,.7)); border-radius: 26px; padding: 10px 10px 26px; overflow: hidden; }
+.unidad.futura { padding-bottom: 10px; }
+.unidad-cabecera { position: relative; z-index: 1; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, #fff)); }
+.unidad-personaje { animation: bote 2.2s ease-in-out infinite; }
+.nodos { position: relative; z-index: 1; }
+.adornos { position: absolute; inset: 0; pointer-events: none; }
+.adornos span { position: absolute; font-size: 2rem; opacity: .9; animation: balanceo 3.2s ease-in-out infinite; animation-delay: calc(var(--i) * -.7s); }
+.adornos span:nth-child(1) { left: 6%; top: 130px; }
+.adornos span:nth-child(2) { right: 7%; top: 200px; }
+.adornos span:nth-child(3) { left: 9%; top: 330px; }
+.adornos span:nth-child(4) { right: 10%; top: 420px; }
+.adornos span:nth-child(5) { left: 12%; top: 520px; }
+@keyframes balanceo { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-8px) rotate(6deg); } }
+
+/* Nodos con brillo */
+.nodo { background: radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--c) 55%, #fff), var(--c) 60%); box-shadow: 0 7px 0 color-mix(in srgb, var(--c) 70%, #000); }
+.nodo:hover { transform: scale(1.06); }
+.nodo.completada { background: radial-gradient(circle at 35% 28%, #fff3b0, var(--amarillo) 60%); box-shadow: 0 7px 0 var(--amarillo-osc); }
+.nodo.completada::after { content: "✨"; position: absolute; top: -10px; right: -8px; font-size: 1.1rem; animation: brilla 1.8s ease-in-out infinite; }
+.nodo { position: relative; }
+@keyframes brilla { 0%, 100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+.nodo-mascota .avatar { animation: bote 1.8s ease-in-out infinite; }
+
+/* Lecciones teñidas con el color de su unidad */
+.leccion { background: linear-gradient(180deg, color-mix(in srgb, var(--c, #3fa9f5) 42%, transparent), color-mix(in srgb, var(--c, #3fa9f5) 14%, transparent) 60%); }
+.frase { background: #fff; box-shadow: 0 4px 0 rgba(0,0,0,.05); }
+.opcion { background: #fff; }
+.progreso span { background: linear-gradient(90deg, var(--verde), #8ee06b); }
+.modo { color: color-mix(in srgb, var(--c, #9b6cff) 70%, #000); }
+.decision-opcion { background: #fff; }
+.final-titulo { background: linear-gradient(90deg, #ff9b2f, #ff7aa8, #9b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Páginas sobre el fondo de color */
+.pagina .tarjeta, .bienvenida .tarjeta { background: rgba(255,255,255,.92); }
+.pestanas button { background: rgba(255,255,255,.9); }
+.logo h1 { background: linear-gradient(90deg, #ff7aa8, #ff9b2f, #4cc764, #3fa9f5, #9b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.perfil-tarjeta, .animal { background: rgba(255,255,255,.95); }
+
+/* Confeti */
+.confeti { position: fixed; top: -20px; width: 10px; height: 16px; border-radius: 3px; z-index: 90; pointer-events: none; animation: caer linear forwards; }
+@keyframes caer { to { transform: translateY(110vh) rotate(var(--giro)); opacity: .9; } }
+
+/* La zona de adultos se queda sobria */
+.adultos-marco { position: relative; z-index: 1; }
+
+body.sin-animaciones { animation: none; }
+body.sin-animaciones .fondo { display: none; }
+@media (prefers-reduced-motion: reduce) { .fondo { display: none; } }
