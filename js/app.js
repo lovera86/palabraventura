@@ -1,5 +1,5 @@
-/* Palabraventura · interfaz: perfiles, inicio, mapa, zonas, misiones (presentación → retos → decisión → resultado),
-   colección, mercadillo, compañero, ajustes y zona de adultos. */
+/* Palabraventura · interfaz (versión 3: camino de lecciones).
+   Pantallas: ¿quién juega? · bienvenida · camino · lección (retos + decisión) · resultado · colección · ajustes · adultos. */
 (function () {
   const U = PV.util, M = PV.motor, R = PV.recompensas, A = PV.almacen, W = PV.mundo, esc = U.esc;
   const app = document.getElementById("app");
@@ -8,38 +8,47 @@
   const problemas = PV.validarBanco();
   if (problemas.length) console.warn("Palabraventura: revisar banco de ejercicios", problemas);
 
-  let P = null;          // progreso del jugador activo
-  let sesion = null;     // misión o reto en curso
-  let actual = null;     // función que redibuja la pantalla actual
-  let saludoMostrado = false, textoSaludo = "";
+  let P = null;        // progreso del jugador activo
+  let sesion = null;   // lección en curso
+  let actual = null;   // función que redibuja la pantalla actual
 
-  const ESTADOS = { nueva: "Sin empezar", practicando: "Practicando", casi: "¡Casi lo tienes!", dominada: "Dominada" };
-  const MSG_ACIERTO = ["¡Genial!", "¡Bien visto!", "¡Eso es!", "¡Muy bien!", "¡Perfecto!", "¡Lo has clavado!"];
-  const MSG_FALLO = ["¡Casi! Vamos a verlo juntos.", "Buen intento. Mira este truco:", "No pasa nada: así se aprende.", "¡Ups! Fíjate en esto:"];
+  const ESTADOS = { nueva: "Sin empezar", practicando: "Practicando", casi: "¡Casi lo tiene!", dominada: "Dominada" };
+  const MSG_ACIERTO = ["¡Genial!", "¡Bien visto!", "¡Eso es!", "¡Muy bien!", "¡Perfecto!", "¡Toma ya!"];
+  const MSG_FALLO = ["¡Casi!", "¡Uy, por poco!", "¡Buen intento!", "¡No pasa nada!"];
   const ANIMO = ["¡A mí también me pasa!", "¡Juntos lo sacamos!", "¡La próxima es nuestra!", "¡Equivocarse es parte de la aventura!"];
-  const N_MISION = 7, N_JEFE = 8, N_DIARIO = 5;
+  const ZIGZAG = [0, 52, 78, 52, 0, -52, -78, -52];
+  const N_MISION = 7, N_JEFE = 8;
 
+  /* ---------- Utilidades ---------- */
   function guardar() { A.guardar(P); }
   function habsAbiertas() { return [...new Set(PV.ZONAS.filter(z => W.abierta(P, z)).flatMap(z => z.habilidades))]; }
   function sonar(n) { PV.sonido.play(n, P && P.sonido); }
   function animacionesOn() { return !(P && P.reducirAnimaciones) && !window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
   function aplicarAjustes() { document.body.classList.toggle("sin-animaciones", !!(P && P.reducirAnimaciones)); }
-
-  /* ---------- Piezas comunes ---------- */
+  // Días seguidos jugando (cuenta hasta hoy o hasta ayer: no se «rompe» hasta pasar un día entero sin jugar).
+  function racha() {
+    let d = U.hoy(), n = 0;
+    if (!P.actividad[d]) d = U.sumarDias(d, -1);
+    while (P.actividad[d]) { n++; d = U.sumarDias(d, -1); }
+    return n;
+  }
   function avatarHTML(tam) {
     const an = R.animal(P.avatar.animal), ac = R.accesorio(P.avatar.accesorio);
     return `<span class="avatar avatar-${tam} etapa-${W.etapa(P)}" aria-hidden="true"><span class="avatar-animal">${an.icono}</span>${ac ? `<span class="avatar-acc">${ac.icono}</span>` : ""}</span>`;
   }
-  function render(html, clase, fn) {
-    if (fn) actual = fn;
-    app.className = clase || "";
-    app.innerHTML = html;
-    window.scrollTo(0, 0);
-    const foco = app.querySelector("[data-foco]");
-    if (foco) foco.focus({ preventScroll: true });
+  function burbuja(texto, tam) {
+    return `<div class="mascota-dice">${avatarHTML(tam || "m")}<p class="bocadillo"><strong>${esc(R.nombreMascota(P))}:</strong> ${esc(texto)}</p></div>`;
   }
-  function modal(html, clase) {
-    capa.innerHTML = `<div class="modal ${clase || ""}" role="dialog" aria-modal="true">${html}</div>`;
+  function render(html, fn, mantenerScroll) {
+    const y = window.scrollY;
+    if (fn) actual = fn;
+    app.innerHTML = html;
+    window.scrollTo(0, mantenerScroll ? y : 0);
+    const foco = app.querySelector("[data-foco]");
+    if (foco && !mantenerScroll) foco.focus({ preventScroll: true });
+  }
+  function modal(html) {
+    capa.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
     capa.hidden = false;
     const f = capa.querySelector("[data-foco]") || capa.querySelector("input, button");
     if (f) setTimeout(() => f.focus(), 30);
@@ -65,261 +74,152 @@
       setTimeout(() => s.remove(), 900);
     }
   }
-  function linternas(zona) {
-    const total = W.totalMisiones(zona), h = W.hechas(P, zona);
-    return `<span class="linternas" aria-label="${h} de ${total} misiones completadas">${Array.from({ length: total }, (_, i) => `<span class="linterna ${i < h ? "encendida" : ""}"></span>`).join("")}</span>`;
-  }
-  function cabecera() {
-    return `<header class="barra">
-      <button type="button" class="perfil" data-accion="ir-coleccion" data-valor="companero" aria-label="Ver a tu compañero">${avatarHTML("m")}</button>
-      <div class="perfil-info">
-        <div class="apodo">${esc(P.apodo || "Aventurero")}</div>
-        <div class="chips">
-          <span class="chip chip-nivel">Nivel ${R.nivelJugador(P)}<span class="barrita"><span style="width:${Math.round(R.progresoNivel(P) * 100)}%"></span></span></span>
-          <span class="chip chip-estrella" title="Estrellas">⭐ ${P.estrellas}</span>
-          <span class="chip chip-moneda" title="Monedas">🪙 ${P.monedas}</span>
-        </div>
+
+  /* ---------- Estructura común: menú lateral (ordenador), barra superior, panel derecho, barra inferior (móvil) ---------- */
+  const SECCIONES = [["camino", "🗺️", "Aventura"], ["ir-coleccion", "🎒", "Colección"], ["ajustes", "⚙️", "Ajustes"]];
+  function marco(contenido, seccion) {
+    const n = racha();
+    return `<div class="marco">
+      <aside class="lateral">
+        <div class="marca">🗺️ Palabraventura</div>
+        <nav aria-label="Secciones">${SECCIONES.map(([a, i, t]) => `<button type="button" class="lateral-item ${a === seccion ? "activa" : ""}" data-accion="${a}"><span>${i}</span>${t}</button>`).join("")}</nav>
+      </aside>
+      <div class="columna">
+        <header class="topbar">
+          <button type="button" class="tb-yo" data-accion="ir-coleccion" data-valor="companero" aria-label="Tu compañero">${avatarHTML("s")}<span>${esc(P.apodo || "Aventurero")}</span></button>
+          <div class="tb-stats">
+            <span class="tb-stat racha ${n ? "" : "apagada"}" title="Días seguidos jugando">🔥 ${n}</span>
+            <span class="tb-stat" title="Estrellas">⭐ ${P.estrellas}</span>
+            <span class="tb-stat" title="Monedas">🪙 ${P.monedas}</span>
+          </div>
+        </header>
+        ${contenido}
       </div>
-    </header>`;
+      <aside class="derecha">${panelDerecho()}</aside>
+    </div>
+    <nav class="tabbar" aria-label="Secciones">${SECCIONES.map(([a, i, t]) => `<button type="button" class="${a === seccion ? "activa" : ""}" data-accion="${a}"><span>${i}</span>${t}</button>`).join("")}</nav>`;
   }
-  function nav(activa) {
-    const items = [["inicio", "🏠", "Inicio"], ["mapa", "🗺️", "Mapa"], ["ir-coleccion", "🎒", "Colección"], ["ajustes", "⚙️", "Ajustes"]];
-    return `<nav class="nav-inferior" aria-label="Navegación principal">${items.map(([acc, ic, txt]) =>
-      `<button type="button" data-accion="${acc}" class="${acc === activa ? "activa" : ""}" ${acc === activa ? 'aria-current="page"' : ""}><span aria-hidden="true">${ic}</span>${txt}</button>`).join("")}</nav>`;
-  }
-  function burbuja(texto, tam) {
-    return `<div class="mascota-dice">${avatarHTML(tam || "m")}<p class="bocadillo"><strong>${esc(R.nombreMascota(P))}:</strong> ${esc(texto)}</p></div>`;
+  function panelDerecho() {
+    const e = W.etapa(P), sig = PV.ETAPAS[e + 1], n = racha();
+    return `<div class="tarjeta">
+        <div class="centro">${avatarHTML("l")}</div>
+        <p class="tarjeta-titulo centro">${esc(R.nombreMascota(P))}</p>
+        <p class="nota centro">${PV.ETAPAS[e].nombre}</p>
+        ${sig ? `<div class="barra-etapa"><span style="width:${Math.round((P.estrellas - PV.ETAPAS[e].min) / (sig.min - PV.ETAPAS[e].min) * 100)}%"></span></div>
+        <p class="nota centro">Con ${sig.min - P.estrellas} ⭐ más, evoluciona.</p>` : ""}
+      </div>
+      <div class="tarjeta">
+        <p class="tarjeta-titulo">🔥 ${n ? `${n} ${n === 1 ? "día seguido" : "días seguidos"}` : "¡Empieza tu racha hoy!"}</p>
+        <p class="nota">Una lección al día es suficiente.</p>
+      </div>
+      <button type="button" class="tarjeta tarjeta-boton" data-accion="ir-coleccion" data-valor="album">
+        <p class="tarjeta-titulo">🖼️ Álbum de tesoros</p><p class="nota">${P.coleccion.length} de ${PV.COLECCION.length} encontrados</p>
+      </button>`;
   }
 
-  /* ---------- Perfiles ---------- */
+  /* ---------- ¿Quién juega? ---------- */
   function pantallaPerfiles() {
-    const lista = A.perfiles();
-    render(`
-      <div class="bienvenida">
+    render(`<main class="bienvenida">
         <div class="logo"><span class="logo-icono">🗺️</span><h1>Palabraventura</h1><p>¿Quién juega hoy?</p></div>
         <div class="rejilla-perfiles">
-          ${lista.map(p => `<button type="button" class="perfil-tarjeta" data-accion="elegir-perfil" data-valor="${esc(p.id)}">
+          ${A.perfiles().map(p => `<button type="button" class="perfil-tarjeta" data-accion="elegir-perfil" data-valor="${esc(p.id)}">
             <span class="avatar avatar-l"><span class="avatar-animal">${R.animal(p.animal).icono}</span></span><strong>${esc(p.apodo || "Aventurero")}</strong></button>`).join("")}
           <button type="button" class="perfil-tarjeta perfil-nuevo" data-accion="nuevo-perfil"><span class="avatar avatar-l"><span class="avatar-animal">➕</span></span><strong>Nuevo jugador</strong></button>
         </div>
-      </div>`, "fondo-cielo", pantallaPerfiles);
+      </main>`, pantallaPerfiles);
   }
 
-  /* ---------- Bienvenida (jugador nuevo) ---------- */
+  /* ---------- Bienvenida ---------- */
   let animalInicio = "zorro";
   function pantallaBienvenida() {
     animalInicio = "zorro";
-    const hayOtros = A.perfiles().length > 0;
-    render(`
-      <div class="bienvenida">
-        <div class="logo"><span class="logo-icono">🗺️</span><h1>Palabraventura</h1><p>Un reino entero de palabras por explorar</p></div>
-        <div class="tarjeta-blanca">
-          <label class="etiqueta" for="apodo">¿Cómo te llamamos en la aventura?</label>
-          <input id="apodo" class="campo" maxlength="16" placeholder="Por ejemplo: Rayo, Lince, Capitana" autocomplete="off">
-          <p class="nota">Usa un apodo. No hace falta tu nombre real.</p>
-          <p class="etiqueta">Elige tu compañero de viaje</p>
+    render(`<main class="bienvenida">
+        <div class="logo"><span class="logo-icono">🗺️</span><h1>Palabraventura</h1><p>¡Aprende a escribir sin faltas jugando!</p></div>
+        <div class="tarjeta">
+          <p class="paso">1. Elige tu compañero</p>
           <div class="rejilla-animales" role="radiogroup" aria-label="Compañero">
             ${R.ANIMALES.map(a => `<button type="button" class="animal ${a.id === animalInicio ? "elegido" : ""}" role="radio" aria-checked="${a.id === animalInicio}" data-accion="elegir-animal-inicio" data-valor="${a.id}" aria-label="${a.nombre}">${a.icono}</button>`).join("")}
           </div>
-          <label class="etiqueta" for="nombre-mascota">¿Cómo se llama tu compañero?</label>
+          <label class="paso" for="apodo">2. ¿Cómo te llamamos?</label>
+          <input id="apodo" class="campo" maxlength="16" placeholder="Un apodo, por ejemplo: Rayo" autocomplete="off">
+          <label class="paso" for="nombre-mascota">3. ¿Y a tu compañero? <small>(si quieres)</small></label>
           <input id="nombre-mascota" class="campo" maxlength="14" placeholder="${R.animal(animalInicio).nombreDefecto}" autocomplete="off">
-          <button type="button" class="btn btn-principal btn-grande" data-accion="empezar">¡Empezar la aventura! ➜</button>
-          ${hayOtros ? `<button type="button" class="btn btn-secundario btn-ancho" data-accion="ver-perfiles">Volver</button>` : ""}
+          <button type="button" class="btn btn-verde btn-xl" data-accion="empezar">¡EMPEZAR!</button>
+          ${A.perfiles().length ? `<button type="button" class="btn btn-gris btn-xl" data-accion="ver-perfiles">Volver</button>` : ""}
         </div>
-        <p class="nota-pie">💾 El progreso se guarda solo en este navegador y en este dispositivo.${A.disponible ? "" : " <strong>Este navegador no permite guardar: el progreso se perderá al cerrar.</strong>"}</p>
-      </div>`, "fondo-cielo", pantallaBienvenida);
+        <p class="nota centro">💾 Se guarda solo en este navegador. No hace falta tu nombre real.${A.disponible ? "" : " <strong>Este navegador no permite guardar.</strong>"}</p>
+      </main>`, pantallaBienvenida);
   }
+  function entrar(p) { P = p; P.ultimaVisita = U.hoy(); A.guardar(P); aplicarAjustes(); pantallaCamino(); }
 
-  function entrar(p) {
-    P = p; aplicarAjustes(); saludoMostrado = false; pantallaInicio();
-  }
-
-  /* ---------- Inicio ---------- */
-  function saludo() {
-    const hoy = U.hoy(), ult = P.ultimaVisita;
-    if (P.cofresPendientes > 0) return `¡Tienes ${P.cofresPendientes === 1 ? "un cofre" : P.cofresPendientes + " cofres"} sin abrir! ¿Qué habrá dentro?`;
-    if (!P.sesiones.length) return `¡Hola, ${P.apodo || "aventurero"}! Soy ${R.nombreMascota(P)}. ¿Empezamos la aventura?`;
-    if (ult === hoy) return U.azar(["¿Otra misión? ¡Yo me apunto!", "¡Qué bien lo estamos haciendo hoy!", "Tengo curiosidad por lo que viene ahora…"]);
-    return U.azar([`¡Qué alegría verte, ${P.apodo || "aventurero"}! ¿Seguimos?`, "¡Hola de nuevo! El reino nos espera.", "¡Has vuelto! Tengo ganas de descubrir la próxima zona."]);
-  }
-
-  function pantallaInicio() {
+  /* ---------- Camino de lecciones ---------- */
+  let abierto = null; // lección cuya tarjeta está desplegada
+  function pantallaCamino(conservar) {
     sesion = null;
-    if (!saludoMostrado) { textoSaludo = saludo(); saludoMostrado = true; P.ultimaVisita = U.hoy(); guardar(); }
-    const sig = W.siguiente(P), z = sig.zona, m = sig.mision;
-    const hoy = U.hoy(), diarioHecho = P.retoDiario.fecha === hoy;
-    const pend = M.pendientes(P, habsAbiertas()).length;
-    render(`
-      ${cabecera()}
-      <main class="inicio">
-        ${burbuja(textoSaludo)}
-        <section class="tarjeta-mision" style="--zona:${z.color}">
-          <div class="tm-cabeza"><span class="tm-zona">${z.icono} ${z.nombre}</span>${linternas(z)}</div>
-          <p class="tm-etiqueta">${m.jefe ? "⚔️ Desafío final de la zona" : m.infinita ? "🔁 Misión de repaso" : "Tu siguiente misión"}</p>
-          <h2 class="tm-titulo">${esc(m.titulo)}</h2>
-          <p class="tm-intro">${esc(m.intro)}</p>
-          <button type="button" class="btn-continuar" data-accion="briefing" data-valor="${m.id}" data-foco>
-            <span class="btn-continuar-icono">▶</span>
-            <span><strong>Continuar aventura</strong><small>${m.jefe ? N_JEFE : N_MISION} retos · unos 5 minutos${pend ? ` · incluye repaso` : ""}</small></span>
-          </button>
-        </section>
-        <div class="fila-tarjetas">
-          ${P.cofresPendientes > 0 ? `
-          <button type="button" class="tarjeta tarjeta-cofre" data-accion="abrir-cofre">
-            <span class="tarjeta-icono cofre-bote">🎁</span>
-            <span><strong>${P.cofresPendientes === 1 ? "Tienes 1 cofre" : `Tienes ${P.cofresPendientes} cofres`}</strong><small>¡Ábrelo y descubre tu premio!</small></span>
-          </button>` : ""}
-          <button type="button" class="tarjeta tarjeta-reto ${diarioHecho ? "hecho" : ""}" data-accion="reto-diario">
-            <span class="tarjeta-icono">${diarioHecho ? "✅" : "📅"}</span>
-            <span><strong>Reto del día</strong><small>${diarioHecho ? "¡Completado! Puedes repetirlo." : "5 retos variados · cofre extra 🎁"}</small></span>
-          </button>
-          <button type="button" class="tarjeta" data-accion="mapa">
-            <span class="tarjeta-icono">🗺️</span>
-            <span><strong>Mapa del reino</strong><small>${PV.ZONAS.filter(x => W.abierta(P, x)).length} de ${PV.ZONAS.length} zonas descubiertas</small></span>
-          </button>
-          <button type="button" class="tarjeta" data-accion="ir-coleccion" data-valor="album">
-            <span class="tarjeta-icono">🖼️</span>
-            <span><strong>Álbum de tesoros</strong><small>${P.coleccion.length} de ${PV.COLECCION.length} encontrados</small></span>
-          </button>
-        </div>
-      </main>
-      ${nav("inicio")}`, "fondo-mar con-nav", pantallaInicio);
-  }
-
-  /* ---------- Mapa ---------- */
-  function caminoSVG() {
-    const pts = PV.ZONAS.map(z => [z.x, z.y]);
-    let d = `M ${pts[0][0]} ${pts[0][1]}`;
-    for (let i = 1; i < pts.length; i++) {
-      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], my = (y0 + y1) / 2;
-      d += ` C ${x0} ${my}, ${x1} ${my}, ${x1} ${y1}`;
-    }
-    // Tramo ya recorrido: hasta la última zona abierta.
-    let ultima = 0; PV.ZONAS.forEach((z, i) => { if (W.abierta(P, z)) ultima = i; });
-    let d2 = `M ${pts[0][0]} ${pts[0][1]}`;
-    for (let i = 1; i <= ultima; i++) {
-      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], my = (y0 + y1) / 2;
-      d2 += ` C ${x0} ${my}, ${x1} ${my}, ${x1} ${y1}`;
-    }
-    const deco = [["🌲", 30, 400], ["🌳", 270, 410], ["🌲", 150, 300], ["🌾", 260, 280], ["🌲", 40, 330], ["🌳", 150, 200], ["⛰️", 260, 220], ["☁️", 70, 40], ["🌲", 140, 500], ["🌊", 290, 330]];
-    return `<svg class="mapa-svg" viewBox="0 0 300 520" preserveAspectRatio="none" aria-hidden="true">
-      <path d="${d}" class="camino-futuro"/>
-      <path d="${d2}" class="camino-hecho"/>
-      ${deco.map(([t, x, y]) => `<text x="${x}" y="${y}" class="deco">${t}</text>`).join("")}
-    </svg>`;
-  }
-  function pantallaMapa() {
     const sig = W.siguiente(P);
-    render(`
-      ${cabecera()}
-      <main class="mapa-pantalla">
-        <h1 class="titulo-pantalla">Mapa del reino</h1>
-        <div class="mapa-lienzo">
-          ${caminoSVG()}
-          ${PV.ZONAS_FUTURAS.map(f => `<div class="nodo nodo-futuro" style="left:${f.x / 3}%;top:${f.y / 5.2}%" aria-label="${f.nombre}: próximamente">
-            <span class="nodo-circulo">${f.icono}</span><span class="nodo-nombre">${f.nombre}</span><span class="nodo-estado">☁️ Próximamente</span></div>`).join("")}
-          ${PV.ZONAS.map(z => {
-            const ab = W.abierta(P, z), comp = W.completada(P, z), aqui = sig.zona === z;
-            const pos = `left:${z.x / 3}%;top:${z.y / 5.2}%;--zona:${z.color}`;
-            const dentro = `${aqui ? `<span class="aqui">${avatarHTML("s")}<span>Estás aquí</span></span>` : ""}
-              <span class="nodo-circulo">${ab ? z.icono : "🔒"}</span>
-              <span class="nodo-nombre">${z.nombre}</span>
-              ${ab ? linternas(z) : `<span class="nodo-estado">${esc(W.requisito(P, z))}</span>`}
-              ${comp ? `<span class="nodo-medalla" title="Zona completada">🏅</span>` : ""}`;
-            return ab
-              ? `<button type="button" class="nodo ${comp ? "completa" : ""} ${aqui ? "actual" : ""}" style="${pos}" data-accion="zona" data-valor="${z.id}">${dentro}</button>`
-              : `<div class="nodo bloqueado" style="${pos}" aria-disabled="true">${dentro}</div>`;
-          }).join("")}
+    let html = `<main class="camino">`;
+    PV.ZONAS.forEach((z, ui) => {
+      const ab = W.abierta(P, z);
+      html += `<section class="unidad ${ab ? "" : "bloqueada"}" style="--c:${z.color}">
+        <div class="unidad-cabecera">
+          <div><small>UNIDAD ${ui + 1} · ${W.hechas(P, z)}/${W.totalMisiones(z)}</small><h2>${z.nombre}</h2>
+          <p>${ab ? `Con ${z.personaje.nombre}, ${z.personaje.rol}` : "🔒 " + esc(W.requisito(P, z))}</p></div>
+          <span class="unidad-personaje">${z.personaje.icono}</span>
         </div>
-      </main>
-      ${nav("mapa")}`, "fondo-mapa con-nav", pantallaMapa);
+        <div class="nodos">`;
+      z.misiones.forEach((m, k) => {
+        const est = W.estadoMision(P, z, k);
+        if (m.infinita && est === "bloqueada") return;
+        const esActual = ab && sig.mision === m;
+        const icono = est === "completada" ? (m.jefe ? "🏆" : "✔") : m.jefe ? "👑" : m.infinita ? "🔁" : est === "bloqueada" ? "🔒" : "★";
+        html += `<div class="nodo-fila" style="--x:${ZIGZAG[k % ZIGZAG.length]}px">
+          ${esActual && abierto !== m.id ? `<span class="empieza">¡EMPIEZA!</span>` : ""}
+          <button type="button" class="nodo ${est} ${esActual ? "actual" : ""} ${m.jefe ? "jefe" : ""}" data-accion="nodo" data-valor="${m.id}" aria-label="${esc(m.titulo)}" aria-expanded="${abierto === m.id}">${icono}</button>
+          ${esActual ? `<span class="nodo-mascota ${ZIGZAG[k % ZIGZAG.length] > 0 ? "izq" : "der"}">${avatarHTML("m")}</span>` : ""}
+          ${abierto === m.id ? tarjetaLeccion(z, m, est) : ""}
+        </div>`;
+      });
+      html += `</div></section>`;
+    });
+    PV.ZONAS_FUTURAS.forEach(f => {
+      html += `<section class="unidad futura"><div class="unidad-cabecera"><div><small>PRÓXIMAMENTE</small><h2>${f.nombre}</h2><p>Nuevas aventuras en camino</p></div><span class="unidad-personaje">${f.icono}</span></div></section>`;
+    });
+    html += `</main>`;
+    render(marco(html, "camino"), () => pantallaCamino(true), conservar);
+    if (!conservar) {
+      const n = app.querySelector(".nodo.actual");
+      if (n) n.scrollIntoView({ block: "center" });
+    }
+  }
+  function tarjetaLeccion(z, m, est) {
+    if (est === "bloqueada") {
+      return `<div class="pop gris"><strong>${esc(m.titulo)}</strong><p>Completa las lecciones anteriores para desbloquear esta.</p></div>`;
+    }
+    return `<div class="pop"><strong>${m.jefe ? "👑 " : ""}${esc(m.titulo)}</strong><p>${esc(m.intro)}</p>
+      <button type="button" class="btn btn-blanco btn-xl" data-accion="empezar-leccion" data-valor="${m.id}" data-foco>${est === "completada" ? "REPETIR" : "EMPEZAR"} · ${m.jefe ? N_JEFE : N_MISION} retos</button></div>`;
   }
 
-  /* ---------- Zona ---------- */
-  function pantallaZona(id) {
-    const z = PV.ZONAS.find(x => x.id === id);
-    if (!z || !W.abierta(P, z)) return pantallaMapa();
-    render(`
-      <header class="barra barra-simple">
-        <button type="button" class="btn btn-volver" data-accion="mapa">← Mapa</button>
-        <h1 class="titulo-pantalla">${z.icono} ${z.nombre}</h1>
-      </header>
-      <main class="zona-pantalla" style="--zona:${z.color}">
-        <div class="personaje-tarjeta">
-          <span class="personaje-icono">${z.personaje.icono}</span>
-          <div><strong>${z.personaje.nombre}, ${z.personaje.rol}</strong>
-          <p>${W.completada(P, z) ? "¡Has completado esta zona! Puedes repetir cualquier misión cuando quieras." : `Completadas ${W.hechas(P, z)} de ${W.totalMisiones(z)} misiones.`}</p></div>
-          ${linternas(z)}
-        </div>
-        <ol class="misiones">
-          ${z.misiones.map((m, k) => {
-            const est = W.estadoMision(P, z, k);
-            if (m.infinita && est === "bloqueada") return "";
-            const etiqueta = m.jefe ? "⚔️ Desafío final" : m.infinita ? "🔁 Sin fin" : `Misión ${k + 1}`;
-            const icono = est === "completada" ? "✅" : est === "disponible" ? (m.jefe ? "⚔️" : "▶") : "🔒";
-            const cuerpo = `<span class="mision-icono">${icono}</span><span class="mision-texto"><small>${etiqueta}</small><strong>${esc(m.titulo)}</strong>
-              <span class="mision-sub">${est === "completada" ? "Completada · tocar para repetir" : est === "disponible" ? "¡Disponible!" : "Completa la misión anterior"}</span></span>`;
-            return `<li>${est === "bloqueada"
-              ? `<div class="mision bloqueada ${m.jefe ? "jefe" : ""}" aria-disabled="true">${cuerpo}</div>`
-              : `<button type="button" class="mision ${est} ${m.jefe ? "jefe" : ""}" data-accion="briefing" data-valor="${m.id}">${cuerpo}</button>`}</li>`;
-          }).join("")}
-        </ol>
-      </main>
-      ${nav("mapa")}`, "fondo-mapa con-nav", () => pantallaZona(id));
-  }
-
-  /* ---------- Presentación de misión ---------- */
-  function pantallaBriefing(idMision) {
-    const f = W.buscar(idMision);
-    if (!f || !W.misionDisponible(P, f.zona, f.k) && W.estadoMision(P, f.zona, f.k) !== "completada") return pantallaMapa();
-    const { zona: z, mision: m } = f;
-    render(`
-      <main class="briefing" style="--zona:${z.color}">
-        <div class="briefing-tarjeta">
-          <p class="tm-zona">${z.icono} ${z.nombre}</p>
-          <span class="briefing-personaje">${z.personaje.icono}</span>
-          <p class="briefing-quien">${z.personaje.nombre}, ${z.personaje.rol}</p>
-          <h1>${esc(m.titulo)}</h1>
-          <p class="briefing-intro">${esc(m.intro)}</p>
-          <div class="briefing-datos"><span>🎯 ${m.jefe ? N_JEFE : N_MISION} retos</span><span>🔀 1 decisión</span><span>🎁 recompensa</span></div>
-          <button type="button" class="btn btn-principal btn-grande" data-accion="vamos" data-valor="${m.id}" data-foco>¡Vamos! ➜</button>
-          <button type="button" class="btn btn-secundario btn-ancho" data-accion="zona" data-valor="${z.id}">Ahora no</button>
-        </div>
-      </main>`, "fondo-cielo", () => pantallaBriefing(idMision));
-  }
-
-  /* ---------- Sesión de juego ---------- */
-  function iniciarMision(idMision) {
+  /* ---------- Lección ---------- */
+  function iniciarLeccion(idMision) {
     const f = W.buscar(idMision); if (!f) return;
     const { zona: z, mision: m } = f;
     const abiertas = habsAbiertas();
-    const n = m.jefe ? N_JEFE : N_MISION;
-    const habs = z.habilidades.filter(h => abiertas.includes(h) || z.requiereTodas);
-    const cola = M.seleccionarSesion(P, { habilidades: habs, n, preferirReglas: m.reglas, repasoDe: m.jefe ? habs : abiertas });
-    empezar({ modo: "mision", zona: z, k: f.k, mision: m, cola });
-  }
-  function iniciarDiario() {
-    const abiertas = habsAbiertas();
-    empezar({ modo: "diario", cola: M.seleccionarSesion(P, { habilidades: abiertas, n: N_DIARIO }) });
-  }
-  function empezar(base) {
-    if (!base.cola.length) { aviso("No hay retos disponibles ahora mismo."); return; }
-    // Variedad: algunos ejercicios de «completa» se juegan como «Construye la palabra».
-    base.cola.forEach(r => { if (PV.construye.apto(r.ej) && Math.random() < 0.45) r.formato = "construye"; });
-    sesion = Object.assign(base, { i: 0, aciertos: 0, contestados: 0, estrellas: 0, monedas: 0, mejoras: 0, consolidadas: 0,
-      comprobaciones: 0, reintentados: new Set(), decisionEn: base.modo === "mision" ? Math.floor(base.cola.length / 2) : -1,
-      eleccion: null, zonasAntes: PV.ZONAS.filter(z => W.abierta(P, z)).map(z => z.id) });
+    const habs = z.requiereTodas ? z.habilidades : z.habilidades.filter(h => abiertas.includes(h));
+    const cola = M.seleccionarSesion(P, { habilidades: habs, n: m.jefe ? N_JEFE : N_MISION, preferirReglas: m.reglas, repasoDe: m.jefe ? habs : abiertas });
+    if (!cola.length) { aviso("No hay retos disponibles ahora mismo."); return; }
+    cola.forEach(r => { if (PV.construye.apto(r.ej) && Math.random() < 0.4) r.formato = "construye"; });
+    abierto = null;
+    sesion = { zona: z, k: f.k, mision: m, cola, i: 0, aciertos: 0, contestados: 0, estrellas: 0, monedas: 0, mejoras: 0,
+      comprobaciones: 0, reintentados: new Set(), decisionEn: Math.floor(cola.length / 2), eleccion: null,
+      zonasAntes: PV.ZONAS.filter(x => W.abierta(P, x)).map(x => x.id) };
     pantallaReto();
   }
 
-  function cabeceraJuego() {
-    const total = sesion.cola.length;
-    return `<header class="barra barra-juego">
-      <button type="button" class="btn btn-volver" data-accion="salir-sesion" aria-label="Salir de la misión">✕</button>
-      <div class="progreso" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${sesion.i}" aria-label="Reto ${sesion.i + 1} de ${total}">
-        ${sesion.cola.map((r, k) => `${k === sesion.decisionEn ? `<span class="punto-decision ${sesion.eleccion ? "hecha" : ""}" title="Decisión">🔀</span>` : ""}<span class="punto ${k < sesion.i ? (r.ok ? "ok" : "repasar") : k === sesion.i ? "actual" : ""}"></span>`).join("")}
-      </div>
-      <span class="chip chip-estrella">⭐ ${sesion.estrellas}</span>
+  function cabeceraLeccion() {
+    const pct = Math.round(sesion.i / sesion.cola.length * 100);
+    return `<header class="leccion-top">
+      <button type="button" class="cerrar" data-accion="salir-leccion" aria-label="Salir de la lección">✕</button>
+      <div class="progreso" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${Math.max(pct, 4)}%"></span></div>
     </header>`;
   }
 
@@ -330,124 +230,115 @@
     if (!r.fase) r.fase = ej.tipo === "robot" ? "buscar" : "elegir";
     if (formato === "construye" && !r.fichas) {
       const f = PV.construye.fichas(ej.palabra);
-      r.objetivo = f.length;
-      r.fichas = U.barajar(f.concat([PV.construye.trampa(ej)]));
-      r.usadas = [];
+      r.objetivo = f.length; r.fichas = U.barajar(f.concat([PV.construye.trampa(ej)])); r.usadas = [];
     }
-    let etiqueta = "";
-    if (r.tag === "comprobacion") etiqueta = `<span class="pill pill-comprobacion">🔎 Comprobación</span>`;
-    else if (r.tag === "reintento") etiqueta = `<span class="pill pill-repaso">🔁 Otra oportunidad</span>`;
-    else if (r.tag === "repaso") etiqueta = `<span class="pill pill-repaso">🔁 Repaso</span>`;
+    const etiqueta = r.tag === "comprobacion" ? "🔎 Comprobación" : r.tag === "reintento" ? "🔁 Otra oportunidad" : r.tag === "repaso" ? "🔁 Repaso" : "";
+    let pregunta = "", cuerpo = "", listo = false;
 
-    let cuerpo = "";
     if (formato === "construye") {
+      pregunta = "Ordena las fichas. ¡Sobra una!";
       const hecha = r.usadas.map(i => r.fichas[i]);
-      const huecos = Array.from({ length: r.objetivo }, (_, i) => `<span class="casilla ${hecha[i] ? "llena" : ""}">${hecha[i] ? esc(hecha[i]) : ""}</span>`).join("");
-      const contexto = ej.frase ? esc(ej.frase).replace("___", `<span class="hueco">${r.respondido ? esc(ej.palabra) : "?"}</span>`) : "";
-      cuerpo = `<p class="instruccion">Ordena las fichas para escribir la palabra. ¡Sobra una!</p>
-        ${contexto ? `<p class="frase frase-pequena">${contexto}</p>` : ""}
-        <div class="casillas ${r.respondido ? (r.ok ? "bien" : "mal") : ""}" aria-label="Tu palabra">${huecos}</div>
+      listo = r.usadas.length === r.objetivo;
+      cuerpo = `${ej.frase ? `<p class="frase">${esc(ej.frase).replace("___", `<span class="hueco">${r.respondido ? esc(ej.palabra) : "?"}</span>`)}</p>` : ""}
+        <div class="casillas ${r.respondido ? (r.ok ? "bien" : "mal") : ""}">${Array.from({ length: r.objetivo }, (_, i) =>
+          `<button type="button" class="casilla ${hecha[i] ? "llena" : ""}" data-accion="quitar-ficha" data-valor="${i}" ${r.respondido || !hecha[i] ? "disabled" : ""} aria-label="${hecha[i] ? "Quitar " + esc(hecha[i]) : "Hueco vacío"}">${hecha[i] ? esc(hecha[i]) : ""}</button>`).join("")}</div>
         ${r.respondido ? "" : `<div class="fichas">${r.fichas.map((f, i) => `<button type="button" class="ficha" data-accion="ficha" data-valor="${i}" ${r.usadas.includes(i) ? "disabled" : ""}>${esc(f)}</button>`).join("")}</div>
-        <div class="fila-botones">
-          <button type="button" class="btn btn-secundario" data-accion="borrar-ficha" ${r.usadas.length ? "" : "disabled"}>⌫ Quitar</button>
-          <button type="button" class="btn btn-principal" data-accion="comprobar-construye" ${r.usadas.length === r.objetivo ? "" : "disabled"}>Comprobar</button>
-        </div>`}`;
+          <p class="nota centro">Toca una ficha colocada para quitarla.</p>`}`;
     } else if (formato === "detective") {
-      cuerpo = `<p class="instruccion">¿Cuál está bien escrita?</p>
-        ${ej.frase ? `<p class="frase">${esc(ej.frase).replace("___", `<span class="hueco">${r.elegida !== undefined ? esc(r.elegida) : "?"}</span>`)}</p>` : ""}
-        <div class="opciones opciones-palabra">${r.orden.map(o => botonOpcion(r, o, esc(o))).join("")}</div>`;
+      pregunta = "¿Cuál está bien escrita?";
+      listo = r.sel !== undefined;
+      cuerpo = `${ej.frase ? `<p class="frase">${esc(ej.frase).replace("___", `<span class="hueco">${r.sel !== undefined ? esc(r.sel) : "?"}</span>`)}</p>` : ""}
+        <div class="opciones">${r.orden.map((o, i) => opcion(r, o, esc(o), i)).join("")}</div>`;
     } else if (formato === "completa") {
-      const relleno = r.elegida !== undefined ? (r.elegida || "·") : "?";
+      pregunta = "¿Qué letra falta?";
+      listo = r.sel !== undefined;
       const partes = ej.hueco.split("_");
+      const relleno = r.sel !== undefined ? (r.sel || "·") : "?";
       const palabra = `<span class="palabra-hueco">${esc(partes[0])}<span class="hueco-letra">${esc(relleno)}</span>${esc(partes[1])}</span>`;
-      cuerpo = `<p class="instruccion">¿Qué letra completa el hechizo?</p>
-        ${ej.frase ? `<p class="frase">${esc(ej.frase).replace("___", palabra)}</p>` : `<p class="frase">${palabra}</p>`}
-        <div class="opciones opciones-letra">${r.orden.map(o => botonOpcion(r, o, o === "" ? "<span class='sin-letra'>sin letra</span>" : esc(o))).join("")}</div>`;
+      cuerpo = `<p class="frase">${ej.frase ? esc(ej.frase).replace("___", palabra) : palabra}</p>
+        <div class="opciones opciones-letras">${r.orden.map((o, i) => opcion(r, o, o === "" ? "<span class='sin-letra'>sin letra</span>" : esc(o), i)).join("")}</div>`;
     } else {
       const toks = ej.frase.split(/\s+/);
-      cuerpo = `<p class="instruccion">${r.fase === "buscar" ? "El robot ha escrito mal una palabra. ¡Tócala!" : "¿Cómo se escribe bien?"}</p>
-        <p class="frase frase-robot">${toks.map((t, k) => {
-          const esError = U.limpiar(t) === ej.error;
-          let cls = "token";
-          if (r.fase !== "buscar" && esError) cls += " token-error";
-          if ((r.tocados || []).includes(k)) cls += " token-bien";
-          return r.fase === "buscar"
-            ? `<button type="button" class="${cls}" data-accion="tocar" data-valor="${k}">${esc(t)}</button>`
-            : `<span class="${cls}">${esError && r.respondido ? esc(t.replace(ej.error, ej.correcta)) : esc(t)}</span>`;
-        }).join(" ")}</p>
-        ${r.aviso ? `<p class="pista">${esc(r.aviso)}</p>` : ""}
-        ${r.fase !== "buscar" ? `<div class="opciones opciones-palabra">${r.orden.map(o => botonOpcion(r, o, esc(o))).join("")}</div>` : ""}`;
+      if (r.fase === "buscar") {
+        pregunta = "Toca la palabra mal escrita";
+        listo = r.selToken !== undefined;
+        cuerpo = `<p class="frase frase-robot">🤖 ${toks.map((t, k) => `<button type="button" class="token ${r.selToken === k ? "sel" : ""} ${(r.tocados || []).includes(k) ? "bien" : ""}" data-accion="token" data-valor="${k}" ${(r.tocados || []).includes(k) ? "disabled" : ""}>${esc(t)}</button>`).join(" ")}</p>
+          ${r.aviso ? `<p class="aviso-reto">${esc(r.aviso)}</p>` : ""}`;
+      } else {
+        pregunta = "¿Cómo se escribe bien?";
+        listo = r.sel !== undefined;
+        cuerpo = `<p class="frase frase-robot">🤖 ${toks.map(t => {
+            const err = U.limpiar(t) === ej.error;
+            return `<span class="token ${err ? "error" : ""}">${err && r.respondido ? esc(t.replace(ej.error, ej.correcta)) : esc(t)}</span>`;
+          }).join(" ")}</p>
+          ${r.aviso ? `<p class="aviso-reto">${esc(r.aviso)}</p>` : ""}
+          <div class="opciones">${r.orden.map((o, i) => opcion(r, o, esc(o), i)).join("")}</div>`;
+      }
     }
 
-    const pista = !r.respondido
-      ? (r.pistaVista ? burbuja("Pista: " + (PV.PISTAS[ej.regla] || "Lee la palabra despacio, letra a letra."), "s")
-                      : `<button type="button" class="btn-pista" data-accion="pista">💡 Pedir una pista a ${esc(R.nombreMascota(P))}</button>`)
-      : "";
+    const pista = r.respondido ? "" : r.pistaVista
+      ? burbuja("Pista: " + (PV.PISTAS[ej.regla] || "Lee la palabra despacio, letra a letra."), "s")
+      : `<button type="button" class="btn-pista" data-accion="pista">💡 Pista</button>`;
 
-    render(`${cabeceraJuego()}
-      <main class="juego">
-        <div class="tarjeta-reto">
-          <div class="modo"><span class="modo-nombre">${tipo.icono} ${tipo.nombre}</span>${etiqueta}</div>
+    render(`<div class="leccion">
+        ${cabeceraLeccion()}
+        <main class="leccion-cuerpo">
+          <p class="modo">${tipo.icono} ${tipo.nombre}${etiqueta ? ` <span class="pill">${etiqueta}</span>` : ""}</p>
+          <h1 class="pregunta">${pregunta}</h1>
           ${cuerpo}
           ${pista}
-        </div>
-        ${r.respondido ? feedbackHTML(r) : ""}
-      </main>`, "fondo-juego", pantallaReto);
+        </main>
+        ${pie(r, listo)}
+      </div>`, pantallaReto);
   }
 
-  function botonOpcion(r, valor, etiqueta) {
-    let cls = "opcion", dis = "";
+  function opcion(r, valor, etiqueta, i) {
+    let cls = "opcion";
     if (r.respondido) {
-      dis = "disabled";
-      if (valor === r.ej.correcta) cls += " correcta";
-      else if (valor === r.elegida) cls += " elegida-mal";
+      if (valor === r.ej.correcta) cls += " correcta"; else if (valor === r.sel) cls += " mal";
+    } else if (valor === r.sel) cls += " sel";
+    return `<button type="button" class="${cls}" data-accion="elegir" data-valor="${esc(valor)}" ${r.respondido ? "disabled" : ""}><span class="tecla">${i + 1}</span>${etiqueta}</button>`;
+  }
+
+  function pie(r, listo) {
+    if (!r.respondido) {
+      return `<footer class="leccion-pie"><div class="pie-dentro">
+        <button type="button" class="btn btn-verde btn-xl" data-accion="comprobar" ${listo ? "" : "disabled"}>COMPROBAR</button></div></footer>`;
     }
-    return `<button type="button" class="${cls}" data-accion="responder" data-valor="${esc(valor)}" ${dis}>${etiqueta}</button>`;
-  }
-
-  function feedbackHTML(r) {
-    const ej = r.ej, ok = r.ok, res = r.res;
-    const extra = [];
-    if (res.sube) extra.push(`<span class="pill pill-sube">⬆️ ¡Cada vez dominas más ${PV.HABILIDADES[ej.habilidad].nombre}!</span>`);
-    if (res.consolidada) extra.push(`<span class="pill pill-sube">💪 ¡Palabra superada!</span>`);
+    const ej = r.ej, res = r.res;
     const ultimo = sesion.i + 1 >= sesion.cola.length;
-    const siguienteDecision = sesion.i + 1 === sesion.decisionEn && !sesion.eleccion;
-    return `<section class="feedback ${ok ? "feedback-ok" : "feedback-repaso"}" aria-live="polite">
-      <p class="feedback-titulo">${ok ? `${r.msg} <span class="mas-estrellas">+${res.estrellas} ⭐</span>` : r.msg}</p>
-      ${ok ? "" : `<p class="feedback-palabra">Se escribe: <strong>${esc(ej.palabra)}</strong></p>`}
-      <p class="feedback-explica">💡 ${esc(ej.explicacion)}</p>
-      ${ok ? "" : burbuja(U.azar(ANIMO) + (r.tag === "reintento" ? " Ya la repasaremos otro día." : " Te la volveré a preguntar al final de la misión."), "s")}
-      ${extra.join("")}
-      <button type="button" class="btn btn-principal btn-grande" data-accion="seguir" data-foco>${ultimo ? "¡Terminar misión! 🎁" : siguienteDecision ? "Seguir: ¡toca decidir! 🔀" : "Seguir ➜"}</button>
-    </section>`;
+    const extra = res.sube ? `<span class="pill">⬆️ ¡Cada vez dominas más ${PV.HABILIDADES[ej.habilidad].nombre}!</span>` : res.consolidada ? `<span class="pill">💪 ¡Palabra superada!</span>` : "";
+    return `<footer class="leccion-pie ${r.ok ? "ok" : "mal"}" aria-live="polite"><div class="pie-dentro">
+        <div class="pie-texto">
+          <p class="pie-titulo">${r.ok ? `✔ ${r.msg} <span class="mas">+${res.estrellas} ⭐</span>` : `${r.msg} Se escribe: <b>${esc(ej.palabra)}</b>`}</p>
+          <p class="pie-explica">${esc(ej.explicacion)}</p>
+          ${r.ok ? extra : `<p class="pie-animo">${avatarHTML("s")} ${esc(U.azar(ANIMO))} ${r.tag === "reintento" ? "La repasaremos otro día." : "Te la volveré a preguntar."}</p>`}
+        </div>
+        <button type="button" class="btn ${r.ok ? "btn-verde" : "btn-naranja"} btn-xl" data-accion="seguir" data-foco>${ultimo ? "TERMINAR" : "CONTINUAR"}</button>
+      </div></footer>`;
   }
 
-  function responder(valor) {
-    const r = sesion.cola[sesion.i];
-    if (r.respondido || r.fase === "buscar") return;
-    r.elegida = valor;
-    terminarReto(r, valor === r.ej.correcta && !r.noEncontrado);
-  }
-  function tocarPalabra(k) {
-    const r = sesion.cola[sesion.i], toks = r.ej.frase.split(/\s+/);
-    if (U.limpiar(toks[k]) === r.ej.error) { r.fase = "corregir"; r.aviso = ""; pantallaReto(); return; }
-    r.tocados = (r.tocados || []).concat(k);
-    r.fallosBusqueda = (r.fallosBusqueda || 0) + 1;
-    if (r.fallosBusqueda >= 2) { r.fase = "corregir"; r.noEncontrado = true; r.aviso = "Era esta palabra, la marcada en naranja. ¿Cómo se escribe bien?"; }
-    else r.aviso = "Esa palabra está bien escrita. ¡Busca otra!";
-    pantallaReto();
-  }
-  function ponerFicha(i) {
-    const r = sesion.cola[sesion.i];
-    if (r.respondido || r.usadas.includes(i) || r.usadas.length >= r.objetivo) return;
-    r.usadas.push(i); sonar("toque"); pantallaReto();
-  }
-  function quitarFicha() { const r = sesion.cola[sesion.i]; if (!r.respondido) { r.usadas.pop(); pantallaReto(); } }
-  function comprobarConstruye() {
-    const r = sesion.cola[sesion.i];
-    if (r.respondido || r.usadas.length !== r.objetivo) return;
-    const hecha = r.usadas.map(i => r.fichas[i]).join("");
-    terminarReto(r, hecha === r.ej.palabra.toLowerCase());
+  function comprobar() {
+    const r = sesion.cola[sesion.i], ej = r.ej, formato = r.formato || ej.tipo;
+    if (r.respondido) return;
+    if (formato === "construye") {
+      if (r.usadas.length !== r.objetivo) return;
+      return terminarReto(r, r.usadas.map(i => r.fichas[i]).join("") === ej.palabra.toLowerCase());
+    }
+    if (ej.tipo === "robot" && r.fase === "buscar") {
+      if (r.selToken === undefined) return;
+      const toks = ej.frase.split(/\s+/);
+      if (U.limpiar(toks[r.selToken]) === ej.error) { r.fase = "corregir"; r.aviso = "¡Encontrada! Ahora elige cómo se escribe."; sonar("toque"); }
+      else {
+        r.tocados = (r.tocados || []).concat(r.selToken); r.fallosBusqueda = (r.fallosBusqueda || 0) + 1;
+        if (r.fallosBusqueda >= 2) { r.fase = "corregir"; r.noEncontrado = true; r.aviso = "Era la palabra marcada en naranja. ¿Cómo se escribe bien?"; }
+        else r.aviso = "Esa palabra está bien escrita. ¡Busca otra!";
+      }
+      r.selToken = undefined;
+      return pantallaReto();
+    }
+    if (r.sel === undefined) return;
+    terminarReto(r, r.sel === ej.correcta && !r.noEncontrado);
   }
 
   function terminarReto(r, acierto) {
@@ -458,9 +349,7 @@
     if (acierto) sesion.aciertos++;
     sesion.estrellas += r.res.estrellas; sesion.monedas += r.res.monedas;
     if (r.res.mejora) sesion.mejoras++;
-    if (r.res.consolidada) sesion.consolidadas++;
     if (!acierto) {
-      // Pregunta de comprobación justo después, y el mismo reto otra vez al final.
       const usados = new Set(sesion.cola.map(x => x.ej.id));
       if (r.tag !== "comprobacion" && sesion.comprobaciones < 2) {
         const c = M.buscarComprobacion(P, r.ej, usados);
@@ -474,9 +363,7 @@
     guardar();
     sonar(acierto ? "acierto" : "fallo");
     pantallaReto();
-    if (acierto) chispas(app.querySelector(".opcion.correcta") || app.querySelector(".casillas") || app.querySelector(".token-error"));
-    const fb = app.querySelector(".feedback");
-    if (fb && fb.scrollIntoView) fb.scrollIntoView({ behavior: animacionesOn() ? "smooth" : "auto", block: "nearest" });
+    if (acierto) chispas(app.querySelector(".opcion.correcta") || app.querySelector(".casillas") || app.querySelector(".token.error") || app.querySelector(".pie-titulo"));
   }
 
   function siguiente() {
@@ -486,205 +373,168 @@
     pantallaReto();
   }
 
-  /* ---------- Decisión a mitad de misión ---------- */
+  /* ---------- Decisión a mitad de lección ---------- */
   function pantallaDecision() {
     const { zona: z, mision: m } = sesion, d = m.decision;
-    const opcion = (k, o) => `<button type="button" class="decision-opcion" data-accion="decidir" data-valor="${k}">
+    const op = (k, o) => `<button type="button" class="decision-opcion" data-accion="decidir" data-valor="${k}">
       <span class="decision-icono">${o.icono}</span><strong>${esc(o.texto)}</strong>
-      <small>${o.efecto === "hallazgo" ? "🔍 Puede que encuentres un tesoro" : "🪙 Ganarás monedas extra"}</small></button>`;
-    render(`${cabeceraJuego()}
-      <main class="juego">
-        <div class="tarjeta-reto decision">
-          <p class="tm-zona">${z.personaje.icono} ${z.personaje.nombre}</p>
-          <h2>${esc(d.pregunta)}</h2>
-          <div class="decision-opciones">${opcion("a", d.a)}${opcion("b", d.b)}</div>
-          <p class="nota centro">Las dos opciones son buenas: ¡elige la que más te guste!</p>
-        </div>
-      </main>`, "fondo-juego", pantallaDecision);
+      <small>${o.efecto === "hallazgo" ? "🔍 Quizá encuentres un tesoro" : "🪙 Monedas extra"}</small></button>`;
+    render(`<div class="leccion">
+        ${cabeceraLeccion()}
+        <main class="leccion-cuerpo centro">
+          <p class="decision-personaje">${z.personaje.icono}</p>
+          <p class="modo">${z.personaje.nombre} te pregunta:</p>
+          <h1 class="pregunta">${esc(d.pregunta)}</h1>
+          <div class="decision-opciones">${op("a", d.a)}${op("b", d.b)}</div>
+          <p class="nota">Las dos opciones son buenas. ¡Elige la que más te guste!</p>
+        </main>
+      </div>`, pantallaDecision);
   }
   function decidir(k) {
     const o = sesion.mision.decision[k];
-    sesion.eleccion = o.efecto; sesion.eleccionTexto = o.texto;
+    sesion.eleccion = o.efecto;
     sonar("toque");
     aviso(`${o.icono} ¡Buena elección!`);
     if (sesion.i >= sesion.cola.length) finalizar(); else pantallaReto();
   }
 
-  /* ---------- Resultado ---------- */
+  /* ---------- Final de lección ---------- */
   function finalizar() {
     const s = sesion;
-    P.sesiones.push({ fecha: U.hoy(), modo: s.modo, mision: s.mision ? s.mision.id : null, retos: s.contestados, aciertos: s.aciertos });
+    P.sesiones.push({ fecha: U.hoy(), modo: "mision", mision: s.mision.id, retos: s.contestados, aciertos: s.aciertos });
     if (P.sesiones.length > 300) P.sesiones.shift();
-    const premio = s.modo === "mision" ? R.completarMision(P, s.zona, s.mision, s.eleccion, false) : R.completarMision(P, null, null, null, true);
-    const nuevasZonas = PV.ZONAS.filter(z => W.abierta(P, z) && !s.zonasAntes.includes(z.id));
+    const premio = R.completarMision(P, s.zona, s.mision, s.eleccion, false);
+    // Los cofres se abren solos: nada de pasos extra.
+    const cofres = [];
+    while (P.cofresPendientes > 0) { const c = R.abrirCofre(P); if (!c) break; cofres.push(c); }
+    const nuevas = PV.ZONAS.filter(z => W.abierta(P, z) && !s.zonasAntes.includes(z.id));
     guardar();
     sonar("fin");
     sesion = null;
-    const prox = s.modo === "mision" ? W.siguiente(P) : null;
-    const rareza = premio.objeto ? PV.RAREZAS[premio.objeto.rareza].nombre : "";
-    render(`
-      <main class="fin">
-        <div class="tarjeta-blanca fin-tarjeta">
-          ${s.modo === "mision" ? `<p class="tm-zona">${s.zona.icono} ${s.zona.nombre}</p>` : ""}
-          <h1>${s.modo === "mision" ? (s.mision.jefe ? "¡Desafío superado!" : "¡Misión completada!") : "¡Reto del día completado!"}</h1>
-          ${burbuja(s.mejoras ? `¡Has superado ${s.mejoras === 1 ? "una palabra que te costaba" : s.mejoras + " palabras que te costaban"}! Eso es mejorar de verdad.` : U.azar(["¡Qué gran equipo hacemos!", "¡Lo hemos conseguido juntos!", "¡Cada misión nos hace más fuertes!"]), "m")}
-          <div class="fin-stats">
-            <div class="stat"><span class="stat-num">⭐ ${s.estrellas + premio.estrellas}</span><span>estrellas</span></div>
-            <div class="stat"><span class="stat-num">🪙 ${s.monedas + premio.monedas}</span><span>monedas</span></div>
-            <div class="stat"><span class="stat-num">✅ ${s.aciertos}/${s.contestados}</span><span>retos superados</span></div>
+    const monedasCofres = cofres.filter(c => c.tipo === "monedas").reduce((t, c) => t + c.cantidad, 0);
+    const pct = s.contestados ? Math.round(s.aciertos / s.contestados * 100) : 0;
+    const lineas = [];
+    if (premio.objeto) lineas.push(`<div class="premio rareza-${premio.objeto.rareza}"><span>${premio.objeto.icono}</span><div><small>Tesoro ${PV.RAREZAS[premio.objeto.rareza].nombre.toLowerCase()}</small><b>${premio.objeto.nombre}</b></div></div>`);
+    cofres.forEach(c => {
+      if (c.tipo === "objeto") lineas.push(`<div class="premio rareza-${c.objeto.rareza}"><span>${c.objeto.icono}</span><div><small>🎁 Del cofre · tesoro</small><b>${c.objeto.nombre}</b></div></div>`);
+      if (c.tipo === "accesorio") lineas.push(`<div class="premio"><span>${c.accesorio.icono}</span><div><small>🎁 Del cofre · accesorio</small><b>${c.accesorio.nombre}</b></div></div>`);
+    });
+    if (premio.etapaNueva) lineas.push(`<div class="premio dorado">${avatarHTML("s")}<div><small>¡Evolución!</small><b>${esc(R.nombreMascota(P))} es ahora ${premio.etapaNueva.nombre.toLowerCase()}</b></div></div>`);
+    nuevas.forEach(z => lineas.push(`<div class="premio azul"><span>🔓</span><div><small>¡Nueva unidad!</small><b>${z.nombre}</b></div></div>`));
+    premio.insignias.forEach(n => lineas.push(`<div class="premio"><span>${n.icono}</span><div><small>¡Nueva insignia!</small><b>${n.nombre}</b></div></div>`));
+
+    render(`<div class="leccion">
+        <main class="leccion-cuerpo final centro">
+          <div class="final-mascota">${avatarHTML("xl")}</div>
+          <h1 class="final-titulo">${s.mision.jefe ? "¡Desafío superado!" : "¡Lección completada!"}</h1>
+          <p class="nota">${s.zona.nombre} · ${esc(s.mision.titulo)}</p>
+          <div class="final-stats">
+            <div class="fs amarillo"><small>ESTRELLAS</small><b>⭐ ${s.estrellas + premio.estrellas}</b></div>
+            <div class="fs naranja"><small>MONEDAS</small><b>🪙 ${s.monedas + premio.monedas + monedasCofres}</b></div>
+            <div class="fs verde"><small>ACIERTOS</small><b>🎯 ${pct}%</b></div>
           </div>
-          ${premio.objeto ? `<div class="hallazgo rareza-${premio.objeto.rareza}"><span class="hallazgo-icono">${premio.objeto.icono}</span>
-            <div><small>¡Has encontrado un tesoro! · ${rareza}</small><strong>${premio.objeto.nombre}</strong><small>Guardado en tu álbum</small></div></div>` : ""}
-          ${premio.etapaNueva ? `<div class="evolucion">${avatarHTML("l")}<div><strong>¡${esc(R.nombreMascota(P))} ha evolucionado!</strong><small>Ahora es ${premio.etapaNueva.nombre.toLowerCase()}.</small></div></div>` : ""}
-          ${nuevasZonas.map(z => `<div class="desbloqueo">🔓 ¡Nueva zona descubierta: <strong>${z.icono} ${z.nombre}</strong>!</div>`).join("")}
-          ${premio.retoDiario ? `<p class="fin-diario">📅 ¡Reto del día completado! Cofre extra para ti.</p>` : ""}
-          ${premio.insignias.length ? `<div class="fin-insignias"><p><strong>¡Nueva insignia!</strong></p>${premio.insignias.map(n => `<div class="insignia-nueva"><span>${n.icono}</span>${n.nombre}</div>`).join("")}</div>` : ""}
-          ${s.modo === "mision" ? `<div class="progreso-zona">${s.zona.nombre}: ${linternas(s.zona)}</div>` : ""}
-          ${P.cofresPendientes > 0 ? `<button type="button" class="btn btn-cofre btn-grande" data-accion="abrir-cofre" data-foco>🎁 Abrir cofre${P.cofresPendientes > 1 ? ` (${P.cofresPendientes})` : ""}</button>` : ""}
-          ${prox ? `<div class="teaser"><small>Próxima misión</small><strong>${prox.zona.icono} ${esc(prox.mision.titulo)}</strong><p>${esc(s.mision.gancho)}</p></div>` : ""}
-          <div class="fin-botones">
-            ${prox ? `<button type="button" class="btn btn-principal" data-accion="briefing" data-valor="${prox.mision.id}">▶ Siguiente misión</button>` : `<button type="button" class="btn btn-principal" data-accion="inicio">▶ Seguir</button>`}
-            <button type="button" class="btn btn-secundario" data-accion="mapa">🗺️ Ver el mapa</button>
-          </div>
-          <p class="nota centro">Puedes parar aquí: tus premios ya están guardados.</p>
-        </div>
-      </main>`, "fondo-cielo", null);
-    actual = pantallaInicio; // tras cerrar un cofre desde aquí, volvemos al inicio
+          ${s.mejoras ? `<p class="final-mejora">💪 ¡Has superado ${s.mejoras === 1 ? "una palabra que te costaba" : s.mejoras + " palabras que te costaban"}!</p>` : ""}
+          ${lineas.length ? `<div class="premios">${lineas.join("")}</div>` : ""}
+          <p class="final-gancho">“${esc(s.mision.gancho)}”</p>
+        </main>
+        <footer class="leccion-pie"><div class="pie-dentro">
+          <button type="button" class="btn btn-verde btn-xl" data-accion="camino" data-foco>CONTINUAR</button>
+        </div></footer>
+      </div>`, null);
+    actual = () => pantallaCamino();
+    if (animacionesOn()) setTimeout(() => chispas(app.querySelector(".final-mascota")), 200);
   }
 
-  /* ---------- Cofres ---------- */
-  function abrirCofre() {
-    const premio = R.abrirCofre(P);
-    if (!premio) return;
-    guardar();
-    modal(`<div class="cofre-anim"><span class="cofre-grande">🎁</span></div><p class="cofre-texto">Abriendo…</p>`, "modal-cofre");
-    setTimeout(() => {
-      sonar("cofre");
-      let icono, titulo, texto, botones;
-      if (premio.tipo === "accesorio") {
-        icono = premio.accesorio.icono; titulo = `¡${premio.accesorio.nombre}!`; texto = `Un accesorio para ${R.nombreMascota(P)}.`;
-        botones = `<button type="button" class="btn btn-principal" data-accion="equipar-nuevo" data-valor="${premio.accesorio.id}" data-foco>Ponérselo</button>
-          <button type="button" class="btn btn-secundario" data-accion="cerrar-cofre">Guardarlo</button>`;
-      } else if (premio.tipo === "objeto") {
-        icono = premio.objeto.icono; titulo = premio.objeto.nombre; texto = `¡Un tesoro ${PV.RAREZAS[premio.objeto.rareza].nombre.toLowerCase()} para tu álbum!`;
-        botones = `<button type="button" class="btn btn-principal" data-accion="cerrar-cofre" data-foco>¡Genial!</button>`;
-      } else {
-        icono = "🪙"; titulo = `¡+${premio.cantidad} monedas!`; texto = "Puedes gastarlas en el mercadillo.";
-        botones = `<button type="button" class="btn btn-principal" data-accion="cerrar-cofre" data-foco>¡Genial!</button>`;
-      }
-      modal(`<div class="cofre-premio"><span class="premio-icono">${icono}</span></div><h2>${titulo}</h2><p>${texto}</p>
-        <div class="modal-botones">${botones}</div>`, "modal-cofre");
-      chispas(capa.querySelector(".premio-icono"));
-    }, animacionesOn() ? 900 : 50);
-  }
-
-  /* ---------- Colección: álbum, compañero, mercadillo, insignias ---------- */
+  /* ---------- Colección ---------- */
   let pestana = "album";
   function pantallaColeccion(tab) {
     if (tab) pestana = tab;
-    const tabs = [["album", "🖼️ Álbum"], ["companero", "🐾 Compañero"], ["mercadillo", "🛒 Mercadillo"], ["insignias", "🏅 Insignias"]];
+    const tabs = [["album", "🖼️", "Álbum"], ["companero", "🐾", "Compañero"], ["mercadillo", "🛒", "Tienda"], ["insignias", "🏅", "Insignias"]];
     let cuerpo = "";
     if (pestana === "album") {
-      cuerpo = `<p class="nota-clara">${P.coleccion.length} de ${PV.COLECCION.length} tesoros encontrados. Aparecen en misiones y cofres.</p>
+      cuerpo = `<p class="nota">${P.coleccion.length} de ${PV.COLECCION.length} tesoros. Salen al terminar lecciones.</p>
         ${PV.ZONAS.map(z => {
           const objs = PV.COLECCION.filter(o => o.zona === z.id);
-          return `<section class="tarjeta-blanca"><h2>${z.icono} ${z.nombre} <small>${objs.filter(o => P.coleccion.includes(o.id)).length}/${objs.length}</small></h2>
+          return `<section class="tarjeta"><h2>${z.nombre} <small>${objs.filter(o => P.coleccion.includes(o.id)).length}/${objs.length}</small></h2>
             <div class="album">${objs.map(o => P.coleccion.includes(o.id)
-              ? `<div class="carta rareza-${o.rareza}"><span class="carta-icono">${o.icono}</span><strong>${o.nombre}</strong><small>${PV.RAREZAS[o.rareza].nombre}</small></div>`
-              : `<div class="carta oculta rareza-${o.rareza}"><span class="carta-icono">?</span><strong>Por descubrir</strong><small>${PV.RAREZAS[o.rareza].nombre}</small></div>`).join("")}</div></section>`;
+              ? `<div class="carta rareza-${o.rareza}"><span class="carta-icono">${o.icono}</span><b>${o.nombre}</b><small>${PV.RAREZAS[o.rareza].nombre}</small></div>`
+              : `<div class="carta oculta"><span class="carta-icono">?</span><b>???</b><small>${PV.RAREZAS[o.rareza].nombre}</small></div>`).join("")}</div></section>`;
         }).join("")}`;
     } else if (pestana === "companero") {
       const e = W.etapa(P), sig = PV.ETAPAS[e + 1];
-      cuerpo = `<section class="tarjeta-blanca centro">
+      cuerpo = `<section class="tarjeta centro">
           ${avatarHTML("xl")}
           <p class="nombre-mascota">${esc(R.nombreMascota(P))}</p>
           <p class="nota">${PV.ETAPAS[e].nombre}</p>
           ${sig ? `<div class="barra-etapa"><span style="width:${Math.round((P.estrellas - PV.ETAPAS[e].min) / (sig.min - PV.ETAPAS[e].min) * 100)}%"></span></div>
-            <p class="nota">Con ${sig.min - P.estrellas} ⭐ más evolucionará a ${sig.nombre.toLowerCase()}.</p>` : `<p class="nota">¡Ha llegado a su forma más legendaria!</p>`}
+            <p class="nota">Con ${sig.min - P.estrellas} ⭐ más evolucionará.</p>` : `<p class="nota">¡Ha llegado a su forma legendaria!</p>`}
           <div class="fila-campo"><input id="nuevo-nombre-mascota" class="campo" maxlength="14" value="${esc(P.mascota.nombre)}" placeholder="${esc(R.animal(P.avatar.animal).nombreDefecto)}" aria-label="Nombre del compañero">
-          <button type="button" class="btn btn-secundario" data-accion="guardar-nombre-mascota">Guardar nombre</button></div>
+          <button type="button" class="btn btn-azul" data-accion="guardar-nombre-mascota">Guardar</button></div>
         </section>
-        <section class="tarjeta-blanca"><h2>Aspecto</h2>
+        <section class="tarjeta"><h2>Animal</h2>
           <div class="rejilla-animales">${R.ANIMALES.map(a => `<button type="button" class="animal ${P.avatar.animal === a.id ? "elegido" : ""}" data-accion="elegir-animal" data-valor="${a.id}" aria-label="${a.nombre}" aria-pressed="${P.avatar.animal === a.id}">${a.icono}</button>`).join("")}</div>
         </section>
-        <section class="tarjeta-blanca"><h2>Accesorios <small>${P.accesorios.length} de ${R.ACCESORIOS.length}</small></h2>
-          ${P.accesorios.length ? `<div class="rejilla-animales">${R.ACCESORIOS.filter(a => P.accesorios.includes(a.id)).map(a => `<button type="button" class="animal ${P.avatar.accesorio === a.id ? "elegido" : ""}" data-accion="equipar" data-valor="${a.id}" aria-label="${a.nombre}" aria-pressed="${P.avatar.accesorio === a.id}" title="${a.nombre}">${a.icono}</button>`).join("")}</div>
-            <p class="nota">Toca un accesorio para ponérselo o quitárselo.</p>` : `<p class="nota">Aún no tiene accesorios. Salen en los cofres o se compran en el mercadillo.</p>`}
+        <section class="tarjeta"><h2>Accesorios</h2>
+          ${P.accesorios.length ? `<div class="rejilla-animales">${R.ACCESORIOS.filter(a => P.accesorios.includes(a.id)).map(a => `<button type="button" class="animal ${P.avatar.accesorio === a.id ? "elegido" : ""}" data-accion="equipar" data-valor="${a.id}" aria-label="${a.nombre}" aria-pressed="${P.avatar.accesorio === a.id}">${a.icono}</button>`).join("")}</div>
+            <p class="nota">Toca uno para ponérselo o quitárselo.</p>` : `<p class="nota">Todavía no tiene. ¡Cómpralos en la tienda!</p>`}
         </section>`;
     } else if (pestana === "mercadillo") {
-      cuerpo = `<p class="nota-clara">Tienes <strong>🪙 ${P.monedas}</strong>. Las monedas se ganan jugando misiones, mejorando y eligiendo bolsas de monedas.</p>
-        <section class="tarjeta-blanca"><div class="tienda">${R.ACCESORIOS.map(a => {
+      cuerpo = `<p class="nota">Tienes <b>🪙 ${P.monedas}</b>. Ganas monedas en cada lección.</p>
+        <section class="tarjeta"><div class="tienda">${R.ACCESORIOS.map(a => {
           const tiene = P.accesorios.includes(a.id), falta = a.precio - P.monedas;
-          return `<div class="producto ${tiene ? "tenido" : ""}"><span class="producto-icono">${a.icono}</span><strong>${a.nombre}</strong>
-            ${tiene ? `<span class="pill pill-sube">✓ Ya es tuyo</span>`
-              : falta > 0 ? `<span class="precio">🪙 ${a.precio}</span><small>Te faltan ${falta}</small>`
-              : `<button type="button" class="btn btn-principal btn-comprar" data-accion="comprar" data-valor="${a.id}">Comprar · 🪙 ${a.precio}</button>`}</div>`;
+          return `<div class="producto ${tiene ? "tenido" : ""}"><span class="producto-icono">${a.icono}</span><b>${a.nombre}</b>
+            ${tiene ? `<span class="pill">✔ Es tuyo</span>`
+              : falta > 0 ? `<span class="precio">🪙 ${a.precio}</span><small>Faltan ${falta}</small>`
+              : `<button type="button" class="btn btn-verde btn-comprar" data-accion="comprar" data-valor="${a.id}">🪙 ${a.precio}</button>`}</div>`;
         }).join("")}</div></section>`;
     } else {
-      cuerpo = `<section class="tarjeta-blanca"><div class="insignias">
-        ${R.INSIGNIAS.map(n => `<div class="insignia ${P.insignias.includes(n.id) ? "" : "bloqueada"}"><span class="insignia-icono">${P.insignias.includes(n.id) ? n.icono : "🔒"}</span><strong>${n.nombre}</strong><small>${n.desc}</small></div>`).join("")}
+      cuerpo = `<section class="tarjeta"><div class="insignias">
+        ${R.INSIGNIAS.map(n => `<div class="insignia ${P.insignias.includes(n.id) ? "" : "bloqueada"}"><span class="insignia-icono">${P.insignias.includes(n.id) ? n.icono : "🔒"}</span><b>${n.nombre}</b><small>${n.desc}</small></div>`).join("")}
       </div></section>`;
     }
-    render(`
-      ${cabecera()}
-      <main class="coleccion">
-        <div class="pestanas" role="tablist">${tabs.map(([id, txt]) => `<button type="button" role="tab" aria-selected="${pestana === id}" class="${pestana === id ? "activa" : ""}" data-accion="ir-coleccion" data-valor="${id}">${txt}</button>`).join("")}</div>
+    render(marco(`<main class="pagina">
+        <div class="pestanas" role="tablist">${tabs.map(([id, ic, txt]) => `<button type="button" role="tab" aria-selected="${pestana === id}" class="${pestana === id ? "activa" : ""}" data-accion="ir-coleccion" data-valor="${id}"><span>${ic}</span>${txt}</button>`).join("")}</div>
         ${cuerpo}
-      </main>
-      ${nav("ir-coleccion")}`, "fondo-mar con-nav", () => pantallaColeccion());
+      </main>`, "ir-coleccion"), () => pantallaColeccion());
   }
 
   /* ---------- Ajustes ---------- */
   function pantallaAjustes() {
-    const varios = A.perfiles().length > 1;
-    render(`
-      ${cabecera()}
-      <main class="coleccion">
-        <h1 class="titulo-pantalla">Ajustes</h1>
-        <section class="tarjeta-blanca ajustes">
+    render(marco(`<main class="pagina">
+        <h1 class="titulo">Ajustes</h1>
+        <section class="tarjeta lista-ajustes">
           <button type="button" class="interruptor" role="switch" aria-checked="${P.sonido}" data-accion="sonido"><span>🔊 Sonido</span><span class="mando ${P.sonido ? "on" : ""}"></span></button>
-          <button type="button" class="interruptor" role="switch" aria-checked="${!!P.reducirAnimaciones}" data-accion="animaciones"><span>🌀 Reducir animaciones</span><span class="mando ${P.reducirAnimaciones ? "on" : ""}"></span></button>
+          <button type="button" class="interruptor" role="switch" aria-checked="${!!P.reducirAnimaciones}" data-accion="animaciones"><span>🌀 Menos animaciones</span><span class="mando ${P.reducirAnimaciones ? "on" : ""}"></span></button>
         </section>
-        <section class="tarjeta-blanca ajustes">
+        <section class="tarjeta lista-ajustes">
           <h2>Jugador</h2>
-          <p class="nota">Ahora juega <strong>${esc(P.apodo || "Aventurero")}</strong>. Cada jugador tiene su propio progreso en este dispositivo.</p>
-          <div class="fila-campo"><input id="nuevo-apodo" class="campo" maxlength="16" value="${esc(P.apodo)}" aria-label="Apodo"><button type="button" class="btn btn-secundario" data-accion="guardar-apodo">Cambiar apodo</button></div>
-          <div class="botones-ajustes">
-            ${varios ? `<button type="button" class="btn btn-secundario" data-accion="ver-perfiles">👥 Cambiar de jugador</button>` : ""}
-            <button type="button" class="btn btn-secundario" data-accion="nuevo-perfil">➕ Añadir jugador</button>
+          <div class="fila-campo"><input id="nuevo-apodo" class="campo" maxlength="16" value="${esc(P.apodo)}" aria-label="Apodo"><button type="button" class="btn btn-azul" data-accion="guardar-apodo">Cambiar apodo</button></div>
+          <div class="fila-botones">
+            ${A.perfiles().length > 1 ? `<button type="button" class="btn btn-gris" data-accion="ver-perfiles">👥 Cambiar de jugador</button>` : ""}
+            <button type="button" class="btn btn-gris" data-accion="nuevo-perfil">➕ Añadir jugador</button>
           </div>
         </section>
-        <section class="tarjeta-blanca ajustes">
-          <p class="nota">💾 El progreso se guarda en este navegador. Para hacer una copia o borrar datos, entra en la zona de adultos.</p>
-          <button type="button" class="enlace-discreto oscuro" data-accion="adultos">Zona de adultos</button>
+        <section class="tarjeta">
+          <p class="nota">💾 El progreso se guarda en este navegador. Copias de seguridad y borrado, en la zona de adultos.</p>
+          <button type="button" class="enlace" data-accion="adultos">Zona de adultos</button>
         </section>
-      </main>
-      ${nav("ajustes")}`, "fondo-mar con-nav", pantallaAjustes);
+      </main>`, "ajustes"), pantallaAjustes);
   }
 
   /* ---------- Zona de adultos ---------- */
-  let reto = null;
+  let retoAdulto = null;
   function abrirAdultos() {
     const pin = A.pin() || P.pin;
-    if (pin) {
-      modal(`<h2>Zona de adultos</h2><label class="etiqueta" for="clave">Escribe el PIN</label>
-        <input id="clave" class="campo" type="password" inputmode="numeric" maxlength="6" autocomplete="off" data-foco>
-        <p class="error-texto" id="error-clave" hidden>PIN incorrecto.</p>
-        <div class="modal-botones"><button type="button" class="btn btn-principal" data-accion="comprobar-adulto">Entrar</button>
-        <button type="button" class="btn btn-secundario" data-accion="cerrar">Cancelar</button></div>`);
-    } else {
-      reto = [6 + Math.floor(Math.random() * 4), 6 + Math.floor(Math.random() * 4)];
-      modal(`<h2>Zona de adultos</h2><label class="etiqueta" for="clave">Para entrar, resuelve: ${reto[0]} × ${reto[1]}</label>
-        <input id="clave" class="campo" inputmode="numeric" maxlength="3" autocomplete="off" data-foco>
-        <p class="error-texto" id="error-clave" hidden>Resultado incorrecto.</p>
-        <div class="modal-botones"><button type="button" class="btn btn-principal" data-accion="comprobar-adulto">Entrar</button>
-        <button type="button" class="btn btn-secundario" data-accion="cerrar">Cancelar</button></div>`);
-    }
+    if (!pin) retoAdulto = [6 + Math.floor(Math.random() * 4), 6 + Math.floor(Math.random() * 4)];
+    modal(`<h2>Zona de adultos</h2><label class="etiqueta" for="clave">${pin ? "Escribe el PIN" : `Para entrar, resuelve: ${retoAdulto[0]} × ${retoAdulto[1]}`}</label>
+      <input id="clave" class="campo" ${pin ? 'type="password"' : ""} inputmode="numeric" maxlength="${pin ? 6 : 3}" autocomplete="off" data-foco>
+      <p class="error-texto" id="error-clave" hidden>${pin ? "PIN incorrecto." : "Resultado incorrecto."}</p>
+      <div class="fila-botones"><button type="button" class="btn btn-verde" data-accion="comprobar-adulto">Entrar</button>
+      <button type="button" class="btn btn-gris" data-accion="cerrar">Cancelar</button></div>`);
   }
   function comprobarAdulto() {
     const v = (document.getElementById("clave").value || "").trim(), pin = A.pin() || P.pin;
-    const ok = pin ? v === pin : Number(v) === reto[0] * reto[1];
-    if (ok) { cerrarModal(); pantallaAdultos(); }
+    if (pin ? v === pin : Number(v) === retoAdulto[0] * retoAdulto[1]) { cerrarModal(); pantallaAdultos(); }
     else document.getElementById("error-clave").hidden = false;
   }
   function fechaCorta(f) {
@@ -698,120 +548,83 @@
     const dias = Object.keys(P.actividad).length;
     const ult7 = Object.entries(P.actividad).filter(([f]) => U.diasEntre(f, hoy) < 7);
     const r7 = ult7.reduce((s, [, a]) => s + a.retos, 0), a7 = ult7.reduce((s, [, a]) => s + a.aciertos, 0);
-    const misionesHechas = Object.values(P.misiones).filter(m => m.completada).length;
+    const hechas = Object.values(P.misiones).filter(m => m.completada).length;
     const totalMis = PV.ZONAS.reduce((s, z) => s + W.totalMisiones(z), 0);
-
     const filas = Object.keys(PV.HABILIDADES).map(h => {
       const d = P.habilidades[h], est = M.estadoHabilidad(P, h), prec = M.precisionReciente(P, h);
-      return `<tr><td>${PV.HABILIDADES[h].icono} ${PV.HABILIDADES[h].nombre}</td><td>${ESTADOS[est]}</td>
-        <td>${d ? d.intentos : 0}</td><td>${d && d.intentos ? Math.round(d.aciertos / d.intentos * 100) + " %" : "—"}</td>
-        <td>${prec === null ? "—" : Math.round(prec * 100) + " %"}</td><td>${d ? d.nivel : 1}</td><td>${d && d.ultimaFecha ? fechaCorta(d.ultimaFecha) : "—"}</td></tr>`;
+      return `<tr><td>${PV.HABILIDADES[h].icono} ${PV.HABILIDADES[h].nombre}</td><td>${ESTADOS[est]}</td><td>${d ? d.intentos : 0}</td>
+        <td>${d && d.intentos ? Math.round(d.aciertos / d.intentos * 100) + " %" : "—"}</td><td>${prec === null ? "—" : Math.round(prec * 100) + " %"}</td>
+        <td>${d ? d.nivel : 1}</td><td>${d && d.ultimaFecha ? fechaCorta(d.ultimaFecha) : "—"}</td></tr>`;
     }).join("");
-
     const porRegla = {};
     PV.banco.forEach(e => { const it = P.items[e.id]; if (it && (it.fallos || it.pistas)) { const k = e.regla; porRegla[k] = porRegla[k] || { fallos: 0, pistas: 0, hab: e.habilidad, palabras: [] }; porRegla[k].fallos += it.fallos; porRegla[k].pistas += it.pistas || 0; if (it.fallos) porRegla[k].palabras.push(e.palabra); } });
     const errores = Object.entries(porRegla).filter(([, v]) => v.fallos).sort((a, b) => b[1].fallos - a[1].fallos).slice(0, 6);
     const pistas = Object.values(porRegla).reduce((s, v) => s + v.pistas, 0);
-
-    const pendientes = PV.banco.filter(e => P.items[e.id] && P.items[e.id].enRefuerzo)
-      .sort((a, b) => (P.items[a.id].proximo || "").localeCompare(P.items[b.id].proximo || ""));
-
+    const pendientes = PV.banco.filter(e => P.items[e.id] && P.items[e.id].enRefuerzo).sort((a, b) => (P.items[a.id].proximo || "").localeCompare(P.items[b.id].proximo || ""));
     const evol = [];
     for (let k = 13; k >= 0; k--) { const f = U.sumarDias(hoy, -k); evol.push({ f, a: P.actividad[f] || { retos: 0, aciertos: 0 } }); }
     const maxR = Math.max(10, ...evol.map(x => x.a.retos));
     const pin = A.pin() || P.pin;
-
-    render(`
-      <header class="barra barra-simple">
-        <button type="button" class="btn btn-volver" data-accion="inicio">← Salir</button>
-        <h1 class="titulo-pantalla">Zona de adultos</h1>
-      </header>
+    render(`<div class="adultos-marco">
+      <header class="cabecera-simple"><button type="button" class="btn btn-gris" data-accion="camino">← Volver</button><h1>Zona de adultos</h1></header>
       <main class="adultos">
-        <p class="aviso-adultos">Jugador: <strong>${esc(P.apodo || "Aventurero")}</strong>. Este panel resume la práctica hecha en la aplicación. No es una evaluación ni un diagnóstico.</p>
-
-        <section class="panel">
-          <h2>Resumen</h2>
-          <div class="fin-stats">
-            <div class="stat"><span class="stat-num">${misionesHechas}/${totalMis}</span><span>misiones completadas</span></div>
-            <div class="stat"><span class="stat-num">${dias}</span><span>días con práctica</span></div>
-            <div class="stat"><span class="stat-num">${totalRetos}</span><span>retos respondidos</span></div>
-            <div class="stat"><span class="stat-num">${r7 ? Math.round(a7 / r7 * 100) + " %" : "—"}</span><span>aciertos (últimos 7 días)</span></div>
-            <div class="stat"><span class="stat-num">${pistas}</span><span>pistas pedidas</span></div>
-          </div>
-        </section>
-
+        <p class="aviso-adultos">Jugador: <b>${esc(P.apodo || "Aventurero")}</b>. Este panel resume la práctica hecha en la aplicación. No es una evaluación ni un diagnóstico.</p>
+        <section class="panel"><h2>Resumen</h2>
+          <div class="stats">
+            <div class="stat"><b>${hechas}/${totalMis}</b><span>lecciones completadas</span></div>
+            <div class="stat"><b>${dias}</b><span>días con práctica</span></div>
+            <div class="stat"><b>${totalRetos}</b><span>retos respondidos</span></div>
+            <div class="stat"><b>${r7 ? Math.round(a7 / r7 * 100) + " %" : "—"}</b><span>aciertos (7 días)</span></div>
+            <div class="stat"><b>${pistas}</b><span>pistas pedidas</span></div>
+          </div></section>
         <section class="panel"><h2>Recomendación</h2><p>${recomendacionTexto()}</p></section>
-
-        <section class="panel">
-          <h2>Habilidades</h2>
-          <div class="tabla-envoltorio"><table>
-            <thead><tr><th>Habilidad</th><th>Estado</th><th>Intentos</th><th>Aciertos totales</th><th>Últimos 10</th><th>Dificultad</th><th>Última práctica</th></tr></thead>
-            <tbody>${filas}</tbody></table></div>
-          <p class="nota">«Dominada» exige al menos 10 respuestas recientes con un 85 % de aciertos, en 2 días distintos o más.</p>
-        </section>
-
-        <section class="panel">
-          <h2>Evolución (14 días)</h2>
+        <section class="panel"><h2>Habilidades</h2>
+          <div class="tabla-envoltorio"><table><thead><tr><th>Habilidad</th><th>Estado</th><th>Intentos</th><th>Aciertos totales</th><th>Últimos 10</th><th>Dificultad</th><th>Última práctica</th></tr></thead><tbody>${filas}</tbody></table></div>
+          <p class="nota">«Dominada» exige al menos 10 respuestas recientes con un 85 % de aciertos, en 2 días distintos o más.</p></section>
+        <section class="panel"><h2>Evolución (14 días)</h2>
           <div class="grafico" role="img" aria-label="Retos respondidos por día en los últimos 14 días">
-            ${evol.map(x => `<div class="col" title="${x.f}: ${x.a.retos} retos, ${x.a.aciertos} aciertos">
-              <div class="barra-col" style="height:${Math.round(x.a.retos / maxR * 100)}%"><div class="barra-ok" style="height:${x.a.retos ? Math.round(x.a.aciertos / x.a.retos * 100) : 0}%"></div></div>
-              <span>${Number(x.f.slice(8))}</span></div>`).join("")}
+            ${evol.map(x => `<div class="col" title="${x.f}: ${x.a.retos} retos, ${x.a.aciertos} aciertos"><div class="barra-col" style="height:${Math.round(x.a.retos / maxR * 100)}%"><div class="barra-ok" style="height:${x.a.retos ? Math.round(x.a.aciertos / x.a.retos * 100) : 0}%"></div></div><span>${Number(x.f.slice(8))}</span></div>`).join("")}
           </div>
-          <p class="nota"><span class="leyenda ley-ok"></span> aciertos <span class="leyenda ley-total"></span> retos respondidos</p>
-        </section>
-
-        <section class="panel">
-          <h2>Errores más frecuentes</h2>
-          ${errores.length ? `<ul class="lista">${errores.map(([k, v]) => `<li><strong>${PV.REGLAS[k]}</strong> <small>(${PV.HABILIDADES[v.hab].nombre})</small> · ${v.fallos} ${v.fallos === 1 ? "fallo" : "fallos"}${v.pistas ? ` · ${v.pistas} ${v.pistas === 1 ? "pista" : "pistas"}` : ""}<br><small>${v.palabras.map(esc).join(", ")}</small></li>`).join("")}</ul>` : `<p class="nota">Todavía no hay errores registrados.</p>`}
-        </section>
-
-        <section class="panel">
-          <h2>Palabras en repaso (${pendientes.length})</h2>
-          ${pendientes.length ? `<ul class="lista lista-cols">${pendientes.map(e => `<li><strong>${esc(e.palabra)}</strong> <small>· ${PV.HABILIDADES[e.habilidad].nombre} · próximo repaso: ${fechaCorta(P.items[e.id].proximo)}</small></li>`).join("")}</ul>
-            <p class="nota">Aparecen solas en las próximas misiones: al día siguiente, a los pocos días y una semana después. Tras tres repasos acertados salen de la lista. Ya se han superado ${P.consolidadas || 0}.</p>` : `<p class="nota">No hay palabras pendientes de repaso.</p>`}
-        </section>
-
-        <section class="panel">
-          <h2>Copia de seguridad</h2>
-          <p class="nota">El progreso se guarda solo en este navegador. Si se borran los datos del navegador, se pierde: conviene exportar una copia de vez en cuando. La importación sustituye el progreso de este jugador.</p>
-          <div class="botones-ajustes">
-            <button type="button" class="btn btn-secundario" data-accion="exportar">⬇️ Exportar copia (JSON)</button>
-            <label class="btn btn-secundario" for="importar">⬆️ Importar copia</label>
+          <p class="nota"><span class="leyenda ley-ok"></span> aciertos <span class="leyenda ley-total"></span> retos respondidos</p></section>
+        <section class="panel"><h2>Errores más frecuentes</h2>
+          ${errores.length ? `<ul class="lista">${errores.map(([k, v]) => `<li><b>${PV.REGLAS[k]}</b> <small>(${PV.HABILIDADES[v.hab].nombre})</small> · ${v.fallos} ${v.fallos === 1 ? "fallo" : "fallos"}${v.pistas ? ` · ${v.pistas} ${v.pistas === 1 ? "pista" : "pistas"}` : ""}<br><small>${v.palabras.map(esc).join(", ")}</small></li>`).join("")}</ul>` : `<p class="nota">Todavía no hay errores registrados.</p>`}</section>
+        <section class="panel"><h2>Palabras en repaso (${pendientes.length})</h2>
+          ${pendientes.length ? `<ul class="lista lista-cols">${pendientes.map(e => `<li><b>${esc(e.palabra)}</b> <small>· ${PV.HABILIDADES[e.habilidad].nombre} · próximo repaso: ${fechaCorta(P.items[e.id].proximo)}</small></li>`).join("")}</ul>
+            <p class="nota">Aparecen solas en las próximas lecciones: al día siguiente, a los pocos días y una semana después. Tras tres repasos acertados salen de la lista. Ya se han superado ${P.consolidadas || 0}.</p>` : `<p class="nota">No hay palabras pendientes de repaso.</p>`}</section>
+        <section class="panel"><h2>Copia de seguridad</h2>
+          <p class="nota">El progreso se guarda solo en este navegador. Conviene exportar una copia de vez en cuando. Importar sustituye el progreso de este jugador.</p>
+          <div class="fila-botones">
+            <button type="button" class="btn btn-gris" data-accion="exportar">⬇️ Exportar copia</button>
+            <label class="btn btn-gris" for="importar">⬆️ Importar copia</label>
             <input id="importar" type="file" accept="application/json,.json" hidden>
           </div>
-          <h3>PIN de la zona de adultos</h3>
+          <h3>PIN</h3>
           <p class="nota">${pin ? "Hay un PIN configurado (sirve para todos los jugadores)." : "Ahora se entra resolviendo una multiplicación. Puedes poner un PIN de 4 a 6 cifras."} Es una barrera sencilla, no una protección de seguridad.</p>
-          <div class="botones-ajustes">
+          <div class="fila-botones">
             <input id="pin-nuevo" class="campo campo-corto" type="password" inputmode="numeric" maxlength="6" placeholder="Nuevo PIN" autocomplete="new-password">
-            <button type="button" class="btn btn-secundario" data-accion="guardar-pin">Guardar PIN</button>
-            ${pin ? `<button type="button" class="btn btn-secundario" data-accion="quitar-pin">Quitar PIN</button>` : ""}
+            <button type="button" class="btn btn-gris" data-accion="guardar-pin">Guardar PIN</button>
+            ${pin ? `<button type="button" class="btn btn-gris" data-accion="quitar-pin">Quitar PIN</button>` : ""}
           </div>
           <h3>Borrar</h3>
-          <p class="nota">Borra el progreso de <strong>${esc(P.apodo || "este jugador")}</strong> (los demás jugadores no se tocan). No se puede deshacer.</p>
-          <div class="botones-ajustes"><button type="button" class="btn btn-peligro" data-accion="reiniciar">🗑️ Borrar este jugador</button></div>
+          <p class="nota">Borra el progreso de <b>${esc(P.apodo || "este jugador")}</b> (los demás no se tocan). No se puede deshacer.</p>
+          <button type="button" class="btn btn-peligro" data-accion="reiniciar">🗑️ Borrar este jugador</button>
         </section>
-        <p class="nota centro">Palabraventura no usa publicidad, no tiene compras y no envía datos a ningún servidor.</p>
-      </main>`, "fondo-adultos", pantallaAdultos);
+        <p class="nota centro">Sin publicidad, sin compras y sin enviar datos a ningún servidor.</p>
+      </main></div>`, pantallaAdultos);
     document.getElementById("importar").addEventListener("change", importar);
   }
-
   function recomendacionTexto() {
     const abiertas = habsAbiertas();
     const total = Object.values(P.habilidades).reduce((s, h) => s + h.intentos, 0);
     const pend = PV.banco.filter(e => P.items[e.id] && P.items[e.id].enRefuerzo).length;
-    if (!total) return "Todavía no hay práctica registrada. Lo ideal son misiones cortas, de 5 a 8 minutos, varios días a la semana.";
-    const cand = abiertas.filter(h => P.habilidades[h] && P.habilidades[h].ultimas.length >= 5)
-      .map(h => ({ h, p: M.precisionReciente(P, h) })).sort((a, b) => a.p - b.p);
-    let t = "";
-    if (cand.length && cand[0].p < 0.85) t = `Para los próximos días: una o dos misiones cortas al día con <strong>${PV.HABILIDADES[cand[0].h].nombre}</strong>, donde el porcentaje de aciertos reciente es más bajo (${Math.round(cand[0].p * 100)} %). `;
-    else {
-      const nueva = abiertas.find(h => M.estadoHabilidad(P, h) === "nueva");
-      t = nueva ? `Buen ritmo. Puede ser un buen momento para empezar con <strong>${PV.HABILIDADES[nueva].nombre}</strong>. ` : "Buen ritmo en todas las habilidades disponibles. Mantener sesiones cortas ayuda a consolidar. ";
-    }
-    if (pend) t += `Hay ${pend} ${pend === 1 ? "palabra" : "palabras"} en repaso: saldrán solas en las próximas misiones. `;
+    if (!total) return "Todavía no hay práctica registrada. Lo ideal es una lección corta (5-8 minutos) al día.";
+    const cand = abiertas.filter(h => P.habilidades[h] && P.habilidades[h].ultimas.length >= 5).map(h => ({ h, p: M.precisionReciente(P, h) })).sort((a, b) => a.p - b.p);
+    let t;
+    if (cand.length && cand[0].p < 0.85) t = `Para los próximos días: una o dos lecciones al día de <b>${PV.HABILIDADES[cand[0].h].nombre}</b>, donde el porcentaje de aciertos reciente es más bajo (${Math.round(cand[0].p * 100)} %). `;
+    else t = "Buen ritmo. Mantener lecciones cortas y frecuentes ayuda a consolidar. ";
+    if (pend) t += `Hay ${pend} ${pend === 1 ? "palabra" : "palabras"} en repaso: saldrán solas en las próximas lecciones. `;
     return t + "Valorar el esfuerzo y la mejora, más que la rapidez, ayuda a mantener las ganas.";
   }
-
   function importar(ev) {
     const f = ev.target.files && ev.target.files[0];
     if (!f) return;
@@ -843,39 +656,33 @@
     "elegir-perfil": v => { const p = A.cargar(v); if (p) { A.activar(v); entrar(p); } },
     "nuevo-perfil": () => pantallaBienvenida(),
     "ver-perfiles": () => pantallaPerfiles(),
-    "inicio": () => pantallaInicio(),
-    "mapa": () => pantallaMapa(),
-    "zona": v => pantallaZona(v),
-    "briefing": v => pantallaBriefing(v),
-    "vamos": v => iniciarMision(v),
-    "reto-diario": () => iniciarDiario(),
-    "responder": v => responder(v),
-    "tocar": v => tocarPalabra(Number(v)),
-    "ficha": v => ponerFicha(Number(v)),
-    "borrar-ficha": () => quitarFicha(),
-    "comprobar-construye": () => comprobarConstruye(),
+    "camino": () => { abierto = null; pantallaCamino(); },
+    "nodo": v => { abierto = abierto === v ? null : v; sonar("toque"); pantallaCamino(true); },
+    "empezar-leccion": v => iniciarLeccion(v),
+    "elegir": v => { const r = sesion.cola[sesion.i]; if (r.respondido) return; r.sel = v; sonar("toque"); pantallaReto(); },
+    "token": v => { const r = sesion.cola[sesion.i]; r.selToken = Number(v); sonar("toque"); pantallaReto(); },
+    "ficha": v => { const r = sesion.cola[sesion.i]; const i = Number(v); if (r.respondido || r.usadas.includes(i) || r.usadas.length >= r.objetivo) return; r.usadas.push(i); sonar("toque"); pantallaReto(); },
+    "quitar-ficha": v => { const r = sesion.cola[sesion.i]; if (r.respondido) return; r.usadas.splice(Number(v), 1); pantallaReto(); },
+    "comprobar": () => comprobar(),
     "pista": () => { sesion.cola[sesion.i].pistaVista = true; sonar("toque"); pantallaReto(); },
     "seguir": () => siguiente(),
     "decidir": v => decidir(v),
-    "salir-sesion": () => {
-      if (sesion && sesion.contestados > 0 && !confirm("¿Salir de la misión? Lo que has respondido ya está guardado, pero la recompensa se gana al terminar.")) return;
-      sesion = null; pantallaInicio();
+    "salir-leccion": () => {
+      if (sesion && sesion.contestados > 0 && !confirm("¿Salir de la lección? Lo que has respondido ya está guardado, pero los premios se ganan al terminar.")) return;
+      sesion = null; pantallaCamino();
     },
-    "abrir-cofre": () => abrirCofre(),
-    "equipar-nuevo": v => { P.avatar.accesorio = v; guardar(); cerrarModal(); refrescar(); },
-    "cerrar-cofre": () => { cerrarModal(); refrescar(); },
     "ir-coleccion": v => pantallaColeccion(v || pestana),
     "elegir-animal": v => { P.avatar.animal = v; guardar(); pantallaColeccion(); },
     "equipar": v => { P.avatar.accesorio = P.avatar.accesorio === v ? null : v; guardar(); pantallaColeccion(); },
     "guardar-nombre-mascota": () => { P.mascota.nombre = (document.getElementById("nuevo-nombre-mascota").value || "").trim().slice(0, 14); guardar(); aviso("¡Nombre guardado!"); pantallaColeccion(); },
-    "comprar": v => { if (R.comprar(P, v)) { guardar(); sonar("cofre"); const a = R.accesorio(v); P.avatar.accesorio = v; guardar(); aviso(`${a.icono} ¡${a.nombre} es tuyo!`); pantallaColeccion(); } },
-    "guardar-apodo": () => { P.apodo = (document.getElementById("nuevo-apodo").value || "").trim().slice(0, 16); guardar(); aviso("Apodo guardado."); pantallaAjustes(); },
-    "cerrar": () => cerrarModal(),
+    "comprar": v => { if (R.comprar(P, v)) { const a = R.accesorio(v); P.avatar.accesorio = v; guardar(); sonar("cofre"); aviso(`${a.icono} ¡${a.nombre} es tuyo!`); pantallaColeccion(); } },
     "ajustes": () => pantallaAjustes(),
+    "guardar-apodo": () => { P.apodo = (document.getElementById("nuevo-apodo").value || "").trim().slice(0, 16); guardar(); aviso("Apodo guardado."); pantallaAjustes(); },
     "sonido": () => { P.sonido = !P.sonido; guardar(); pantallaAjustes(); },
     "animaciones": () => { P.reducirAnimaciones = !P.reducirAnimaciones; guardar(); aplicarAjustes(); pantallaAjustes(); },
     "adultos": () => abrirAdultos(),
     "comprobar-adulto": () => comprobarAdulto(),
+    "cerrar": () => cerrarModal(),
     "exportar": () => A.exportar(P),
     "guardar-pin": () => {
       const v = (document.getElementById("pin-nuevo").value || "").trim();
@@ -884,12 +691,11 @@
     },
     "quitar-pin": () => { A.ponerPin(null); P.pin = null; guardar(); aviso("PIN quitado."); pantallaAdultos(); },
     "reiniciar": () => {
-      if (!confirm(`¿Borrar todo el progreso de ${P.apodo || "este jugador"}? Se perderán estrellas, monedas, tesoros e historial.`)) return;
+      if (!confirm(`¿Borrar todo el progreso de ${P.apodo || "este jugador"}?`)) return;
       if (!confirm("Esta acción no se puede deshacer. ¿Seguro?")) return;
       A.borrar(P.id); P = null; sesion = null; arrancar();
     }
   };
-  function refrescar() { if (actual) actual(); else pantallaInicio(); }
 
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-accion]");
@@ -897,20 +703,33 @@
     const f = ACCIONES[b.dataset.accion];
     if (f) { e.preventDefault(); f(b.dataset.valor, b); }
   });
+  // Teclado (ordenador): números para elegir, Intro para comprobar o continuar.
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && !capa.hidden && !capa.querySelector(".modal-cofre")) cerrarModal();
-    if (e.key === "Enter" && e.target.matches && e.target.matches("input.campo")) {
-      const btn = (e.target.closest(".modal, .tarjeta-blanca, .fila-campo") || document).querySelector(".btn-principal, .fila-campo .btn");
-      if (btn) btn.click();
+    if (!capa.hidden) {
+      if (e.key === "Escape") cerrarModal();
+      if (e.key === "Enter" && e.target.id === "clave") comprobarAdulto();
+      return;
+    }
+    if (e.target.matches && e.target.matches("input")) {
+      if (e.key === "Enter") { const b = e.target.closest(".fila-campo, .tarjeta"); const btn = b && b.querySelector(".btn"); if (btn) btn.click(); }
+      return;
+    }
+    if (!sesion || !app.querySelector(".leccion")) return;
+    if (e.key === "Enter") {
+      const b = app.querySelector("[data-accion=seguir]") || app.querySelector("[data-accion=comprobar]:not([disabled])");
+      if (b) { e.preventDefault(); b.click(); }
+    } else if (/^[1-9]$/.test(e.key)) {
+      const ops = app.querySelectorAll(".opcion:not([disabled]), .ficha:not([disabled]), .decision-opcion");
+      const b = ops[Number(e.key) - 1]; if (b) b.click();
     }
   });
-  capa.addEventListener("click", e => { if (e.target === capa && !capa.querySelector(".modal-cofre")) cerrarModal(); });
+  capa.addEventListener("click", e => { if (e.target === capa) cerrarModal(); });
 
   /* ---------- Arranque ---------- */
   function arrancar() {
     const lista = A.perfiles();
     if (!lista.length) return pantallaBienvenida();
-    if (lista.length > 1) return pantallaPerfiles();   // con varios jugadores, cada uno elige al entrar
+    if (lista.length > 1) return pantallaPerfiles();
     const p = A.cargar(lista[0].id);
     if (p) { A.activar(p.id); entrar(p); } else pantallaBienvenida();
   }
