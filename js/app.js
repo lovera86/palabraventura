@@ -21,7 +21,7 @@
 
   /* ---------- Utilidades ---------- */
   function guardar() { A.guardar(P); }
-  function habsAbiertas() { return [...new Set(PV.ZONAS.filter(z => W.abierta(P, z)).flatMap(z => z.habilidades))]; }
+  function habsAbiertas() { return [...new Set(W.zonas(P).flatMap(z => z.habilidades))]; }
   function sonar(n) { PV.sonido.play(n, P && P.sonido); }
   function animacionesOn() { return !(P && P.reducirAnimaciones) && !window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
   function aplicarAjustes() { document.body.classList.toggle("sin-animaciones", !!(P && P.reducirAnimaciones)); }
@@ -145,7 +145,7 @@
         <p class="nota">Una lección al día es suficiente.</p>
       </div>
       <button type="button" class="tarjeta tarjeta-boton t-album" data-accion="ir-coleccion" data-valor="album">
-        <p class="tarjeta-titulo">🖼️ Álbum de tesoros</p><p class="nota">${P.coleccion.length} de ${PV.COLECCION.length} encontrados</p>
+        <p class="tarjeta-titulo">🖼️ Álbum de tesoros</p><p class="nota">${P.coleccion.length} de ${PV.COLECCION.filter(o => W.zonas(P).some(z => z.id === o.zona)).length} encontrados</p>
       </button>`;
   }
 
@@ -155,31 +155,36 @@
         <div class="logo"><span class="logo-icono">🗺️</span><h1>Palabraventura</h1><p>¿Quién juega hoy?</p></div>
         <div class="rejilla-perfiles">
           ${A.perfiles().map(p => `<button type="button" class="perfil-tarjeta" data-accion="elegir-perfil" data-valor="${esc(p.id)}">
-            <span class="avatar avatar-l"><span class="avatar-animal">${R.animal(p.animal).icono}</span></span><strong>${esc(p.apodo || "Aventurero")}</strong></button>`).join("")}
+            <span class="avatar avatar-l"><span class="avatar-animal">${R.animal(p.animal).icono}</span></span><strong>${esc(p.apodo || "Aventurero")}</strong>${p.tipo === "adulto" ? `<span class="pill">🎓 Adulto</span>` : ""}</button>`).join("")}
           <button type="button" class="perfil-tarjeta perfil-nuevo" data-accion="nuevo-perfil"><span class="avatar avatar-l"><span class="avatar-animal">➕</span></span><strong>Nuevo jugador</strong></button>
         </div>
       </main>`, pantallaPerfiles);
   }
 
   /* ---------- Bienvenida ---------- */
-  let animalInicio = "zorro";
+  let animalInicio = "zorro", tipoInicio = "nino";
   function pantallaBienvenida() {
-    animalInicio = "zorro";
+    animalInicio = "zorro"; tipoInicio = "nino";
     render(`<main class="bienvenida">
         <div class="logo"><span class="logo-icono">🗺️</span><h1>Palabraventura</h1><p>¡Aprende a escribir sin faltas jugando!</p></div>
         <div class="tarjeta">
-          <p class="paso">1. Elige tu compañero</p>
+          <p class="paso">1. ¿Quién va a jugar?</p>
+          <div class="tipo-jugador" role="radiogroup" aria-label="Tipo de jugador">
+            <button type="button" class="tipo elegido" role="radio" aria-checked="true" data-accion="elegir-tipo" data-valor="nino"><span>🎒</span><b>Niño o niña</b><small>Aventura de 7 a 11 años</small></button>
+            <button type="button" class="tipo" role="radio" aria-checked="false" data-accion="elegir-tipo" data-valor="adulto"><span>🎓</span><b>Adulto</b><small>Ortografía avanzada</small></button>
+          </div>
+          <p class="paso">2. Elige tu compañero</p>
           <div class="rejilla-animales" role="radiogroup" aria-label="Compañero">
             ${R.ANIMALES.map(a => `<button type="button" class="animal ${a.id === animalInicio ? "elegido" : ""}" role="radio" aria-checked="${a.id === animalInicio}" data-accion="elegir-animal-inicio" data-valor="${a.id}" aria-label="${a.nombre}">${a.icono}</button>`).join("")}
           </div>
-          <label class="paso" for="apodo">2. ¿Cómo te llamamos?</label>
+          <label class="paso" for="apodo">3. ¿Cómo te llamamos?</label>
           <input id="apodo" class="campo" maxlength="16" placeholder="Un apodo, por ejemplo: Rayo" autocomplete="off">
-          <label class="paso" for="nombre-mascota">3. ¿Y a tu compañero? <small>(si quieres)</small></label>
+          <label class="paso" for="nombre-mascota">4. ¿Y a tu compañero? <small>(si quieres)</small></label>
           <input id="nombre-mascota" class="campo" maxlength="14" placeholder="${R.animal(animalInicio).nombreDefecto}" autocomplete="off">
           <button type="button" class="btn btn-verde btn-xl" data-accion="empezar">¡EMPEZAR!</button>
           ${A.perfiles().length ? `<button type="button" class="btn btn-gris btn-xl" data-accion="ver-perfiles">Volver</button>` : ""}
         </div>
-        <p class="nota centro">💾 Se guarda solo en este navegador. No hace falta tu nombre real.${A.disponible ? "" : " <strong>Este navegador no permite guardar.</strong>"}</p>
+        <p class="nota centro">💾 Se guarda solo en este navegador. No hace falta tu nombre real. Cada jugador tiene su propio progreso.${A.disponible ? "" : " <strong>Este navegador no permite guardar.</strong>"}</p>
       </main>`, pantallaBienvenida);
   }
   function entrar(p) { P = p; P.ultimaVisita = U.hoy(); A.guardar(P); aplicarAjustes(); pantallaCamino(); }
@@ -190,7 +195,7 @@
     sesion = null;
     const sig = W.siguiente(P);
     let html = `<main class="camino">`;
-    PV.ZONAS.forEach((z, ui) => {
+    W.zonas(P).forEach((z, ui) => {
       const ab = W.abierta(P, z);
       html += `<section class="unidad ${ab ? "" : "bloqueada"}" style="--c:${z.color}">
         <div class="adornos" aria-hidden="true">${(z.deco || []).map((d, i) => `<span style="--i:${i}">${d}</span>`).join("")}</div>
@@ -258,7 +263,9 @@
 
   function pantallaReto() {
     const r = sesion.cola[sesion.i], ej = r.ej;
-    const formato = r.formato || ej.tipo, tipo = PV.TIPOS[formato];
+    const formato = r.formato || ej.tipo;
+    const NOMBRES_ADULTO = { completa: { nombre: "Completa la frase", icono: "✍️" }, robot: { nombre: "Encuentra el error", icono: "🔎" } };
+    const tipo = (P.tipo === "adulto" && NOMBRES_ADULTO[formato]) || PV.TIPOS[formato];
     if (!r.orden) r.orden = U.barajar(ej.opciones);
     if (!r.fase) r.fase = ej.tipo === "robot" ? "buscar" : "elegir";
     if (formato === "construye" && !r.fichas) {
@@ -485,8 +492,9 @@
     const tabs = [["album", "🖼️", "Álbum"], ["companero", "🐾", "Compañero"], ["mercadillo", "🛒", "Tienda"], ["insignias", "🏅", "Insignias"]];
     let cuerpo = "";
     if (pestana === "album") {
-      cuerpo = `<p class="nota">${P.coleccion.length} de ${PV.COLECCION.length} tesoros. Salen al terminar lecciones.</p>
-        ${PV.ZONAS.map(z => {
+      const misTesoros = PV.COLECCION.filter(o => W.zonas(P).some(z => z.id === o.zona));
+      cuerpo = `<p class="nota">${misTesoros.filter(o => P.coleccion.includes(o.id)).length} de ${misTesoros.length} tesoros. Salen al terminar lecciones.</p>
+        ${W.zonas(P).map(z => {
           const objs = PV.COLECCION.filter(o => o.zona === z.id);
           return `<section class="tarjeta"><h2>${z.nombre} <small>${objs.filter(o => P.coleccion.includes(o.id)).length}/${objs.length}</small></h2>
             <div class="album">${objs.map(o => P.coleccion.includes(o.id)
@@ -522,7 +530,7 @@
         }).join("")}</div></section>`;
     } else {
       cuerpo = `<section class="tarjeta"><div class="insignias">
-        ${R.INSIGNIAS.map(n => `<div class="insignia ${P.insignias.includes(n.id) ? "" : "bloqueada"}"><span class="insignia-icono">${P.insignias.includes(n.id) ? n.icono : "🔒"}</span><b>${n.nombre}</b><small>${n.desc}</small></div>`).join("")}
+        ${R.INSIGNIAS.filter(n => R.insigniaVisible(P, n)).map(n => `<div class="insignia ${P.insignias.includes(n.id) ? "" : "bloqueada"}"><span class="insignia-icono">${P.insignias.includes(n.id) ? n.icono : "🔒"}</span><b>${n.nombre}</b><small>${n.desc}</small></div>`).join("")}
       </div></section>`;
     }
     render(marco(`<main class="pagina">
@@ -540,7 +548,7 @@
           <button type="button" class="interruptor" role="switch" aria-checked="${!!P.reducirAnimaciones}" data-accion="animaciones"><span>🌀 Menos animaciones</span><span class="mando ${P.reducirAnimaciones ? "on" : ""}"></span></button>
         </section>
         <section class="tarjeta lista-ajustes">
-          <h2>Jugador</h2>
+          <h2>Jugador ${P.tipo === "adulto" ? `<span class="pill">🎓 Adulto · ortografía avanzada</span>` : `<span class="pill">🎒 Aventura infantil</span>`}</h2>
           <div class="fila-campo"><input id="nuevo-apodo" class="campo" maxlength="16" value="${esc(P.apodo)}" aria-label="Apodo"><button type="button" class="btn btn-azul" data-accion="guardar-apodo">Cambiar apodo</button></div>
           <div class="fila-botones">
             ${A.perfiles().length > 1 ? `<button type="button" class="btn btn-gris" data-accion="ver-perfiles">👥 Cambiar de jugador</button>` : ""}
@@ -582,8 +590,8 @@
     const ult7 = Object.entries(P.actividad).filter(([f]) => U.diasEntre(f, hoy) < 7);
     const r7 = ult7.reduce((s, [, a]) => s + a.retos, 0), a7 = ult7.reduce((s, [, a]) => s + a.aciertos, 0);
     const hechas = Object.values(P.misiones).filter(m => m.completada).length;
-    const totalMis = PV.ZONAS.reduce((s, z) => s + W.totalMisiones(z), 0);
-    const filas = Object.keys(PV.HABILIDADES).map(h => {
+    const totalMis = W.zonas(P).reduce((s, z) => s + W.totalMisiones(z), 0);
+    const filas = habsAbiertas().map(h => {
       const d = P.habilidades[h], est = M.estadoHabilidad(P, h), prec = M.precisionReciente(P, h);
       return `<tr><td>${PV.HABILIDADES[h].icono} ${PV.HABILIDADES[h].nombre}</td><td>${ESTADOS[est]}</td><td>${d ? d.intentos : 0}</td>
         <td>${d && d.intentos ? Math.round(d.aciertos / d.intentos * 100) + " %" : "—"}</td><td>${prec === null ? "—" : Math.round(prec * 100) + " %"}</td>
@@ -683,8 +691,13 @@
       const p = A.nuevo();
       p.apodo = (document.getElementById("apodo").value || "").trim().slice(0, 16);
       p.avatar.animal = animalInicio;
+      p.tipo = tipoInicio;
       p.mascota.nombre = (document.getElementById("nombre-mascota").value || "").trim().slice(0, 14);
       A.guardar(p); entrar(p);
+    },
+    "elegir-tipo": v => {
+      tipoInicio = v;
+      app.querySelectorAll(".tipo-jugador .tipo").forEach(b => { const on = b.dataset.valor === v; b.classList.toggle("elegido", on); b.setAttribute("aria-checked", on); });
     },
     "elegir-perfil": v => { const p = A.cargar(v); if (p) { A.activar(v); entrar(p); } },
     "nuevo-perfil": () => pantallaBienvenida(),

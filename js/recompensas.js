@@ -23,6 +23,11 @@ PV.recompensas = (function () {
     { id: "explorador-gj", icono: "🦇", nombre: "Explorador de la G/J", desc: "Domina la G y la J.", hab: "gj" },
     { id: "capitan-czs", icono: "⚓", nombre: "Capitán de la C/Z/S", desc: "Domina la C, la Z y la S.", hab: "czs" },
     { id: "guardian-signos", icono: "❗", nombre: "Guardián de los signos", desc: "Domina la puntuación y las mayúsculas.", hab: "punt" },
+    { id: "adulto-diac", icono: "📚", nombre: "Experto en tildes diacríticas", desc: "Domina la tilde diacrítica.", hab: "diac", publico: "adulto" },
+    { id: "adulto-homo", icono: "☕", nombre: "Maestro de homófonos", desc: "Domina los homófonos.", hab: "homo", publico: "adulto" },
+    { id: "adulto-porq", icono: "🤔", nombre: "Filósofo del porqué", desc: "Domina porque, sino y expresiones.", hab: "porq", publico: "adulto" },
+    { id: "adulto-gram", icono: "📮", nombre: "Corrector de estilo", desc: "Domina las dudas gramaticales.", hab: "gram", publico: "adulto" },
+    { id: "adulto-tild2", icono: "🔭", nombre: "Astrónomo de las tildes", desc: "Domina las tildes avanzadas.", hab: "tild2", publico: "adulto" },
     { id: "constancia", icono: "📅", nombre: "Constancia", desc: "Juega en 3 días distintos." },
     { id: "superacion", icono: "💪", nombre: "Superación", desc: "Supera 5 palabras de tu lista de repaso." },
     { id: "coleccionista", icono: "🖼️", nombre: "Coleccionista", desc: "Reúne 10 objetos del álbum." },
@@ -37,7 +42,7 @@ PV.recompensas = (function () {
   function revisarInsignias(p) {
     const nuevas = [];
     INSIGNIAS.forEach(ins => {
-      if (p.insignias.includes(ins.id)) return;
+      if (p.insignias.includes(ins.id) || !insigniaVisible(p, ins)) return;
       let ok = false;
       if (ins.id === "primera") ok = p.sesiones.length >= 1;
       else if (ins.hab) ok = PV.motor.estadoHabilidad(p, ins.hab) === "dominada";
@@ -48,6 +53,15 @@ PV.recompensas = (function () {
       if (ok) { p.insignias.push(ins.id); nuevas.push(ins); }
     });
     return nuevas;
+  }
+
+  // Insignias de cada tipo de jugador (las generales, sin «hab» ni «publico», valen para todos).
+  function insigniaVisible(p, ins) {
+    const t = p.tipo || "nino";
+    if (ins.publico) return ins.publico === t;
+    if (ins.hab) return t === "nino";
+    if (ins.id === "rey-castillo") return t === "nino";
+    return true;
   }
 
   /* Elige un objeto de colección que aún no se tiene, con probabilidad según su rareza. */
@@ -62,7 +76,7 @@ PV.recompensas = (function () {
   }
   function darObjeto(p, o) { if (o && !p.coleccion.includes(o.id)) p.coleccion.push(o.id); return o; }
 
-  function zonasAbiertas(p) { return PV.ZONAS.filter(z => PV.mundo.abierta(p, z)).map(z => z.id); }
+  function zonasAbiertas(p) { return PV.mundo.zonas(p).map(z => z.id); }
 
   /* Al terminar una misión. eleccion = "hallazgo" | "monedas" (la decisión que tomó el jugador). */
   function completarMision(p, zona, mision, eleccion, diario) {
@@ -120,7 +134,7 @@ PV.recompensas = (function () {
   function accesorio(id) { return ACCESORIOS.find(a => a.id === id) || null; }
   function nombreMascota(p) { return (p.mascota && p.mascota.nombre) || animal(p.avatar.animal).nombreDefecto; }
 
-  return { ANIMALES, ACCESORIOS, INSIGNIAS, BONUS, nivelJugador, progresoNivel, revisarInsignias, completarMision,
+  return { ANIMALES, ACCESORIOS, INSIGNIAS, BONUS, insigniaVisible, nivelJugador, progresoNivel, revisarInsignias, completarMision,
            abrirCofre, comprar, animal, accesorio, nombreMascota, sortearObjeto };
 })();
 

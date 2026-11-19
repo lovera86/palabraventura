@@ -36,7 +36,7 @@ git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git pu
 
 ## Cómo se juega (versión 3: camino de lecciones)
 
-1. **¿Quién juega?** Si hay varios jugadores en el dispositivo, cada uno elige su perfil al entrar. Sin registro: solo apodo, compañero y su nombre.
+1. **¿Quién juega?** Si hay varios jugadores en el dispositivo, cada uno elige su perfil al entrar. Sin registro: solo apodo, compañero y su nombre. Al crear un jugador se elige **Niño o niña** (aventura infantil) o **Adulto** (ortografía avanzada); cada tipo ve sus propias unidades, tesoros e insignias.
 2. **Aventura (pantalla principal):** un camino de lecciones en zigzag, agrupado en unidades de colores: Ciudad de B/V → Pantano de la H → Cascada de LL/Y → Montaña de las Tildes → Cuevas de G/J → Bahía de C/Z/S → Torre de la Puntuación → Castillo de los Retos (mezcla de todo). La lección que toca lleva el globo «¡EMPIEZA!». Al tocar un círculo se abre una tarjeta con la historia y el botón EMPEZAR. Cada unidad tiene 3 lecciones y un desafío final (👑). **Todo está abierto desde el principio**: se puede jugar o repetir cualquier lección de cualquier unidad cuando se quiera; «¡EMPIEZA!» solo sugiere por dónde seguir.
 3. **Lección (5–8 min, 7 retos; 8 en los desafíos):** un reto por pantalla, se elige una respuesta y se pulsa COMPROBAR. Abajo aparece una franja verde (acierto) o naranja (solución, explicación y ánimo) con CONTINUAR. A mitad, una decisión: un camino da un tesoro y el otro, monedas. En el ordenador: teclas 1-3 para elegir e Intro para comprobar o continuar.
 4. **Formatos de reto:** Detective de palabras, Hechizo de letras, Robot corrector y Construye la palabra. Botón «💡 Pista» en cada reto, sin penalización.
@@ -78,6 +78,19 @@ Los ejercicios están en archivos `.js` (con datos en formato JSON) en lugar de 
 | G / J | 20 | verbos en -ger/-gir, -aje, -jero, gen, -gía, verbos con j (dije, trajeron), gue/gui y diéresis, vocabulario |
 | C / Z / S | 21 | c delante de e/i, z delante de a/o/u, plural de -z en -ces, vocabulario |
 | Puntuación y mayúsculas | 20 | ¿? y ¡!, mayúscula al empezar y en nombres propios, días y meses en minúscula, punto final |
+
+**Ortografía para adultos** (perfil «Adulto»):
+
+| Unidad | Ejercicios | Contenido |
+|---|---|---|
+| Biblioteca de la tilde diacrítica | 17 | tú/tu, él/el, mí/mi, sí/si, sé/se, té/te, dé/de, más/mas, interrogativos directos e indirectos, solo/fue/ti sin tilde |
+| Café de los homófonos | 16 | a ver/haber, hecho/echo, hay/ahí/ay, vaya/valla/baya, tubo/tuvo, votar/botar, rallar/rayar, hierva/hierba, ojear/hojear |
+| Club del porqué | 15 | porque, por qué, porqué, por que; sino/si no; a veces, sobre todo, o sea, de repente, a lo mejor, tan bien, a gusto |
+| Oficina de dudas | 15 | haber y hacer impersonales, dequeísmo, queísmo, imperativo (id, venid, sentaos), detrás de mí, laísmo |
+| Observatorio de las tildes | 16 | hiatos, huir y cuidado, adverbios en -mente, tilde en mayúsculas, plurales que cambian la tilde |
+| Gran Repaso | — | mezcla de todas las anteriores |
+
+Criterio: Ortografía de la RAE (2010) y Diccionario panhispánico de dudas.
 
 Las regularidades con excepciones se presentan con «casi siempre» o «suele»; las palabras sin regla deducible se trabajan como vocabulario.
 

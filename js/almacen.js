@@ -21,6 +21,7 @@ PV.almacen = (function () {
   function nuevo(id) {
     return {
       esquema: ESQUEMA, id: id || nuevoId(), creado: PV.util.hoy(),
+      tipo: "nino",        // "nino" o "adulto"
       apodo: "", avatar: { animal: "zorro", accesorio: null },
       mascota: { nombre: "" },
       estrellas: 0, monedas: 0, cofresPendientes: 0, accesorios: [], insignias: [], coleccion: [],
@@ -64,7 +65,7 @@ PV.almacen = (function () {
     return ix;
   }
   function guardarIndice(ix) { escribir(CLAVE_PERFILES, JSON.stringify(ix)); }
-  function resumenDe(p) { return { id: p.id, apodo: p.apodo, animal: p.avatar.animal }; }
+  function resumenDe(p) { return { id: p.id, apodo: p.apodo, animal: p.avatar.animal, tipo: p.tipo || "nino" }; }
   function perfiles() { return indice().lista; }
   function activo() { return indice().activo; }
   function activar(id) { const ix = indice(); ix.activo = id; guardarIndice(ix); }

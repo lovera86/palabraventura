@@ -457,3 +457,12 @@ body.sin-animaciones { animation: none; }
 body.sin-animaciones .fondo { display: none; }
 @media (prefers-reduced-motion: reduce) { .fondo { display: none; } }
 .palabra-hueco.larga { white-space: normal; letter-spacing: 0; }
+
+/* Elegir tipo de jugador */
+.tipo-jugador { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tipo { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 2px solid var(--linea); background: rgba(255,255,255,.95); border-radius: 16px; padding: 12px 8px; cursor: pointer; box-shadow: 0 4px 0 var(--linea); }
+.tipo span { font-size: 2.2rem; }
+.tipo small { color: var(--suave); font-weight: 700; }
+.tipo.elegido { border-color: #84c8fb; background: var(--azul-claro); box-shadow: 0 4px 0 #84c8fb; }
+.tipo:active { transform: translateY(3px); box-shadow: none; }
+.perfil-tarjeta .pill { margin-top: -4px; }

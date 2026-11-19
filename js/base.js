@@ -34,7 +34,13 @@ PV.HABILIDADES = {
   tildes: { nombre: "Tildes básicas", icono: "✨" },
   gj:     { nombre: "G / J",          icono: "🦇" },
   czs:    { nombre: "C / Z / S",      icono: "🐚" },
-  punt:   { nombre: "Puntuación y mayúsculas", icono: "❓" }
+  punt:   { nombre: "Puntuación y mayúsculas", icono: "❓" },
+  // Adultos
+  diac:   { nombre: "Tilde diacrítica", icono: "📚", publico: "adulto" },
+  homo:   { nombre: "Homófonos", icono: "☕", publico: "adulto" },
+  porq:   { nombre: "Porque, sino y expresiones", icono: "🤔", publico: "adulto" },
+  gram:   { nombre: "Dudas gramaticales", icono: "📮", publico: "adulto" },
+  tild2:  { nombre: "Tildes avanzadas", icono: "🔭", publico: "adulto" }
 };
 
 PV.REGLAS = {
@@ -53,7 +59,16 @@ PV.REGLAS = {
   "czs-vocab": "Palabras con C, Z o S para memorizar",
   "pregunta": "Signos de pregunta (¿?)", "exclamacion": "Signos de exclamación (¡!)",
   "mayus-inicio": "Mayúscula al empezar", "mayus-nombres": "Mayúscula en nombres propios",
-  "dias-meses": "Días y meses en minúscula", "punto": "Punto final"
+  "dias-meses": "Días y meses en minúscula", "punto": "Punto final",
+  "tu-el-mi": "Tú/tu, él/el, mí/mi", "si-se-te-de": "Sí/si, sé/se, té/te, dé/de", "mas": "Más/mas",
+  "interrog": "Interrogativos con tilde", "sin-tilde": "Palabras que no llevan tilde (solo, fue, ti)",
+  "a-ver": "A ver / haber", "hecho-echo": "Hecho / echo", "hay-ahi-ay": "Hay / ahí / ay",
+  "vaya-valla-baya": "Vaya / valla / baya", "otros-homo": "Otros homófonos",
+  "porque": "Porque, por qué, porqué, por que", "sino": "Sino / si no", "juntas": "Expresiones juntas o separadas",
+  "haber-impersonal": "Haber y hacer impersonales", "dequeismo": "Dequeísmo", "queismo": "Queísmo",
+  "pronombres": "Detrás de mí, cerca de ti", "imperativo": "Imperativo (id, venid, sentaos)", "laismo": "Laísmo",
+  "hiato": "Hiatos (día, maíz)", "diptongo": "Diptongos sin tilde (huir, cuidado)", "mente": "Adverbios en -mente",
+  "mayusculas": "Tilde en mayúsculas", "plurales": "Tildes en los plurales"
 };
 
 PV.TIPOS = {

@@ -160,7 +160,124 @@ PV.ZONAS = [
         intro: "Recorre el reino con Ortiga y repasa las palabras que más te han costado.",
         gancho: "Siempre hay algo nuevo que descubrir en el reino.",
         decision: { pregunta: "¿Por dónde patrullas hoy?", a: { icono: "🌲", texto: "Por el bosque", efecto: "hallazgo" }, b: { icono: "🏞️", texto: "Por el río", efecto: "monedas" } } }
-    ] }
+    ] },
+  /* ===== Unidades para adultos (publico: "adulto") ===== */
+  { id: "diac", publico: "adulto", nombre: "Biblioteca de la tilde diacrítica", icono: "📚", color: "#7c5cff", deco: ["📚", "🖋️", "🕯️", "📖", "🔖"], habilidades: ["diac"], x: 0, y: 0,
+    personaje: { nombre: "Doña Tilde", icono: "👩‍🏫", rol: "la bibliotecaria" },
+    misiones: [
+      { id: "diac-1", titulo: "Tú, él y mí", reglas: ["tu-el-mi"],
+        intro: "Los pronombres llevan tilde para no confundirse con sus gemelos: tú y tu, él y el, mí y mi.",
+        gancho: "En el siguiente estante: sí, sé, té y dé…",
+        decision: { pregunta: "¿Qué sección visitas?", a: { icono: "📜", texto: "Manuscritos antiguos", efecto: "hallazgo" }, b: { icono: "🗞️", texto: "Hemeroteca", efecto: "monedas" } } },
+      { id: "diac-2", titulo: "Sí, sé, té y dé", reglas: ["si-se-te-de", "mas"],
+        intro: "Monosílabos que cambian de significado con una tilde. Un clásico de las dudas.",
+        gancho: "Ahora, las preguntas: qué, dónde, cuándo… ¿con tilde o sin ella?",
+        decision: { pregunta: "Doña Tilde te recomienda:", a: { icono: "📘", texto: "Un diccionario raro", efecto: "hallazgo" }, b: { icono: "☕", texto: "Un té y monedas", efecto: "monedas" } } },
+      { id: "diac-3", titulo: "Preguntas con tilde", reglas: ["interrog", "sin-tilde"],
+        intro: "Interrogativos directos e indirectos… y palabras que nunca llevan tilde aunque lo parezca.",
+        gancho: "Doña Tilde prepara su examen final…",
+        decision: { pregunta: "¿Dónde te sientas a estudiar?", a: { icono: "🪟", texto: "Junto a la ventana", efecto: "hallazgo" }, b: { icono: "🛋️", texto: "En el sofá", efecto: "monedas" } } },
+      { id: "diac-jefe", titulo: "El examen de la bibliotecaria", jefe: true, reglas: [],
+        intro: "Doña Tilde mezcla todos los casos de tilde diacrítica. ¿Te los sabes todos?",
+        gancho: "Te espera un café… y palabras que suenan igual.",
+        decision: { pregunta: "Doña Tilde te regala:", a: { icono: "🖋️", texto: "Su pluma favorita", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } }
+    ] },
+  { id: "homo", publico: "adulto", nombre: "Café de los homófonos", icono: "☕", color: "#c97b4a", deco: ["☕", "🥐", "🍰", "🫖", "🧁"], habilidades: ["homo"], x: 0, y: 0,
+    personaje: { nombre: "Homero", icono: "🧔", rol: "el camarero" },
+    misiones: [
+      { id: "homo-1", titulo: "A ver qué hay", reglas: ["a-ver", "hay-ahi-ay"],
+        intro: "«A ver» o «haber»; «hay», «ahí» o «¡ay!». Suenan igual, pero no significan lo mismo.",
+        gancho: "Homero ha hecho… ¿o echado? un café nuevo.",
+        decision: { pregunta: "¿Qué pides?", a: { icono: "🥐", texto: "Un cruasán", efecto: "hallazgo" }, b: { icono: "🍪", texto: "Galletas", efecto: "monedas" } } },
+      { id: "homo-2", titulo: "Hecho y echo", reglas: ["hecho-echo", "vaya-valla-baya"],
+        intro: "Hacer y echar, ir y vallar… las H y las B/V que cambian todo el sentido.",
+        gancho: "En la terraza se oyen más palabras gemelas…",
+        decision: { pregunta: "¿Dónde te sientas?", a: { icono: "🌿", texto: "En la terraza", efecto: "hallazgo" }, b: { icono: "🪑", texto: "En la barra", efecto: "monedas" } } },
+      { id: "homo-3", titulo: "Suena igual, se escribe distinto", reglas: ["otros-homo"],
+        intro: "Tubo y tuvo, votar y botar, rallar y rayar… El contexto lo decide todo.",
+        gancho: "Homero te reta a su prueba final…",
+        decision: { pregunta: "Homero te ofrece:", a: { icono: "🍰", texto: "La tarta de la casa", efecto: "hallazgo" }, b: { icono: "🪙", texto: "La propina", efecto: "monedas" } } },
+      { id: "homo-jefe", titulo: "El reto de Homero", jefe: true, reglas: [],
+        intro: "Todos los homófonos del café en una sola ronda.",
+        gancho: "En el club de al lado discuten sobre el porqué de las cosas…",
+        decision: { pregunta: "De premio:", a: { icono: "🫖", texto: "Una tetera antigua", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } }
+    ] },
+  { id: "porq", publico: "adulto", nombre: "Club del porqué", icono: "🤔", color: "#ef6461", deco: ["🤔", "💬", "🗨️", "❔", "💡"], habilidades: ["porq"], x: 0, y: 0,
+    personaje: { nombre: "Sócrates", icono: "🦉", rol: "el búho filósofo" },
+    misiones: [
+      { id: "porq-1", titulo: "Los cuatro porqués", reglas: ["porque"],
+        intro: "Porque, por qué, porqué y por que. Cuatro formas, cuatro usos distintos.",
+        gancho: "Sócrates pregunta: ¿sino o si no?",
+        decision: { pregunta: "¿Con quién debates?", a: { icono: "🦉", texto: "Con Sócrates", efecto: "hallazgo" }, b: { icono: "🐦", texto: "Con un loro", efecto: "monedas" } } },
+      { id: "porq-2", titulo: "Sino o si no", reglas: ["sino"],
+        intro: "Una contrapone, la otra pone condiciones. Aprende a distinguirlas.",
+        gancho: "¿A veces o aveces? ¿Sobre todo o sobretodo?",
+        decision: { pregunta: "Elige tema de debate:", a: { icono: "🌍", texto: "El mundo", efecto: "hallazgo" }, b: { icono: "🍕", texto: "La pizza", efecto: "monedas" } } },
+      { id: "porq-3", titulo: "¿Juntas o separadas?", reglas: ["juntas"],
+        intro: "A veces, sobre todo, o sea, a lo mejor… expresiones que se escriben separadas.",
+        gancho: "Sócrates prepara la gran pregunta final…",
+        decision: { pregunta: "Sócrates te ofrece:", a: { icono: "📜", texto: "Un pergamino", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } },
+      { id: "porq-jefe", titulo: "La gran pregunta", jefe: true, reglas: [],
+        intro: "¿Por qué, porque o porqué? Sócrates lo mezcla todo.",
+        gancho: "En la oficina de al lado, alguien corrige textos…",
+        decision: { pregunta: "De premio:", a: { icono: "💡", texto: "Una idea brillante", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } }
+    ] },
+  { id: "gram", publico: "adulto", nombre: "Oficina de dudas", icono: "📮", color: "#3aa76d", deco: ["📮", "✍️", "📎", "🗂️", "📝"], habilidades: ["gram"], x: 0, y: 0,
+    personaje: { nombre: "Rosa", icono: "👩‍💼", rol: "la correctora" },
+    misiones: [
+      { id: "gram-1", titulo: "Hubo, no hubieron", reglas: ["haber-impersonal"],
+        intro: "«Haber» y «hacer» impersonales van en singular. Uno de los errores más comunes.",
+        gancho: "Rosa revisa ahora los «de que»…",
+        decision: { pregunta: "¿Qué carpeta abres?", a: { icono: "🗂️", texto: "La de los casos raros", efecto: "hallazgo" }, b: { icono: "📁", texto: "La de facturas", efecto: "monedas" } } },
+      { id: "gram-2", titulo: "De que o que", reglas: ["dequeismo", "queismo"],
+        intro: "Dequeísmo y queísmo: el truco de cambiar por «eso» lo resuelve casi siempre.",
+        gancho: "Ahora tocan las órdenes y los pronombres…",
+        decision: { pregunta: "Rosa te pide ayuda con:", a: { icono: "✉️", texto: "Una carta", efecto: "hallazgo" }, b: { icono: "📧", texto: "Un correo", efecto: "monedas" } } },
+      { id: "gram-3", titulo: "Órdenes y pronombres", reglas: ["imperativo", "pronombres", "laismo"],
+        intro: "Id, venid, sentaos; detrás de mí; le o la. Dudas del día a día.",
+        gancho: "Rosa prepara la corrección final…",
+        decision: { pregunta: "Rosa te ofrece:", a: { icono: "🖊️", texto: "Su boli rojo", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } },
+      { id: "gram-jefe", titulo: "La corrección final", jefe: true, reglas: [],
+        intro: "Un texto lleno de dudas gramaticales. Rosa confía en ti.",
+        gancho: "Desde el observatorio se ven tildes muy difíciles…",
+        decision: { pregunta: "De premio:", a: { icono: "📎", texto: "Un clip de oro", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } }
+    ] },
+  { id: "tild2", publico: "adulto", nombre: "Observatorio de las tildes", icono: "🔭", color: "#2f80ed", deco: ["🔭", "🌙", "⭐", "🪐", "☄️"], habilidades: ["tild2"], x: 0, y: 0,
+    personaje: { nombre: "Galileo", icono: "🧑‍🔬", rol: "el astrónomo" },
+    misiones: [
+      { id: "tild2-1", titulo: "Hiatos y diptongos", reglas: ["hiato", "diptongo"],
+        intro: "Día, maíz, reír… y huir o cuidado, que no llevan tilde. Las vocales que se separan (o no).",
+        gancho: "Galileo enfoca ahora los adverbios en -mente…",
+        decision: { pregunta: "¿Qué observas?", a: { icono: "🪐", texto: "Saturno", efecto: "hallazgo" }, b: { icono: "🌙", texto: "La luna", efecto: "monedas" } } },
+      { id: "tild2-2", titulo: "Adverbios y mayúsculas", reglas: ["mente", "mayusculas"],
+        intro: "Fácilmente conserva la tilde, y Álvaro también, aunque vaya en mayúscula.",
+        gancho: "Algunos plurales cambian la tilde de sitio…",
+        decision: { pregunta: "Galileo te enseña:", a: { icono: "☄️", texto: "Un cometa", efecto: "hallazgo" }, b: { icono: "⭐", texto: "Una estrella", efecto: "monedas" } } },
+      { id: "tild2-3", titulo: "Plurales traviesos", reglas: ["plurales"],
+        intro: "Examen → exámenes, camión → camiones, carácter → caracteres. La tilde se mueve.",
+        gancho: "Galileo prepara su última observación…",
+        decision: { pregunta: "Galileo te ofrece:", a: { icono: "🔭", texto: "Mirar por su telescopio", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } },
+      { id: "tild2-jefe", titulo: "La noche de las tildes", jefe: true, reglas: [],
+        intro: "Todas las tildes avanzadas en una noche estrellada.",
+        gancho: "Te espera el Gran Repaso…",
+        decision: { pregunta: "De premio:", a: { icono: "🌌", texto: "Un mapa estelar", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } }
+    ] },
+  { id: "repaso-adultos", publico: "adulto", nombre: "Gran Repaso", icono: "🎓", color: "#ff7aa8", deco: ["🎓", "🏆", "📜", "✨", "🎉"], habilidades: ["diac", "homo", "porq", "gram", "tild2"], x: 0, y: 0,
+    personaje: { nombre: "La Rectora", icono: "👩‍🎓", rol: "de la Academia" },
+    misiones: [
+      { id: "repaso-1", titulo: "Repaso mixto", reglas: [],
+        intro: "Un poco de todo: tildes, homófonos, porqués y dudas gramaticales.",
+        gancho: "La Rectora te espera para el examen final…",
+        decision: { pregunta: "¿Cómo repasas?", a: { icono: "📝", texto: "Con apuntes", efecto: "hallazgo" }, b: { icono: "🎧", texto: "Con música", efecto: "monedas" } } },
+      { id: "repaso-jefe", titulo: "Examen final", jefe: true, reglas: [],
+        intro: "La prueba definitiva de la Academia.",
+        gancho: "¡Enhorabuena! Puedes seguir repasando cuando quieras.",
+        decision: { pregunta: "La Rectora te entrega:", a: { icono: "🎓", texto: "El diploma", efecto: "hallazgo" }, b: { icono: "🪙", texto: "Monedas", efecto: "monedas" } } },
+      { id: "repaso-libre", titulo: "Repaso libre", infinita: true, reglas: [],
+        intro: "Repasa las palabras que más te han costado.",
+        gancho: "Siempre se puede afinar un poco más.",
+        decision: { pregunta: "¿Qué prefieres?", a: { icono: "📖", texto: "Leer", efecto: "hallazgo" }, b: { icono: "✏️", texto: "Escribir", efecto: "monedas" } } }
+    ] },
 ];
 
 /* Zonas futuras: se ven en el mapa cubiertas de niebla, sin botón. */
@@ -204,6 +321,29 @@ PV.COLECCION = [
   { id: "pluma-tinta", zona: "punt", icono: "✒️", nombre: "Pluma de tinta", rareza: "comun" },
   { id: "libro-signos", zona: "punt", icono: "📖", nombre: "Libro de los signos", rareza: "rara" },
   { id: "medalla", zona: "punt", icono: "🎖️", nombre: "Medalla de la torre", rareza: "epica" },
+  { id: "pluma-oca", zona: "diac", icono: "🪶", nombre: "Pluma de oca", rareza: "comun" },
+  { id: "marcapaginas", zona: "diac", icono: "🔖", nombre: "Marcapáginas", rareza: "comun" },
+  { id: "lupa", zona: "diac", icono: "🔍", nombre: "Lupa de lectura", rareza: "comun" },
+  { id: "incunable", zona: "diac", icono: "📕", nombre: "Libro incunable", rareza: "rara" },
+  { id: "taza-cafe", zona: "homo", icono: "☕", nombre: "Taza de café", rareza: "comun" },
+  { id: "cruasan", zona: "homo", icono: "🥐", nombre: "Cruasán dorado", rareza: "comun" },
+  { id: "tarta", zona: "homo", icono: "🍰", nombre: "Tarta de la casa", rareza: "comun" },
+  { id: "tetera", zona: "homo", icono: "🫖", nombre: "Tetera antigua", rareza: "rara" },
+  { id: "bocadillo-dialogo", zona: "porq", icono: "💬", nombre: "Bocadillo de diálogo", rareza: "comun" },
+  { id: "bombilla-idea", zona: "porq", icono: "💡", nombre: "Bombilla de ideas", rareza: "comun" },
+  { id: "balanza", zona: "porq", icono: "⚖️", nombre: "Balanza del debate", rareza: "comun" },
+  { id: "laurel", zona: "porq", icono: "🏛️", nombre: "Templo del saber", rareza: "rara" },
+  { id: "clip", zona: "gram", icono: "📎", nombre: "Clip de oro", rareza: "comun" },
+  { id: "boli-rojo", zona: "gram", icono: "🖊️", nombre: "Boli de corregir", rareza: "comun" },
+  { id: "sobre", zona: "gram", icono: "✉️", nombre: "Carta sellada", rareza: "comun" },
+  { id: "sello", zona: "gram", icono: "📮", nombre: "Buzón de la oficina", rareza: "rara" },
+  { id: "luna", zona: "tild2", icono: "🌙", nombre: "Luna creciente", rareza: "comun" },
+  { id: "planeta", zona: "tild2", icono: "🪐", nombre: "Planeta anillado", rareza: "comun" },
+  { id: "cometa-estelar", zona: "tild2", icono: "☄️", nombre: "Cometa", rareza: "comun" },
+  { id: "galaxia", zona: "tild2", icono: "🌌", nombre: "Mapa de la galaxia", rareza: "rara" },
+  { id: "diploma", zona: "repaso-adultos", icono: "📜", nombre: "Diploma de la Academia", rareza: "rara" },
+  { id: "birrete-oro", zona: "repaso-adultos", icono: "🎓", nombre: "Birrete de honor", rareza: "epica" },
+  { id: "copa", zona: "repaso-adultos", icono: "🏆", nombre: "Copa de la ortografía", rareza: "epica" },
   { id: "escudo", zona: "castillo", icono: "🛡️", nombre: "Escudo real", rareza: "rara" },
   { id: "trofeo", zona: "castillo", icono: "🏆", nombre: "Trofeo de los retos", rareza: "rara" },
   { id: "huevo-dragon", zona: "castillo", icono: "🥚", nombre: "Huevo de dragón", rareza: "epica" }
@@ -259,6 +399,30 @@ PV.PISTAS = {
   "mayus-nombres": "¿Es el nombre de una persona, un animal o un lugar?",
   "dias-meses": "Recuerda: los días y los meses van con minúscula.",
   "punto": "¿La frase cuenta algo y termina ahí? Entonces necesita un punto.",
+  "tu-el-mi": "¿Es un pronombre (tú vienes, para mí, a él) o acompaña a un nombre (tu casa, el perro)?",
+  "si-se-te-de": "¿Es un verbo (sé, dé), una afirmación (sí), una bebida (té)… o una palabra de enlace?",
+  "mas": "¿Indica cantidad? Entonces es «más». «Mas» sin tilde significa «pero».",
+  "interrog": "¿Hay una pregunta o exclamación, aunque sea indirecta (no sé…, dime…)?",
+  "sin-tilde": "Recuerda: los monosílabos (fue, dio, ti) no llevan tilde, y «solo» y «este» tampoco.",
+  "a-ver": "¿Se puede cambiar por «vamos a ver»? Entonces es «a ver».",
+  "hecho-echo": "¿Viene de hacer (con H) o de echar (sin H)?",
+  "hay-ahi-ay": "¿Existe algo (hay), es un lugar (ahí) o es una queja (¡ay!)?",
+  "vaya-valla-baya": "¿Es del verbo ir, una cerca o un fruto?",
+  "otros-homo": "Piensa en el significado de la frase: ¿qué palabra encaja?",
+  "porque": "¿Pregunta (por qué), da una causa (porque), es «el motivo» (porqué) o equivale a «por el que» (por que)?",
+  "sino": "¿Contrapone ideas (sino) o pone una condición (si no)?",
+  "juntas": "Muchas expresiones se escriben siempre separadas: a veces, sobre todo, o sea, a lo mejor.",
+  "haber-impersonal": "¿«Haber» o «hacer» indican existencia o tiempo? Entonces van en singular.",
+  "dequeismo": "Cambia la parte de «que…» por «eso»: ¿dirías «pienso de eso»?",
+  "queismo": "Cambia la parte de «que…» por «eso»: ¿dirías «me acuerdo de eso»?",
+  "pronombres": "Con detrás, delante, cerca… se dice «de mí», «de ti».",
+  "imperativo": "¿Es una orden a «vosotros»? El imperativo acaba en -d (y pierde la -d con «os»).",
+  "laismo": "¿«La» es lo que se da/dice o es la persona que lo recibe? A quien lo recibe se le dice «le».",
+  "hiato": "¿Hay una i o una u tónica pegada a a, e u o? Entonces lleva tilde.",
+  "diptongo": "Divide en sílabas y busca la sílaba fuerte; luego aplica la regla de agudas y llanas.",
+  "mente": "¿El adjetivo lleva tilde? El adverbio en -mente la conserva.",
+  "mayusculas": "Las mayúsculas se acentúan igual que las minúsculas.",
+  "plurales": "Divide el plural en sílabas: ¿dónde cae ahora la fuerza? ¿Es aguda, llana o esdrújula?",
   "aguda": "Di la palabra en voz alta. ¿La sílaba más fuerte es la última? ¿En qué letra acaba?",
   "llana": "Di la palabra en voz alta. ¿La sílaba más fuerte es la penúltima? ¿En qué letra acaba?",
   "esdrujula": "Di la palabra en voz alta. ¿La sílaba más fuerte es la antepenúltima? Si es así, siempre lleva tilde."
@@ -266,6 +430,8 @@ PV.PISTAS = {
 
 /* ---------- Progreso en el mundo (funciones puras sobre el progreso P) ---------- */
 PV.mundo = (function () {
+  // Zonas que ve cada tipo de jugador: los niños ven las suyas y los adultos, las de adultos.
+  function zonas(P) { const t = (P && P.tipo) || "nino"; return PV.ZONAS.filter(z => (z.publico || "nino") === t); }
   function hechas(P, zona) { return zona.misiones.filter(m => !m.infinita && P.misiones[m.id] && P.misiones[m.id].completada).length; }
   function totalMisiones(zona) { return zona.misiones.filter(m => !m.infinita).length; }
   function completada(P, zona) { return hechas(P, zona) >= totalMisiones(zona); }
@@ -287,14 +453,15 @@ PV.mundo = (function () {
   }
   // Siguiente misión recomendada: la primera pendiente, en el orden del mapa.
   function siguiente(P) {
-    for (const z of PV.ZONAS) {
+    const zs = zonas(P);
+    for (const z of zs) {
       if (!abierta(P, z)) continue;
       for (let k = 0; k < z.misiones.length; k++) {
         if (estadoMision(P, z, k) === "disponible") return { zona: z, k, mision: z.misiones[k] };
       }
     }
     // Todo completado: patrulla del reino (o la última zona abierta).
-    const c = PV.ZONAS[PV.ZONAS.length - 1];
+    const c = zs[zs.length - 1];
     return { zona: c, k: c.misiones.length - 1, mision: c.misiones[c.misiones.length - 1] };
   }
   function buscar(idMision) {
@@ -312,5 +479,5 @@ PV.mundo = (function () {
     PV.ETAPAS.forEach((x, i) => { if (P.estrellas >= x.min) e = i; });
     return e;
   }
-  return { hechas, totalMisiones, completada, abierta, requisito, misionDisponible, estadoMision, siguiente, buscar, despues, etapa };
+  return { zonas, hechas, totalMisiones, completada, abierta, requisito, misionDisponible, estadoMision, siguiente, buscar, despues, etapa };
 })();
