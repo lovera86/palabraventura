@@ -32,7 +32,7 @@ git init && git add . && git commit -m "Palabraventura MVP" && git branch -M mai
 git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git push -u origin main
 ```
 
-**Actualizar la web publicada:** cualquier cambio que llegue a la rama `main` del repositorio se publica solo en uno o dos minutos.
+**Actualizar la web publicada:** cualquier cambio que llegue a la rama `main` del repositorio se publica solo en uno o dos minutos. Al publicar cambios, sube el número `?v=` de los archivos en `index.html` (por ejemplo de `v=6` a `v=7`) para que los navegadores no mezclen archivos nuevos con otros antiguos guardados en caché.
 
 ## Cómo se juega (versión 3: camino de lecciones)
 
