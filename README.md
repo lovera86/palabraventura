@@ -49,7 +49,27 @@ En el móvil la navegación está abajo; en el ordenador hay un menú lateral y 
 
 Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva versión, y la clave antigua se conserva como copia (`palabraventura.progreso`).
 
-## La expedición de las palabras perdidas
+## La Gran Expedición
+
+Modo de aventura por capítulos dentro de la expedición (al abrirla se elige entre «La Gran Expedición» y «Expediciones cortas»). Cada capítulo tiene una misión y varias zonas conectadas; el avance se guarda por zona y se puede continuar otro día.
+
+- **Capítulo 1: El mapa perdido.** El viento ha roto el mapa en 6 trozos y cada zona devuelve uno:
+
+  | Zona | Retos | Consecuencia |
+  |---|---|---|
+  | 1. El bosque | buscar un objeto leyendo la pista (la llave dorada, no la inglesa ni la vieja) · formar TRONCO | se abre una jaula y una ardilla queda libre · un tronco cruza el río |
+  | 2. La cueva | adivinanzas | se enciende un farol y se ilumina la cueva · se abre una puerta |
+  | 3. El río | formar BARCO (con letra trampa) · letra que falta | sale un barco · se repara un ascensor |
+  | 4. El campamento | memoria (dibujo y palabra) · clasificar (animal o planta) | se enciende la hoguera · se abre la valla |
+  | 5. La montaña | ordenar frases | se abre una reja · aparece una escalera |
+  | 6. El castillo | formar CASTILLO · batalla final con sinónimos, antónimos, rimas, adivinanzas y ortografía | una balsa cruza el foso · el Guardián se convierte en mariposas |
+
+- **Retos:** se explican con una frase la primera vez; los errores dan una pista y otra oportunidad, sin quitar nada.
+- **Gemas secretas:** 3 por zona, opcionales; la mascota se acerca a ellas (✨) para dar una pista.
+- **Premios:** cada zona da ⭐ 3 y 🪙 5 la primera vez; el capítulo completo, ⭐ 25, 🪙 40 y la insignia «Mapa recuperado».
+- **Archivos:** `js/expedicion/capitulos.js` (zonas y contenido, solo datos: una zona se describe con `zona({…})` y el recorrido se monta solo) y `js/expedicion/retos.js` (paneles reutilizables de los retos: elegir, frase, memoria y clasificar). El contenido nuevo (adivinanzas, frases, relaciones, categorías) conviene revisarlo a mano.
+
+## La expedición de las palabras perdidas (expediciones cortas)
 
 Juego de exploración y plataformas, pensado para el móvil en horizontal. Aparece como una tarjeta arriba del todo en Aventura para los perfiles de niño (con la etiqueta NUEVO y la pantalla empezando arriba hasta que se abre su mapa). En los perfiles de adulto solo se ve si se activa en el dispositivo desde **Ajustes → Zona de adultos → «Mostrar también a adultos»** (o abriendo la app con `?expedicion`; `?expedicion=0` lo quita).
 
@@ -96,7 +116,7 @@ js/motor.js           Motor adaptativo: registrarRespuesta, actualizarHabilidad,
                       seleccionarSesion (con reglas preferidas por misión), buscarComprobacion, estadoHabilidad
 js/recompensas.js     Estrellas, monedas, cofres, tesoros, mercadillo, insignias, evolución; sonidos
 js/app.js             Pantallas e interacción
-js/expedicion/        La expedición: niveles.js (contenido de los 6 niveles), motor.js (física, dibujo en canvas y controles
+js/expedicion/        La expedición: capitulos.js (Gran Expedición), retos.js (paneles de retos), niveles.js (expediciones cortas), motor.js (física, dibujo en canvas y controles
                       táctiles) y expedicion.js (pantallas del juego: intro, reto, pausa, meta)
 ```
 

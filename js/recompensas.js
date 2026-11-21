@@ -94,6 +94,7 @@ PV.recompensas = (function () {
     { id: "coleccionista", icono: "🖼️", nombre: "Coleccionista", desc: "Reúne 10 objetos del álbum." },
     { id: "rey-castillo", icono: "🏰", nombre: "Héroe del castillo", desc: "Supera el Gran Desafío del castillo." },
     { id: "puente-magico", icono: "🌉", nombre: "Puente mágico", desc: "Reconstruye el puente de la expedición." },
+    { id: "mapa-recuperado", icono: "🗺️", nombre: "Mapa recuperado", desc: "Completa el capítulo «El mapa perdido» de La Gran Expedición." },
     { id: "gran-expedicion", icono: "🏆", nombre: "Gran expedición", desc: "Completa todos los niveles de la expedición de las palabras perdidas." }
   ];
   function expedicionCompleta(p) { return (PV.EXPEDICION_ORDEN || []).length > 0 && PV.EXPEDICION_ORDEN.every(id => ((p.expedicion || {})[id] || {}).completada); }
@@ -116,6 +117,7 @@ PV.recompensas = (function () {
       else if (ins.id === "rey-castillo") ok = !!(p.misiones["castillo-jefe"] || {}).completada;
       else if (ins.id === "puente-magico") ok = !!((p.expedicion || {}).puente || {}).completada;
       else if (ins.id === "gran-expedicion") ok = expedicionCompleta(p);
+      else if (ins.id === "mapa-recuperado") ok = !!((p.expedicion || {})["cap-mapa"] || {}).completada;
       if (ok) { p.insignias.push(ins.id); nuevas.push(ins); }
     });
     return nuevas;
@@ -129,6 +131,7 @@ PV.recompensas = (function () {
     if (ins.id === "rey-castillo") return t === "nino";
     if (ins.id === "puente-magico") return !!((p.expedicion || {}).puente || {}).completada;   // no adelanta la expedición
     if (ins.id === "gran-expedicion") return expedicionCompleta(p);
+    if (ins.id === "mapa-recuperado") return !!((p.expedicion || {})["cap-mapa"] || {}).completada;
     return true;
   }
 

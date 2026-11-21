@@ -1,4 +1,6 @@
 /* Palabraventura · La expedición de las palabras perdidas · pantallas del juego.
+   Dos modos: «La Gran Expedición» (capítulos con zonas conectadas y retos variados, js/expedicion/capitulos.js)
+   y «Expediciones cortas» (los niveles sueltos de js/expedicion/niveles.js).
    Monta la expedición a pantalla completa encima de la app: mapa de niveles, introducción, marcador de letras,
    reto de cada palabra (con letra trampa y pistas), pausa, meta con premio y paso al siguiente nivel, aviso de
    «gira el móvil» y ayuda de controles. Todo se crea al entrar y se limpia al salir (listeners incluidos).
@@ -72,6 +74,8 @@ PV.expedicion = (function () {
     let nivel = null, partida = null, controlNivel = null, soltarControles = () => {};
     let jugando = false, obsActual = 0, reto = null, retoAbierto = false;
     let amigo = null, batalla = null, bolsa = [], avisoBorron = false, fraseBarca = "";
+    let escena = null;          // { tipo: "corta", k } o { tipo: "zona", ci, zi }
+    let retoNuevo = null;       // reto de la Gran Expedición abierto (js/expedicion/retos.js)
     const poderesEl = $(".ex-poderes");
 
     /* ---------- Avisos y ayuda ---------- */
@@ -97,6 +101,7 @@ PV.expedicion = (function () {
     function ocultarPanel() { panel.hidden = true; panel.innerHTML = ""; }
     function pausar() { if (partida) partida.pausar(); soltarControles(); }
     function seguir() {
+      if (retoNuevo) return;
       if (batalla) { if (partida && !partida.corriendo) partida.iniciar(); return pintarBatalla(); }
       if (amigo) return pintarAmigo();
       if (retoAbierto) return pintarReto();
@@ -106,7 +111,57 @@ PV.expedicion = (function () {
       partida.iniciar();
     }
 
-    /* ---------- Mapa de la expedición ---------- */
+    /* ---------- Menú: La Gran Expedición o expediciones cortas ---------- */
+    function inicio() {
+      cerrarNivel();
+      escena = null;
+      raiz.classList.add("en-mapa");
+      if (!estado.granVista) { estado.granVista = true; estado.mapaVisto = true; guardar(); }
+      const cap = PV.GRAN_EXPEDICION[0], z = zonaSiguiente(cap);
+      const hechas = cap.zonas.filter(x => completado(estado, x.id)).length;
+      const lista = niveles(), cortas = lista.filter(n => completado(estado, n.id)).length;
+      mostrarPanel(`<h2>🗺️ La expedición de las palabras perdidas</h2>
+        <div class="ex-modos">
+          <button type="button" class="ex-modo gran" data-ex="gran">
+            <span class="ex-modo-icono">${cap.icono}</span>
+            <span><strong>La Gran Expedición</strong><small>Capítulo 1: ${esc(cap.titulo)} · ${completado(estado, "cap-" + cap.id) ? "¡completado! ✔" : `zona ${Math.min(z + 1, cap.zonas.length)} de ${cap.zonas.length}`}</small>
+            <small>${hechas ? `🗺️ ${hechas} de ${cap.zonas.length} trozos del mapa` : "Aventura larga con retos de todo tipo"}</small></span></button>
+          <button type="button" class="ex-modo" data-ex="cortas">
+            <span class="ex-modo-icono">🏕️</span>
+            <span><strong>Expediciones cortas</strong><small>${lista.length} niveles · ${cortas} completados</small></span></button>
+        </div>
+        <button type="button" class="btn btn-gris" data-ex="confirmar-salir">Salir</button>`, "ex-tarjeta-mapa");
+    }
+    function zonaHecha(z) { return completado(estado, z.id); }
+    // Las zonas se abren en orden; una zona ya completada sigue abierta siempre.
+    function zonaAbierta(cap, i) { return i === 0 || zonaHecha(cap.zonas[i]) || zonaHecha(cap.zonas[i - 1]); }
+    function zonaSiguiente(cap) { const i = cap.zonas.findIndex(z => !zonaHecha(z)); return i < 0 ? cap.zonas.length : i; }
+    function gemasDe(z) { return (estado[z.id] && estado[z.id].gemas) || 0; }
+    function pantallaCapitulo(ci) {
+      cerrarNivel();
+      escena = null;
+      raiz.classList.add("en-mapa");
+      const cap = PV.GRAN_EXPEDICION[ci], sig = zonaSiguiente(cap);
+      const gemas = cap.zonas.reduce((s, z) => s + gemasDe(z), 0), totalGemas = cap.zonas.reduce((s, z) => s + z.secretos.length, 0);
+      mostrarPanel(`<h2>${cap.icono} Capítulo 1: ${esc(cap.titulo)}</h2>
+        <p class="ex-mapa-nota">${esc(cap.mision)}</p>
+        <div class="ex-mapa zonas">${cap.zonas.map((z, i) => {
+          const hecha = zonaHecha(z), ab = zonaAbierta(cap, i);
+          return `<button type="button" class="ex-nivel ${hecha ? "hecho" : ""} ${ab ? "" : "bloqueado"} ${i === sig ? "siguiente" : ""}" data-ex="zona" data-ci="${ci}" data-zi="${i}"
+            aria-label="Zona ${i + 1}: ${esc(z.nombre)}${hecha ? ", completada" : ab ? "" : ", bloqueada"}">
+            <span class="ex-nivel-icono">${ab ? z.icono : "🔒"}</span>
+            <span class="ex-nivel-texto"><strong>${i + 1}. ${esc(z.nombre)}</strong><small>${esc(z.regla)}${hecha ? ` · 💎 ${gemasDe(z)}/${z.secretos.length}` : ""}</small></span>
+            <span class="ex-nivel-estado">${hecha ? "✔" : i === sig ? "▶" : ""}</span></button>`;
+        }).join("")}</div>
+        <p class="ex-mapa-nota">🗺️ Trozos del mapa: ${cap.zonas.filter(zonaHecha).length} de ${cap.zonas.length} · 💎 Gemas secretas: ${gemas} de ${totalGemas}</p>
+        <div class="ex-r-botones">
+          ${sig < cap.zonas.length ? `<button type="button" class="btn btn-verde" data-ex="zona" data-ci="${ci}" data-zi="${sig}" data-foco>▶ ${sig ? "Continuar" : "Empezar"}: zona ${sig + 1}</button>` : ""}
+          <button type="button" class="btn btn-gris" data-ex="inicio">← Volver</button>
+        </div>`, "ex-tarjeta-mapa");
+    }
+    function volverMenu() { if (escena && escena.tipo === "zona") pantallaCapitulo(escena.ci); else mapa(); }
+
+    /* ---------- Mapa de las expediciones cortas ---------- */
     function mapa() {
       cerrarNivel();
       raiz.classList.add("en-mapa");
@@ -124,7 +179,7 @@ PV.expedicion = (function () {
             <span class="ex-nivel-texto"><strong>${k + 1}. ${esc(n.nombre)}</strong><small>${esc(n.regla)}</small></span>
             <span class="ex-nivel-estado">${hecho ? "✔" : k === siguiente ? "▶" : ""}</span></button>`;
         }).join("")}</div>
-        <button type="button" class="btn btn-gris" data-ex="confirmar-salir">Salir</button>`, "ex-tarjeta-mapa");
+        <button type="button" class="btn btn-gris" data-ex="inicio">← Volver</button>`, "ex-tarjeta-mapa");
     }
 
     /* ---------- Jugar un nivel ---------- */
@@ -133,15 +188,18 @@ PV.expedicion = (function () {
       if (partida) partida.destruir();
       if (controlNivel) controlNivel.abort();
       partida = null; controlNivel = null; soltarControles = () => {};
-      jugando = false; reto = null; retoAbierto = false; obsActual = 0; amigo = null; batalla = null; bolsa = [];
+      jugando = false; reto = null; retoAbierto = false; obsActual = 0; amigo = null; batalla = null; bolsa = []; retoNuevo = null;
       panel.classList.remove("lado");
       clearTimeout(avisoT); avisoEl.hidden = true;
       raiz.querySelectorAll(".ex-confeti, .ex-vuela").forEach(c => c.remove());
     }
-    function cargarNivel(k) {
+    function cargarNivel(k) { cargarEscena(niveles()[k], { tipo: "corta", k }); }
+    function cargarZona(ci, zi) { cargarEscena(PV.GRAN_EXPEDICION[ci].zonas[zi], { tipo: "zona", ci, zi }); }
+    function cargarEscena(n, info) {
       cerrarNivel();
       raiz.classList.remove("en-mapa");
-      nivel = niveles()[k];
+      nivel = n; escena = info;
+      (nivel.objetos || []).forEach(o => { o.entregado = false; });
       controlNivel = new AbortController();
       let palabras = null;
       if (nivel.modo === "barca") {
@@ -158,10 +216,13 @@ PV.expedicion = (function () {
       }, controlNivel.signal);
       pintarMarcador();
       pintarPoderes();
+      const cap = info.tipo === "zona" ? PV.GRAN_EXPEDICION[info.ci] : null;
       mostrarPanel(`<div class="ex-icono-grande">${nivel.icono}</div>
-        <small class="ex-etiqueta">Nivel ${k + 1} · ${esc(nivel.regla)}</small>
+        <small class="ex-etiqueta">${cap ? `Zona ${info.zi + 1} de ${cap.zonas.length}` : `Nivel ${info.k + 1}`} · ${esc(nivel.regla)}</small>
         <h2>${esc(nivel.titulo)}</h2>
+        ${cap && info.zi === 0 ? `<p class="ex-mision">🗺️ ${esc(cap.mision)}</p>` : ""}
         <p>${esc(nivel.intro)}</p>
+        ${nivel.secretos && nivel.secretos.length ? `<p class="ex-r-nota">💎 Hay ${nivel.secretos.length} gemas secretas escondidas. Tu mascota te ayudará a encontrarlas.</p>` : ""}
         <button type="button" class="btn btn-verde" data-ex="empezar" data-foco>¡VAMOS!</button>`);
     }
     function indiceNivel() { return PV.EXPEDICION_ORDEN.indexOf(nivel.id); }
@@ -188,7 +249,13 @@ PV.expedicion = (function () {
       }
       if (tipo === "par") { fraseBarca = d.q ? (d.q.frase || "¿Cuál está bien escrita?") : ""; pintarMarcador(); }
       if (tipo === "atraca") { ctx.sonar && ctx.sonar("cofre"); aviso("¡Has llegado al puerto! Baja y ve hasta la meta 🏁"); }
-      if (tipo === "obstaculo" && partida.obstaculo(d.i).tipo === "jefe") abrirBatalla(d.i);
+      if (tipo === "objeto") objetoTocado(d);
+      if (tipo === "secreto") { ctx.sonar && ctx.sonar("cofre"); aviso(`💎 ¡Gema secreta! (${d.cogidas} de ${d.total})`); pintarMarcador(); }
+      const obT = tipo === "obstaculo" ? partida.obstaculo(d.i) : null;
+      const tipoReto = obT && obT.reto && obT.reto.tipo;
+      if (obT && obT.tipo === "jefe") abrirBatalla(d.i);
+      else if (tipoReto === "buscar") llegarBuscar(d.i);
+      else if (tipoReto && tipoReto !== "construir") abrirRetoNuevo(d.i);
       else if (tipo === "obstaculo") {
         if (d.cogidas < d.total) { const n = d.total - d.cogidas; aviso(`Te ${n === 1 ? "falta 1 letra" : `faltan ${n} letras`}. ¡Sigue buscando! 🔍`); }
         else abrirReto(d.i);
@@ -215,6 +282,12 @@ PV.expedicion = (function () {
       }
       const total = partida.totalLetras(obsActual), tengo = partida.letrasDe(obsActual);
       const ob = partida.obstaculo(obsActual);
+      if (!total && escena && escena.tipo === "zona" && !(ob && ob.tipo === "jefe")) {
+        const cap = PV.GRAN_EXPEDICION[escena.ci], g = partida.secretos();
+        tiraLetras.innerHTML = `<span class="ex-jefe-chip">🗺️ ${escena.zi + 1}/${cap.zonas.length} · 💎 ${g.cogidos}/${g.total}</span>`;
+        tiraLetras.setAttribute("aria-label", `Zona ${escena.zi + 1} de ${cap.zonas.length}. Gemas: ${g.cogidos} de ${g.total}`);
+        return;
+      }
       if (!total && ob && ob.tipo === "jefe") { tiraLetras.innerHTML = `<span class="ex-jefe-chip">⚔️ ${esc(ob.nombre)}</span>`; tiraLetras.setAttribute("aria-label", ob.nombre); return; }
       tiraLetras.innerHTML = Array.from({ length: total }, (_, i) => `<span class="ex-hueco ${tengo[i] ? "llena" : ""}">${tengo[i] || ""}</span>`).join("");
       tiraLetras.setAttribute("aria-label", `Letras recogidas: ${tengo.length} de ${total}`);
@@ -355,10 +428,16 @@ PV.expedicion = (function () {
     /* ---------- Poderes ---------- */
     function pintarPoderes() {
       const p = partida ? partida.poderes : {};
-      poderesEl.innerHTML = Object.keys(PODERES).filter(k => p[k]).map(k => `<span title="${PODERES[k].nombre}">${PODERES[k].icono}</span>`).join("");
+      const llevo = partida && nivel && nivel.objetos ? partida.objetosCogidos().map(id => nivel.objetos.find(o => o.id === id)).filter(o => o && !o.entregado) : [];
+      poderesEl.innerHTML = Object.keys(PODERES).filter(k => p[k]).map(k => `<span title="${PODERES[k].nombre}">${PODERES[k].icono}</span>`).join("")
+        + llevo.map(o => `<span title="${esc(o.desc)}">${o.e}</span>`).join("");
     }
     function tomarPregunta() {
-      if (!bolsa.length) bolsa = mezclar(preguntas(nivel.habilidades || ["bv", "h", "lly"]));
+      if (!bolsa.length) {
+        bolsa = mezclar(preguntas(nivel.habilidades || ["bv", "h", "lly"]));
+        // Las preguntas propias del nivel (relaciones, adivinanzas…) salen primero, mezcladas.
+        if (nivel.preguntas) bolsa = bolsa.concat(mezclar(nivel.preguntas.map(q => Object.assign({}, q, { opciones: mezclar(q.opciones) }))));
+      }
       return bolsa.pop();
     }
     function fraseHTML(f) { return esc(f).replace("___", `<span class="ex-blanco">___</span>`); }
@@ -470,9 +549,88 @@ PV.expedicion = (function () {
       if (!partida.corriendo) partida.iniciar();
     }
 
+    /* ---------- Retos de la Gran Expedición ---------- */
+    function abrirRetoNuevo(i) {
+      const ob = partida.obstaculo(i), clave = nivel.id + "-" + i;
+      pausar();
+      estado.intros = estado.intros || {};
+      retoNuevo = PV.retos.abrir(ob.reto, {
+        mostrarPanel, esc, sonar: n => ctx.sonar && ctx.sonar(n), hablar,
+        introVista: !!estado.intros[clave],
+        introLeida() { estado.intros[clave] = true; guardar(); },
+        alResolver() { retoNuevo = null; partida.resolver(i); seguir(); },
+        alSalir() { retoNuevo = null; seguir(); aviso("Cuando quieras, vuelve a intentarlo 👍"); }
+      });
+    }
+    /* Buscar: un personaje pide un objeto que hay en el escenario. Tocar otros objetos dice qué son. */
+    function retoBuscar() {
+      const k = nivel.obstaculos.findIndex(o => o.reto && o.reto.tipo === "buscar");
+      return k < 0 ? null : { k, r: nivel.obstaculos[k].reto, ob: partida.obstaculo(k) };
+    }
+    function objetoTocado(d) {
+      const b = retoBuscar();
+      if (!b || b.ob.resuelto) return;
+      if (d.id === b.r.objetivo) {
+        partida.recogerObjeto(d.id); pintarPoderes();
+        ctx.sonar && ctx.sonar("cofre");
+        aviso(b.ob.pedido ? `¡Esta es! Has cogido ${d.desc} ${d.e}. ¡Llévasela!` : `Has cogido ${d.desc} ${d.e}. ¿Quién la necesitará?`);
+      } else {
+        ctx.sonar && ctx.sonar("toque");
+        aviso(`${d.e} Es ${d.desc}.${b.ob.pedido ? " No es lo que te han pedido." : ""}`);
+      }
+    }
+    function llegarBuscar(i) {
+      const ob = partida.obstaculo(i), r = ob.reto, cara = ob.preso || "🙂";
+      ob.pedido = true;
+      pausar();
+      const objetivo = nivel.objetos.find(o => o.id === r.objetivo);
+      if (partida.objetosCogidos().includes(r.objetivo)) {
+        objetivo.entregado = true; pintarPoderes();
+        ctx.sonar && ctx.sonar("fin");
+        if (r.regalo) { partida.darPoder(r.regalo); pintarPoderes(); }
+        mostrarPanel(`<div class="ex-amigo"><span class="ex-amigo-cara">${cara}</span><div class="ex-bocadillo"><b>¡Bien hecho!</b><span>${esc(r.exito)}</span></div></div>
+          <button type="button" class="btn btn-verde" data-ex="entregar" data-i="${i}" data-foco>${esc(r.boton)}</button>`, "ancha");
+      } else {
+        mostrarPanel(`<div class="ex-amigo"><span class="ex-amigo-cara">${cara}</span><div class="ex-bocadillo"><b>¿Me ayudas?</b><span>${esc(r.instruccion)}</span></div></div>
+          <p class="ex-r-nota">Lee bien la pista: hay objetos parecidos que no sirven.</p>
+          <button type="button" class="btn btn-verde" data-ex="seguir" data-foco>🔍 ¡VOY A BUSCARLA!</button>`, "ancha");
+      }
+    }
+
+    /* ---------- Final de una zona de la Gran Expedición ---------- */
+    function panelZona() {
+      const cap = PV.GRAN_EXPEDICION[escena.ci], zi = escena.zi, ultima = zi + 1 === cap.zonas.length;
+      const r = ctx.alCompletar ? ctx.alCompletar(nivel.id, nivel.premio) : null;
+      const g = partida.secretos();
+      if (estado[nivel.id]) { estado[nivel.id].gemas = Math.max(estado[nivel.id].gemas || 0, g.cogidos); guardar(); }
+      const rc = ultima && ctx.alCompletar ? ctx.alCompletar("cap-" + cap.id, cap.premio) : null;
+      ctx.sonar && ctx.sonar("fin");
+      if (animado) confeti();
+      const trozos = cap.zonas.map((z, k) => `<span class="${zonaHecha(z) ? "hecho" : ""} ${k === zi ? "nuevo" : ""}">${zonaHecha(z) ? "🗺️" : ""}</span>`).join("");
+      const premios = [r, rc].filter(Boolean);
+      const extra = [];
+      if (premios.length) {
+        extra.push(`<div class="ex-premios"><span>⭐ +${premios.reduce((s, x) => s + x.estrellas, 0)}</span><span>🪙 +${premios.reduce((s, x) => s + x.monedas, 0)}</span></div>`);
+        premios.forEach(x => x.insignias.forEach(i => extra.push(`<p class="ex-logro">${i.icono} Nueva insignia: <b>${esc(i.nombre)}</b></p>`)));
+        if (premios.some(x => x.etapaNueva)) extra.push(`<p class="ex-logro">✨ ¡Tu compañero ha evolucionado!</p>`);
+      }
+      const totalGemas = cap.zonas.reduce((s, z) => s + gemasDe(z), 0), maxGemas = cap.zonas.reduce((s, z) => s + z.secretos.length, 0);
+      mostrarPanel(`<div class="ex-icono-grande ex-meta-icono">${ultima ? "🏆" : "🗺️"}</div>
+        <h2>${ultima ? "¡Has recuperado el mapa completo!" : `¡Trozo de mapa ${zi + 1} de ${cap.zonas.length}!`}</h2>
+        <div class="ex-trozos">${trozos}</div>
+        <p class="ex-r-nota">💎 Gemas secretas en esta zona: ${g.cogidos} de ${g.total}${ultima ? ` · en todo el capítulo: ${totalGemas} de ${maxGemas}` : ""}</p>
+        ${extra.join("")}
+        <div class="ex-r-botones">
+          ${ultima ? "" : `<button type="button" class="btn btn-verde" data-ex="zona" data-ci="${escena.ci}" data-zi="${zi + 1}" data-foco>▶ Zona ${zi + 2}: ${esc(cap.zonas[zi + 1].nombre)}</button>`}
+          <button type="button" class="btn btn-gris" data-ex="otra-vez">🔁 Repetir zona</button>
+          <button type="button" class="btn ${ultima ? "btn-verde" : "btn-gris"}" data-ex="capitulo" ${ultima ? "data-foco" : ""}>🗺️ Capítulo</button>
+        </div>`);
+    }
+
     /* ---------- Meta: celebración, premio y siguiente nivel ---------- */
     function panelMeta() {
       if (!abierta || !partida) return;
+      if (escena && escena.tipo === "zona") { pausar(); jugando = false; return panelZona(); }
       pausar(); jugando = false;
       const r = ctx.alCompletar ? ctx.alCompletar(nivel.id, nivel.premio) : null;
       ctx.sonar && ctx.sonar("fin");
@@ -512,7 +670,8 @@ PV.expedicion = (function () {
     }
     function volverAJugar() {
       partida.reiniciar();
-      reto = null; retoAbierto = false; obsActual = 0; amigo = null; batalla = null;
+      reto = null; retoAbierto = false; obsActual = 0; amigo = null; batalla = null; retoNuevo = null;
+      (nivel.objetos || []).forEach(o => { o.entregado = false; });
       pintarMarcador();
       pintarPoderes();
       clearTimeout(avisoT); avisoEl.hidden = true;
@@ -526,7 +685,7 @@ PV.expedicion = (function () {
       pausar();
       mostrarPanel(`<h2>⏸ Pausa</h2>
         <button type="button" class="btn btn-verde" data-ex="seguir" data-foco>SEGUIR</button>
-        <button type="button" class="btn btn-gris" data-ex="mapa">🗺️ Volver al mapa</button>
+        <button type="button" class="btn btn-gris" data-ex="mapa">🗺️ ${escena && escena.tipo === "zona" ? "Volver al capítulo" : "Volver al mapa"}</button>
         <button type="button" class="btn btn-gris" data-ex="confirmar-salir">Salir de la expedición</button>`);
     }
 
@@ -571,6 +730,7 @@ PV.expedicion = (function () {
       else if (!panel.hidden && panel.querySelector("[data-ex=seguir]")) seguir();
       else if (retoAbierto && reto.estado !== "bien") ACC["volver-reto"]();
       else if (amigo) ACC["cerrar-amigo"]();
+      else if (retoNuevo) retoNuevo.accion("salir");
     }, { signal: senal });
     const ro = new ResizeObserver(() => { if (partida) partida.medir(); });
     ro.observe(raiz);
@@ -591,9 +751,20 @@ PV.expedicion = (function () {
       },
       seguir() { seguir(); },
       "jugar-asi"() { girarDescartado = true; seguir(); },
-      pausa() { if (jugando && !retoAbierto && !batalla && partida && partida.corriendo) panelPausa(); },
-      salir() { if (jugando && partida && partida.corriendo) panelPausa(); else if (raiz.classList.contains("en-mapa")) cerrar(); else mapa(); },
-      mapa() { mapa(); },
+      pausa() { if (jugando && !retoAbierto && !batalla && !retoNuevo && partida && partida.corriendo) panelPausa(); },
+      salir() { if (jugando && partida && partida.corriendo) panelPausa(); else if (raiz.classList.contains("en-mapa")) cerrar(); else volverMenu(); },
+      mapa() { volverMenu(); },
+      inicio() { inicio(); },
+      gran() { pantallaCapitulo(0); },
+      cortas() { mapa(); },
+      capitulo() { pantallaCapitulo(escena ? escena.ci : 0); },
+      zona(b) {
+        const ci = Number(b.dataset.ci), zi = Number(b.dataset.zi), cap = PV.GRAN_EXPEDICION[ci];
+        if (!zonaAbierta(cap, zi)) return aviso("Completa la zona anterior para abrir esta 🔒");
+        cargarZona(ci, zi);
+      },
+      rt(b) { if (retoNuevo) retoNuevo.accion(b.dataset.a, b); },
+      entregar(b) { const i = Number(b.dataset.i); partida.resolver(i); seguir(); },
       "confirmar-salir"() { cerrar(); },
       ficha(b) { colocar(Number(b.dataset.i)); },
       hueco(b) { quitar(Number(b.dataset.i)); },
@@ -619,7 +790,7 @@ PV.expedicion = (function () {
       if (!b || b.disabled) return;
       e.preventDefault(); e.stopPropagation();
       const f = ACC[b.dataset.ex];
-      if (f) { if (!["ficha", "hueco", "resp-amigo", "resp-batalla"].includes(b.dataset.ex)) ctx.sonar && ctx.sonar("toque"); f(b); }
+      if (f) { if (!["ficha", "hueco", "resp-amigo", "resp-batalla", "rt"].includes(b.dataset.ex)) ctx.sonar && ctx.sonar("toque"); f(b); }
     }, { signal: senal });
 
     function cerrar() {
@@ -634,7 +805,7 @@ PV.expedicion = (function () {
     }
 
     abierta = { cerrar };
-    mapa();
+    inicio();
   }
 
   return { abrir, niveles, get abierta() { return !!abierta; } };

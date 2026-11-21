@@ -239,10 +239,10 @@
     const sig = W.siguiente(P);
     let html = `<main class="camino">`;
     if (expedicionVisible() && PV.expedicion) {
-      const nueva = !(P.expedicion && P.expedicion.mapaVisto);
+      const nueva = !(P.expedicion && P.expedicion.granVista);
       const total = PV.EXPEDICION_ORDEN.length, hechos = PV.EXPEDICION_ORDEN.filter(id => (P.expedicion[id] || {}).completada).length;
       html += `<button type="button" class="tarjeta-expedicion" data-accion="expedicion">
-        <span class="te-icono">🗺️</span><span><strong>La expedición de las palabras perdidas</strong><small>${hechos ? `${hechos} de ${total} niveles · ` : ""}Explora, salta y recupera las letras</small></span>
+        <span class="te-icono">🗺️</span><span><strong>La expedición de las palabras perdidas</strong><small>${P.expedicion.granVista ? "" : "¡Nuevo: La Gran Expedición! · "}${hechos ? `${hechos} de ${total} niveles cortos · ` : ""}Explora, salta y recupera las letras</small></span>
         ${nueva ? `<span class="te-nuevo">NUEVO</span>` : ""}</button>`;
     }
     W.zonas(P).forEach((z, ui) => {

@@ -6,6 +6,9 @@
    vencen en una batalla de palabras.
    Modo «barca» (nivel.modo): el jugador va en una barca que avanza sola por un río; el joystick cambia la
    velocidad y el salto sirve para elegir entre dos palabras que flotan (una arriba y otra abajo).
+   La Gran Expedición añade: zona oscura que se ilumina («luz»), jaula que libera a un personaje («jaula»),
+   ascensor para subir un acantilado (muro con solucion «ascensor»), objetos que hay que buscar y gemas secretas
+   que la mascota ayuda a encontrar.
    Personajes: Borrones (enemigos que pasean; si tocan al jugador le quitan una letra, y si les salta encima
    se convierten en mariposas: nadie muere) y amiguitos (piden ayuda con una palabra y regalan un poder:
    doble salto, imán de letras o escudo).
@@ -69,6 +72,7 @@ PV.expedicionMotor = (function () {
     let solidos = [], obs = [], letras = [], enMeta = false, orden = 0;
     let enemigos = [], amigos = [], congelado = false, foco = null;
     let bote = null, pares = [], parActual = -2;
+    let objetos = [], secretos = [];
     const modoBarca = nivel.modo === "barca";
     const poderes = { dobleSalto: false, iman: false, escudo: false };
     const chispas = [], rayos = [];
@@ -85,11 +89,15 @@ PV.expedicionMotor = (function () {
         dir: e.dir || 1, vel: e.vel || 55, estado: "anda", t: 0 }));
       amigos = (nivel.amigos || []).map((a, i) => Object.assign({ i, ayudado: false, cerca: false }, a));
       bote = null; pares = []; parActual = -2;
+      objetos = (nivel.objetos || []).map(o => Object.assign({ cogido: false, visto: false }, o));
+      secretos = (nivel.secretos || []).map(x => Object.assign({ cogido: false }, x));
       j.y = alturaSuelo(j.x) - j.h; j.seguroX = j.x; j.seguroY = j.y;
       solidos = nivel.solidos.map(s => Object.assign({}, s));
       obs = (nivel.obstaculos || []).map((o, i) => {
         const e = Object.assign({}, o, { i, resuelto: false, animando: false, p: 0, cerca: false, solidos: [] });
         if (o.tipo === "rio") e.barrera = { x: o.x - 10, y: -600, w: 10, h: 900, invisible: true };
+        if (o.tipo === "luz" || o.tipo === "jaula") e.barrera = { x: o.x - 10, y: -600, w: 10, h: 900, invisible: true };
+        if (o.tipo === "luz") e.w = o.w || 700;
         if (o.tipo === "jefe") {
           e.barrera = { x: o.x - 70, y: -600, w: 10, h: 900, invisible: true };
           e.vida = o.vida || 3; e.golpe = 0; e.risa = 0;
@@ -99,7 +107,7 @@ PV.expedicionMotor = (function () {
           solidos.push({ x: o.x - 16, y: -600, w: 76, h: 600 + 170, invisible: true });     // roca sobre la puerta
         }
         if (e.barrera) solidos.push(e.barrera);
-        e.disparo = (o.tipo === "rio" ? o.x - 10 : o.tipo === "jefe" ? o.x - 70 : o.x) - 6;
+        e.disparo = (o.tipo === "rio" || o.tipo === "luz" || o.tipo === "jaula" ? o.x - 10 : o.tipo === "jefe" ? o.x - 70 : o.x) - 6;
         return e;
       });
       letras = (nivel.letras || []).map((l, i) => Object.assign({ i, o: 0, cogida: false, orden: 0 }, l));
@@ -212,6 +220,7 @@ PV.expedicionMotor = (function () {
 
       recogerLetras();
       if (pares.length) actualizarPares(dt);
+      if (objetos.length || secretos.length) actualizarObjetos();
       actualizarEnemigos(dt);
       actualizarAmigos();
       for (let k = rayos.length - 1; k >= 0; k--) { rayos[k].t += dt * 1.8; if (rayos[k].t >= 1 + rayos[k].retraso) rayos.splice(k, 1); }
@@ -242,6 +251,54 @@ PV.expedicionMotor = (function () {
         evento("letra", { letra: l.l, o: l.o, cogidas: n, total: delObs.length, pantalla: aPantalla(l.x, l.y) });
       }
     }
+    /* ---------- Objetos que hay que buscar y gemas secretas ---------- */
+    function actualizarObjetos() {
+      const cx = j.x + j.w / 2, cy = j.y + j.h / 2;
+      for (const o of objetos) {
+        if (o.cogido) continue;
+        const d = Math.hypot(o.x - cx, o.y - cy);
+        // Al tocar un objeto se avisa una vez; quien juega decide si es el que se busca.
+        if (d < 46 && !o.visto) { o.visto = true; evento("objeto", { id: o.id, e: o.e, desc: o.desc }); }
+        else if (d > 100) o.visto = false;
+      }
+      for (const g of secretos) {
+        if (g.cogido || Math.hypot(g.x - cx, g.y - cy) > 44) continue;
+        g.cogido = true; m.fiesta = 1.4;
+        for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; chispas.push({ x: g.x, y: g.y, vx: Math.cos(a) * 160, vy: Math.sin(a) * 160 - 60, vida: 0.7 }); }
+        evento("secreto", { cogidos: secretos.filter(x => x.cogido).length, total: secretos.length });
+      }
+    }
+    function recogerObjeto(id) {
+      const o = objetos.find(x => x.id === id);
+      if (!o || o.cogido) return;
+      o.cogido = true; m.fiesta = 1.5;
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; chispas.push({ x: o.x, y: o.y, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150 - 60, vida: 0.6 }); }
+    }
+    function dibujarObjetos() {
+      for (const o of objetos) {
+        if (o.cogido || !visible(o.x - 30, 60)) continue;
+        const y = o.y + 17 + (animado ? Math.sin(tiempo * 3 + o.x) * 4 : 0);
+        ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.beginPath(); ctx.arc(o.x, y - 17, 24, 0, 6.3); ctx.fill();
+        emoji(o.e, o.x, y, o.tam || 32);
+      }
+      for (const g of secretos) {
+        if (g.cogido || !visible(g.x - 30, 60)) continue;
+        const y = g.y + 13 + (animado ? Math.sin(tiempo * 4 + g.x) * 3 : 0);
+        ctx.fillStyle = "rgba(160,220,255,.35)"; ctx.beginPath(); ctx.arc(g.x, y - 13, 18 + (animado ? Math.sin(tiempo * 6 + g.x) * 2 : 0), 0, 6.3); ctx.fill();
+        emoji("💎", g.x, y, 24);
+      }
+    }
+    // La mascota se acerca a las gemas secretas cercanas para dar una pista.
+    function secretoCercano() {
+      let mejor = null, dmin = 330;
+      for (const g of secretos) {
+        if (g.cogido) continue;
+        const d = Math.abs(g.x - (j.x + j.w / 2));
+        if (d < dmin) { dmin = d; mejor = g; }
+      }
+      return mejor;
+    }
+
     /* ---------- Barca del río y parejas de palabras ---------- */
     function moverBote(eje, dt) {
       const b = nivel.barca, sb = bote.s;
@@ -381,6 +438,12 @@ PV.expedicionMotor = (function () {
           evento("obstaculo", { i: o.i, cogidas: letrasDe(o.i).length, total: totalLetras(o.i) });
         } else if (o.cerca && j.x + j.w < o.disparo - 120) o.cerca = false;
       }
+      if (o.plataforma) {
+        // Ascensor: sube mientras se repara y después va y viene despacio entre el suelo y lo alto.
+        const alto = 300 - o.arriba;
+        if (o.animando) o.plataforma.y = 300 - alto * o.p;
+        else if (o.resuelto) { o.fase += dt; o.plataforma.y = o.arriba + alto * (0.5 - 0.5 * Math.cos(o.fase * 0.55)); }
+      }
       if (o.animando) {
         o.p = Math.min(1, o.p + dt / DURACION_SOLUCION);
         if (animado && Math.random() < dt * 30) {
@@ -394,6 +457,9 @@ PV.expedicionMotor = (function () {
     }
     function zonaSolucion(o) {
       if (o.tipo === "jefe") return { x: o.x, w: 90, y: alturaSuelo(o.x + 45) - 60 };
+      if (o.tipo === "luz") return { x: o.x - 40, w: 80, y: 220 };
+      if (o.tipo === "jaula") return { x: o.x, w: 70, y: 250 };
+      if (o.tipo === "muro" && o.solucion === "ascensor") return { x: o.x - 90, w: 90, y: o.plataforma ? o.plataforma.y : 300 };
       if (o.tipo === "rio") return { x: o.x - 14, w: o.w + 28, y: 296 };
       if (o.tipo === "muro") return { x: o.x - 4 * 42, w: 4 * 42, y: 300 - (300 - o.arriba) * o.p };
       return { x: o.x, w: 44, y: 300 - 130 * o.p };
@@ -412,6 +478,8 @@ PV.expedicionMotor = (function () {
         solidos.push(o.tope);
       } else if (o.tipo === "rio") {
         solidos.push({ x: o.x - 14, y: 300, w: o.w + 28, h: 14, invisible: true });
+      } else if (o.tipo === "muro" && o.solucion === "ascensor") {
+        o.fase = 0;
       } else if (o.tipo === "muro") {
         const n = 4, alto = 300 - o.arriba;
         let encima = null;
@@ -449,7 +517,9 @@ PV.expedicionMotor = (function () {
       rastro.push({ x: j.x + j.w / 2, y: j.y + j.h, mira: j.mira });
       if (rastro.length > 40) rastro.shift();             // unos 0,3 s de retraso
       const r = rastro[0];
-      const tx = r.x - r.mira * 46, ty = r.y - 34 + (animado ? Math.sin(m.t * 4) * 5 : 0);
+      let tx = r.x - r.mira * 46, ty = r.y - 34 + (animado ? Math.sin(m.t * 4) * 5 : 0);
+      m.pista = secretos.length ? secretoCercano() : null;
+      if (m.pista) { tx += (m.pista.x - tx) * 0.55; ty += (m.pista.y - 20 - ty) * 0.45; }
       if (Math.hypot(tx - m.x, ty - m.y) > 420) { m.x = tx; m.y = ty; }   // nunca se queda lejos
       const k = 1 - Math.exp(-dt * 6);
       const dx = (tx - m.x) * k;
@@ -465,6 +535,10 @@ PV.expedicionMotor = (function () {
       if (!o || o.resuelto || o.animando) return;
       o.animando = true;
       o.p = animado ? 0 : 0.999;          // sin animaciones aparece casi de golpe
+      if (o.tipo === "muro" && o.solucion === "ascensor") {
+        o.plataforma = { x: o.x - 90, y: 300, w: 90, h: 14, invisible: true, movil: true };
+        solidos.push(o.plataforma);
+      }
       m.fiesta = 1.5;
       dibujar();
     }
@@ -778,10 +852,61 @@ PV.expedicionMotor = (function () {
         ctx.fillStyle = "#7a4b00"; ctx.fillText(r.l, x, y + 1);
       }
     }
+    function dibujarFarol(o) {
+      if (!visible(o.x - 60, 80)) return;
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      const x = o.x - 34, base = alturaSuelo(x);
+      ctx.fillStyle = "#4b4452"; ctx.fillRect(x - 3, base - 92, 6, 92);
+      if (p > 0) {
+        const g = ctx.createRadialGradient(x, base - 100, 4, x, base - 100, 150 * p);
+        g.addColorStop(0, "rgba(255,220,120,.7)"); g.addColorStop(1, "rgba(255,220,120,0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, base - 100, 150 * p, 0, 6.3); ctx.fill();
+      }
+      ctx.save(); ctx.globalAlpha = 0.45 + 0.55 * p; emoji("🏮", x, base - 84, 30); ctx.restore();
+    }
+    function sombraLuz(o) {
+      // La zona oscura: se aclara al encender el farol.
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      if (p >= 1 || !visible(o.x, o.w)) return;
+      const a = 0.9 * (1 - p);
+      const g = ctx.createLinearGradient(o.x - 60, 0, o.x + 40, 0);
+      g.addColorStop(0, "rgba(12,10,28,0)"); g.addColorStop(1, `rgba(12,10,28,${a})`);
+      ctx.fillStyle = g; ctx.fillRect(o.x - 60, vista.camY - 20, 100, vista.alto + 440);
+      ctx.fillStyle = `rgba(12,10,28,${a})`; ctx.fillRect(o.x + 40, vista.camY - 20, o.w - 40, vista.alto + 440);
+      if (!p) { ctx.font = "900 22px Nunito, 'Segoe UI', system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillText("?", o.x + 120, 220); }
+    }
+    function dibujarJaula(o) {
+      if (!visible(o.x - 20, 110)) return;
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      const base = alturaSuelo(o.x + 35), alto = 96, sube = alto * p;
+      if (o.preso) {
+        const salto = p >= 1 && animado ? Math.abs(Math.sin(tiempo * 5)) * 10 : 0;
+        emoji(o.preso, o.x + 35 + (p >= 1 ? 50 : 0), base - salto, 40, j.x > o.x ? -1 : 1);
+        if (p >= 1) emoji("❤️", o.x + 85, base - 56 - salto, 16);
+      }
+      ctx.fillStyle = "#6b5a3e"; ctx.fillRect(o.x - 4, base - alto - 10 - sube, 78, 10);
+      ctx.fillStyle = "#4b4452";
+      for (let x = o.x; x <= o.x + 70; x += 10) ctx.fillRect(x, base - alto - sube, 4, alto);
+      ctx.fillStyle = "#6b5a3e"; ctx.fillRect(o.x - 4, base - 6, 78, 6);
+      if (!p) emoji("🔒", o.x + 35, base - alto / 2 + 10, 22);
+    }
+    function dibujarAscensor(o) {
+      if (!visible(o.x - 110, 130)) return;
+      const tope = o.arriba - 30;
+      ctx.fillStyle = "#8a5a35"; ctx.fillRect(o.x - 96, tope, 6, 300 - tope); ctx.fillRect(o.x - 6, tope, 6, 300 - tope);
+      ctx.fillRect(o.x - 98, tope, 100, 6);
+      ctx.fillStyle = "#c9a26b"; ctx.beginPath(); ctx.arc(o.x - 48, tope + 3, 8, 0, 6.3); ctx.fill();
+      const y = o.plataforma ? o.plataforma.y : 300;
+      ctx.strokeStyle = "#5a4a3a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(o.x - 48, tope + 3); ctx.lineTo(o.x - 48, y); ctx.stroke();
+      if (o.plataforma) { ctx.fillStyle = "#a8693d"; redondo(o.x - 90, y, 90, 14, 4); ctx.fill(); ctx.fillStyle = "#e3b27a"; ctx.fillRect(o.x - 88, y, 86, 4); }
+      else { ctx.setLineDash([8, 7]); ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 3; ctx.strokeRect(o.x - 90, 286, 90, 14); ctx.setLineDash([]); emoji("🔧", o.x - 45, 278, 24); }
+    }
     function dibujarObstaculos() {
       for (const o of obs) {
         if (o.tipo === "rio") dibujarRio(o);
+        else if (o.tipo === "muro" && o.solucion === "ascensor") dibujarAscensor(o);
         else if (o.tipo === "muro") dibujarMuro(o);
+        else if (o.tipo === "luz") dibujarFarol(o);
       }
     }
     function dibujarMeta() {
@@ -820,6 +945,7 @@ PV.expedicionMotor = (function () {
       else if (m.quieto > 1.5 && animado) rot = Math.sin(m.t * 2.2) * 0.18;   // espera mirando a los lados
       else if (animado) sy = 1 + Math.sin(m.t * 10) * 0.05;
       emoji(op.mascota || "🐣", m.x, m.y - bote, 30, m.mira > 0 ? -1 : 1, sy, rot);
+      if (m.pista && animado) emoji("✨", m.x + 14, m.y - bote - 30 + Math.sin(tiempo * 6) * 3, 16);
     }
     function dibujarJugador() {
       if (j.parpadeo > 0 && Math.floor(j.parpadeo * 10) % 2) return;
@@ -872,6 +998,8 @@ PV.expedicionMotor = (function () {
       for (const o of obs) if (o.tipo === "puerta") dibujarPuerta(o);
       dibujarMeta();
       dibujarAmigos();
+      for (const o of obs) if (o.tipo === "jaula") dibujarJaula(o);
+      if (objetos.length || secretos.length) dibujarObjetos();
       for (const o of obs) if (o.tipo === "jefe") dibujarJefe(o);
       dibujarEnemigos();
       dibujarLetras();
@@ -882,6 +1010,7 @@ PV.expedicionMotor = (function () {
       dibujarRayos();
       for (const d of nivel.deco) if (!d.nube && d.capa === 1 && visible(d.x - d.tam, d.tam * 2)) emoji(d.e, d.x, d.y + 3, d.tam);
       if (copos.length) dibujarNieve();
+      for (const o of obs) if (o.tipo === "luz") sombraLuz(o);
     }
 
     /* ---------- Bucle ---------- */
@@ -911,6 +1040,8 @@ PV.expedicionMotor = (function () {
       iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, resolver, reiniciar, letrasDe, totalLetras,
       darPoder, ayudarAmigo, golpearJefe, reirJefe, congelar, poderes, amigo: i => amigos[i], enemigos: () => enemigos,
       resultadoBarca, get modoBarca() { return modoBarca; },
+      recogerObjeto, objetosCogidos: () => objetos.filter(o => o.cogido).map(o => o.id),
+      secretos: () => ({ cogidos: secretos.filter(x => x.cogido).length, total: secretos.length }),
       obstaculo: i => obs[i], get numObstaculos() { return obs.length; },
       get corriendo() { return corriendo; }
     };

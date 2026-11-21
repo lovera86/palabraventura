@@ -578,6 +578,46 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 .ex-tarjeta .btn { width: 100%; margin-top: 8px; touch-action: manipulation; }
 .ex-icono-grande { font-size: 3rem; line-height: 1; }
 .ex-tarjeta.ancha { width: min(560px, 100%); }
+/* Menú: La Gran Expedición o expediciones cortas */
+.ex-modos { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; margin: 8px 0 10px; }
+.ex-modo { display: flex; align-items: center; gap: 12px; padding: 14px; border: 2px solid var(--linea); border-radius: 18px; background: #fff; font: inherit;
+  text-align: left; cursor: pointer; box-shadow: 0 4px 0 var(--linea); touch-action: manipulation; min-height: 88px; }
+.ex-modo:active { translate: 0 2px; box-shadow: 0 2px 0 var(--linea); }
+.ex-modo.gran { border-color: #ff9b2f; background: linear-gradient(135deg, #fff6d6, #ffe7c2); box-shadow: 0 4px 0 #ff9b2f; }
+.ex-modo-icono { font-size: 2.4rem; line-height: 1; flex: none; }
+.ex-modo strong { display: block; font-size: 1.05rem; }
+.ex-modo small { display: block; color: #6b6b7b; font-weight: 700; font-size: .8rem; }
+.ex-mision { margin: 0 0 6px !important; padding: 6px 10px; border-radius: 12px; background: #fff6d6; font-weight: 700; font-size: .92rem; }
+.ex-trozos { display: flex; justify-content: center; gap: 4px; margin: 4px 0 6px; }
+.ex-trozos span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; border: 2px dashed #d6c7a8; background: #fbf6ea; font-size: 1.3rem; }
+.ex-trozos span.hecho { border-style: solid; border-color: #e3b27a; background: #fff1d6; }
+.ex-trozos span.nuevo { animation: ex-pop .6s ease; }
+/* Retos de la Gran Expedición */
+.ex-mapa.zonas, .expedicion .ex-mapa.zonas { grid-template-columns: repeat(3, 1fr) !important; }
+@media (max-width: 420px) { .ex-mapa.zonas, .expedicion .ex-mapa.zonas { grid-template-columns: repeat(2, 1fr) !important; } }
+.ex-rt-puntos { display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
+.ex-rt-puntos span { width: 10px; height: 10px; border-radius: 50%; background: var(--linea); }
+.ex-rt-puntos span.hecho { background: var(--verde); }
+.ex-rt-puntos span.actual { background: #ff9b2f; }
+.ex-rt-estimulo { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; font-weight: 800; font-size: 1.1rem; }
+.ex-rt-imagen { font-size: 2.3rem; line-height: 1; }
+.ex-rt-elemento { padding: 6px 18px; border-radius: 14px; background: #fff3c4; font-size: 1.4rem; font-weight: 900; }
+.ex-rt-frase { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 48px; }
+.ex-rt-frase.banco { margin-bottom: 4px; }
+.ex-rt-palabra { min-width: 48px; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 0; background: #fff3c4; color: #5a3d00; font: inherit;
+  font-weight: 900; font-size: 1.1rem; box-shadow: 0 3px 0 #e8cf7a; cursor: pointer; touch-action: manipulation; }
+.ex-rt-palabra:disabled { background: #eef0f4; color: transparent; box-shadow: none; }
+.ex-rt-palabra.hueco { background: #f3f8fb; border: 2px dashed #a9c7d8; box-shadow: none; color: #3c3c4a; }
+.ex-rt-palabra.hueco.llena { background: #ffcc33; border: 2px solid #fff; box-shadow: 0 3px 0 #e0a400; }
+.ex-rt-palabra.hueco.mal { animation: ex-temblor .4s ease; }
+.ex-rt-memoria { display: grid; grid-template-columns: repeat(var(--c), 1fr); gap: 6px; margin-bottom: 4px; }
+.ex-rt-carta { min-height: 54px; border-radius: 12px; border: 0; background: linear-gradient(135deg, #4fb3e8, #a68cff); color: #fff; font: inherit; font-weight: 900;
+  font-size: 1.05rem; box-shadow: 0 3px 0 rgba(0,0,0,.18); cursor: pointer; touch-action: manipulation; }
+.ex-rt-carta.vista { background: #fff; color: #3c3c4a; border: 2px solid var(--linea); font-size: 1.2rem; }
+.ex-rt-carta.hecha { background: var(--verde-claro); border-color: var(--verde); }
+.ex-rt-cesta span { font-size: 1.4rem; }
+@media (max-width: 560px) { .ex-modos { grid-template-columns: 1fr; } .ex-rt-memoria { grid-template-columns: repeat(4, 1fr); } }
+@media (max-height: 420px) { .ex-modo { min-height: 64px; padding: 8px 12px; } .ex-modo-icono { font-size: 1.9rem; } .ex-rt-carta { min-height: 42px; } .ex-rt-palabra { min-height: 38px; padding: 4px 10px; font-size: 1rem; } .ex-rt-imagen { font-size: 1.8rem; } .ex-trozos span { width: 30px; height: 30px; font-size: 1.05rem; } }
 /* Poderes de los amiguitos (debajo del botón de pausa) */
 .ex-poderes { position: absolute; z-index: 3; left: max(10px, env(safe-area-inset-left)); top: max(60px, calc(env(safe-area-inset-top) + 52px));
   display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
