@@ -804,9 +804,9 @@
     },
     "confirmar-salir": () => { cerrarModal(); sesion = null; pantallaCamino(); },
     "expedicion": () => {
-      const pu = R.puestos(P), cab = R.accesorio(pu.cabeza);
+      const pu = R.puestos(P), cab = R.accesorio(pu.cabeza), mas = R.accesorio(pu.mascota);
       PV.expedicion.abrir({
-        icono: R.animal(P.avatar.animal).icono, cabeza: cab ? cab.icono : null,
+        icono: R.animal(P.avatar.animal).icono, cabeza: cab ? cab.icono : null, mascota: mas ? mas.icono : "🐣",
         sonar, animaciones: animacionesOn(),
         estado: P.expedicion, guardarEstado: e => { P.expedicion = e; guardar(); },
         alSalir: () => pantallaCamino()

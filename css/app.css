@@ -535,6 +535,18 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 .ex-hud { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: center; gap: 10px;
   padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); pointer-events: none; }
 .ex-hud > * { pointer-events: auto; }
+.ex-centro { flex: 1; display: flex; justify-content: center; pointer-events: none; }
+.ex-letras { display: flex; gap: 5px; padding: 5px 8px; border-radius: 14px; background: rgba(255,255,255,.75); box-shadow: 0 3px 0 rgba(0,0,0,.1); }
+.ex-hueco { width: 30px; height: 34px; border-radius: 9px; border: 2px dashed #a9c7d8; display: grid; place-items: center;
+  font-weight: 900; font-size: 1.15rem; color: #7a4b00; }
+.ex-hueco.llena { border: 2px solid #fff; background: #ffcc33; box-shadow: 0 2px 0 #e0a400; animation: ex-pop .35s ease; }
+@keyframes ex-pop { 0% { transform: scale(.4); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.ex-vuela { position: fixed; z-index: 4; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 10px; display: grid; place-items: center;
+  background: #ffcc33; border: 3px solid #fff; color: #7a4b00; font-weight: 900; font-size: 1.3rem; pointer-events: none;
+  transition: transform .55s cubic-bezier(.5,-0.3,.6,1); box-shadow: 0 4px 10px rgba(0,0,0,.2); }
+.ex-aviso { position: absolute; left: 50%; top: max(62px, calc(env(safe-area-inset-top) + 54px)); translate: -50% 0; z-index: 3; max-width: calc(100% - 32px);
+  padding: 8px 16px; border-radius: 99px; background: rgba(60,60,74,.88); color: #fff; font-weight: 800; font-size: .95rem; text-align: center; pointer-events: none; transition: opacity .4s; }
+.ex-aviso.fuera { opacity: 0; }
 .ex-titulo { flex: 1; text-align: center; font-weight: 900; font-size: .95rem; color: #2a5a7a; text-shadow: 0 1px 0 #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .ex-boton { width: 44px; height: 44px; border-radius: 14px; border: 0; background: rgba(255,255,255,.9); font-size: 1.2rem; box-shadow: 0 3px 0 rgba(0,0,0,.15); cursor: pointer; touch-action: manipulation; }
 .ex-boton:active { translate: 0 2px; box-shadow: 0 1px 0 rgba(0,0,0,.15); }
@@ -554,7 +566,7 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
   border: 3px solid rgba(255,255,255,.9); box-shadow: 0 6px 0 #d0627e; pointer-events: none; transition: transform .08s; }
 .ex-salto.pulsado { transform: translateY(4px) scale(.95); box-shadow: 0 2px 0 #d0627e; }
 
-.ex-ayuda { position: absolute; left: 50%; top: 58px; translate: -50% 0; z-index: 3; display: flex; gap: 22px; padding: 8px 16px; border-radius: 99px;
+.ex-ayuda { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); translate: -50% 0; z-index: 3; display: flex; gap: 22px; padding: 8px 16px; border-radius: 99px;
   background: rgba(60,60,74,.82); color: #fff; font-weight: 800; font-size: .9rem; white-space: nowrap; pointer-events: none; transition: opacity .5s; }
 .ex-ayuda.fuera { opacity: 0; }
 .expedicion [hidden] { display: none !important; }
