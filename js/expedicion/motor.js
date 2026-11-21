@@ -1,6 +1,8 @@
 /* Palabraventura · La expedición de las palabras perdidas · motor 2D.
    Canvas 2D sin dependencias: física con paso fijo, colisiones de cajas, cámara lateral, dibujo con emojis
    (pintados una vez en lienzos pequeños y reutilizados) y entrada táctil multitoque con Pointer Events.
+   Los obstáculos (río, acantilado, puerta) se superan formando una palabra; al resolverlos se anima su
+   solución (puente, hielo, barca o balsa, escalera, puerta que se abre).
    Nada de este archivo toca el resto de la app: recibe un nivel y un lienzo y avisa con eventos. */
 PV.expedicionMotor = (function () {
   const ALTO = 360;                 // alto lógico del mundo que siempre se ve entero
@@ -10,7 +12,14 @@ PV.expedicionMotor = (function () {
     vel: 270, acel: 2600, frenado: 3200, aire: 0.7,
     coyote: 0.1, buffer: 0.14, maxCaida: 1100
   };
+  const DURACION_SOLUCION = 1.8;    // segundos que tarda en aparecer la solución de un obstáculo
+  const VEL_BARCA = 110;
   const FUENTE_EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",sans-serif';
+  const FUENTE_LETRA = "900 25px Nunito, 'Segoe UI', system-ui, sans-serif";
+  const TEMA = {
+    cielo: ["#bfe7ff", "#eaf8ff"], colinas: ["#cfeccf", "#a9dca8"], tierra: "#c98c5a", tierraOsc: "#b27748",
+    hierba: "#6cc070", hierbaOsc: "#4ea457", plataforma: "#8a5a35", agua: ["#4fb3e8", "#3a9bd3"]
+  };
 
   /* ---------- Emojis en caché (dibujar texto en cada fotograma es caro en móviles) ---------- */
   const cache = new Map();
@@ -40,36 +49,53 @@ PV.expedicionMotor = (function () {
     const ctx = lienzo.getContext("2d");
     const evento = op.alEvento || function () {};
     const animado = op.animaciones !== false;
+    const tema = Object.assign({}, TEMA, nivel.tema || {});
     const entrada = { eje: 0, ejeTeclado: 0, saltoPulsado: false, saltoMantenido: false };
-    const j = {
-      x: nivel.inicio.x, y: 300 - 46, w: 38, h: 46, vx: 0, vy: 0,
-      suelo: true, mira: 1, coyote: 0, buffer: 0, cortado: false, tSalto: 0,
-      t: 0, aterriza: 0, seguroX: nivel.inicio.x, parpadeo: 0, recorrido: 0
-    };
-    const vista = { escala: 1, dpr: 1, ancho: 640, alto: ALTO, camX: 0, camY: 0, cssW: 0, cssH: 0 };
+    const j = { x: 0, y: 0, w: 38, h: 46, vx: 0, vy: 0, suelo: true, mira: 1, coyote: 0, buffer: 0, cortado: false, tSalto: 0,
+      t: 0, aterriza: 0, seguroX: 0, seguroY: 0, parpadeo: 0, recorrido: 0, sobre: null };
+    const vista = { escala: 1, dpr: 1, ancho: 640, alto: ALTO, camX: 0, camY: 0 };
     let corriendo = false, raf = 0, ultimo = 0, acum = 0, tiempo = 0, destruido = false;
-
-    // Copias propias: lo que cambia en la partida (letras cogidas, barrera del río) no toca los datos del nivel.
-    const solidos = nivel.solidos.map(s => Object.assign({}, s));
-    const rio = nivel.rio || null;
-    const meta = nivel.meta || null;
-    function nuevaBarrera() { return rio ? { x: rio.x - 10, y: -600, w: 10, h: 900, invisible: true } : null; }
-    let barrera = nuevaBarrera();
-    let puenteHecho = false, construyendo = false, puenteP = 0, enMeta = false;
-    const DURACION_PUENTE = 1.8;
-    if (barrera) solidos.push(barrera);
-    const letras = (nivel.letras || []).map((l, i) => Object.assign({ i, cogida: false }, l));
     const RADIO_LETRA = 44;
-    let enOrilla = false;
+    const meta = nivel.meta ? { x: nivel.meta.x, y: nivel.meta.y || 300 } : null;
+    const copos = nivel.tema && nivel.tema.nieve ? Array.from({ length: 46 }, (_, i) => ({ x: (i * 97) % 1000, y: (i * 61) % 360, v: 18 + (i % 5) * 7, r: 1.5 + (i % 3) })) : [];
+
+    // Estado de la partida (copias propias: no se tocan los datos del nivel, así se puede volver a jugar).
+    let solidos = [], obs = [], letras = [], enMeta = false, orden = 0;
     const chispas = [];
     // Mascota: sigue el rastro del jugador con un poco de retraso, flotando (no choca con nada, así nunca se atasca).
-    const m = { x: j.x - 46, y: 300 - 34, mira: 1, fiesta: 0, quieto: 0, t: 0 };
+    const m = { x: 0, y: 0, mira: 1, fiesta: 0, quieto: 0, t: 0 };
     const rastro = [];
+
+    function preparar() {
+      Object.assign(j, { x: nivel.inicio.x, vx: 0, vy: 0, suelo: true, mira: 1, coyote: 0, buffer: 0, cortado: false, tSalto: 0,
+        aterriza: 0, parpadeo: 0, sobre: null });
+      j.y = alturaSuelo(j.x) - j.h; j.seguroX = j.x; j.seguroY = j.y;
+      solidos = nivel.solidos.map(s => Object.assign({}, s));
+      obs = (nivel.obstaculos || []).map((o, i) => {
+        const e = Object.assign({}, o, { i, resuelto: false, animando: false, p: 0, cerca: false, solidos: [] });
+        if (o.tipo === "rio") e.barrera = { x: o.x - 10, y: -600, w: 10, h: 900, invisible: true };
+        if (o.tipo === "puerta") {
+          e.barrera = { x: o.x, y: -600, w: 44, h: 900, invisible: true };
+          solidos.push({ x: o.x - 16, y: -600, w: 76, h: 600 + 170, invisible: true });     // roca sobre la puerta
+        }
+        if (e.barrera) solidos.push(e.barrera);
+        e.disparo = (o.tipo === "rio" ? o.x - 10 : o.x) - 6;
+        return e;
+      });
+      letras = (nivel.letras || []).map((l, i) => Object.assign({ i, o: 0, cogida: false, orden: 0 }, l));
+      enMeta = false; orden = 0;
+      chispas.length = 0; rastro.length = 0;
+      Object.assign(m, { x: j.x - 46, y: j.y + j.h - 34, fiesta: 0, quieto: 0 });
+    }
+    function alturaSuelo(x) {
+      let y = 300;
+      for (const s of nivel.solidos) if (s.tipo === "suelo" && x >= s.x && x < s.x + s.w) y = Math.min(y, s.y);
+      return y;
+    }
 
     function medir() {
       const r = lienzo.getBoundingClientRect();
       if (!r.width || !r.height) return;
-      vista.cssW = r.width; vista.cssH = r.height;
       vista.dpr = Math.min(window.devicePixelRatio || 1, 2);
       // Se ve siempre el alto completo; en vertical se limita el zoom para no ver un trozo diminuto del mundo.
       // En pantallas grandes se ve más mundo (al menos ~900 de ancho) en lugar de ampliarlo todo.
@@ -119,67 +145,125 @@ PV.expedicionMotor = (function () {
 
       const pie0 = j.y + j.h, estabaEnSuelo = j.suelo, vyAntes = j.vy;
       j.y += j.vy * dt;
-      j.suelo = false;
+      j.suelo = false; j.sobre = null;
       for (const s of solidos) {
         if (!solapan(j, s)) continue;
-        if (j.vy > 0) { j.y = s.y - j.h; j.vy = 0; j.suelo = true; }
+        if (j.vy > 0) { j.y = s.y - j.h; j.vy = 0; j.suelo = true; j.sobre = s; }
         else if (j.vy < 0) { j.y = s.y + s.h; j.vy = 0; }
       }
       if (j.vy >= 0) {
         for (const p of nivel.plataformas) {
           const pie = j.y + j.h;
-          if (pie0 <= p.y + 0.5 && pie >= p.y && j.x + j.w > p.x + 4 && j.x < p.x + p.w - 4) { j.y = p.y - j.h; j.vy = 0; j.suelo = true; }
+          if (pie0 <= p.y + 0.5 && pie >= p.y && j.x + j.w > p.x + 4 && j.x < p.x + p.w - 4) { j.y = p.y - j.h; j.vy = 0; j.suelo = true; j.sobre = p; }
         }
       }
       if (j.suelo && !estabaEnSuelo) { j.aterriza = 1; evento("aterriza", { fuerza: Math.min(1, vyAntes / 900) }); }
-      if (j.suelo) j.seguroX = j.x;
+      // El último sitio seguro es suelo firme (nunca una barca en marcha).
+      if (j.suelo && !(j.sobre && j.sobre.movil)) { j.seguroX = j.x; j.seguroY = j.y; }
       j.aterriza = Math.max(0, j.aterriza - dt * 5);
 
-      // Caerse del mundo no castiga: vuelve al último sitio seguro.
-      if (j.y > ALTO + 240) { j.x = j.seguroX; j.y = 120; j.vx = 0; j.vy = 0; j.parpadeo = 1.2; evento("reaparece"); }
+      // Caerse no castiga: vuelve al último sitio seguro.
+      if (j.y > ALTO + 240) { j.x = j.seguroX; j.y = j.seguroY - 4; j.vx = 0; j.vy = 0; j.parpadeo = 1.2; evento("reaparece"); }
       j.parpadeo = Math.max(0, j.parpadeo - dt);
 
-      // Letras: se recogen solas al pasar cerca, sin tener que pulsar nada.
-      const cx = j.x + j.w / 2, cy = j.y + j.h / 2;
-      for (const l of letras) {
-        if (l.cogida || Math.hypot(l.x - cx, l.y - cy) > RADIO_LETRA) continue;
-        l.cogida = true;
-        const n = letras.filter(x => x.cogida).length;
-        m.fiesta = n === letras.length ? 2.2 : 1;
-        for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; chispas.push({ x: l.x, y: l.y, vx: Math.cos(a) * 160, vy: Math.sin(a) * 160 - 80, vida: 0.7 }); }
-        evento("letra", { letra: l.l, cogidas: n, total: letras.length, pantalla: aPantalla(l.x, l.y) });
-      }
+      recogerLetras();
       for (let k = chispas.length - 1; k >= 0; k--) {
         const c = chispas[k];
         c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 500 * dt; c.vida -= dt;
         if (c.vida <= 0) chispas.splice(k, 1);
       }
-      // Orilla del río: avisa una vez cada vez que se llega.
-      if (barrera) {
-        if (!enOrilla && j.x + j.w >= barrera.x - 6) { enOrilla = true; evento("orilla", { cogidas: letras.filter(x => x.cogida).length, total: letras.length }); }
-        else if (enOrilla && j.x + j.w < barrera.x - 120) enOrilla = false;
-      }
-      // Construcción del puente: los tablones aparecen uno a uno; al terminar se puede cruzar.
-      if (construyendo) {
-        puenteP = Math.min(1, puenteP + dt / DURACION_PUENTE);
-        if (animado && Math.random() < dt * 30) {
-          const x = rio.x - 14 + Math.random() * (rio.w + 28) * puenteP;
-          chispas.push({ x, y: 296, vx: (Math.random() - 0.5) * 120, vy: -120 - Math.random() * 160, vida: 0.6 });
-        }
-        if (puenteP >= 1) {
-          construyendo = false;
-          if (barrera) { solidos.splice(solidos.indexOf(barrera), 1); barrera = null; }
-          solidos.push({ x: rio.x - 14, y: 300, w: rio.w + 28, h: 14, invisible: true });
-          m.fiesta = 2.2;
-          evento("puente");
-        }
-      }
-      if (meta && puenteHecho && !construyendo && !enMeta && j.x + j.w >= meta.x - 10) {
+      for (const o of obs) actualizarObstaculo(o, dt);
+      if (meta && !enMeta && obs.every(o => o.resuelto) && j.x + j.w >= meta.x - 10) {
         enMeta = true; m.fiesta = 3;
         evento("meta");
       }
       actualizarMascota(dt);
       colocarCamara(false, dt);
+    }
+
+    // Letras: se recogen solas al pasar cerca, sin tener que pulsar nada.
+    function recogerLetras() {
+      const cx = j.x + j.w / 2, cy = j.y + j.h / 2;
+      for (const l of letras) {
+        if (l.cogida || Math.hypot(l.x - cx, l.y - cy) > RADIO_LETRA) continue;
+        l.cogida = true; l.orden = ++orden;
+        const delObs = letras.filter(x => x.o === l.o);
+        const n = delObs.filter(x => x.cogida).length;
+        m.fiesta = n === delObs.length ? 2.2 : 1;
+        for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; chispas.push({ x: l.x, y: l.y, vx: Math.cos(a) * 160, vy: Math.sin(a) * 160 - 80, vida: 0.7 }); }
+        evento("letra", { letra: l.l, o: l.o, cogidas: n, total: delObs.length, pantalla: aPantalla(l.x, l.y) });
+      }
+    }
+    function letrasDe(o) { return letras.filter(l => l.o === o && l.cogida).sort((a, b) => a.orden - b.orden).map(l => l.l); }
+    function totalLetras(o) { return letras.filter(l => l.o === o).length; }
+
+    function actualizarObstaculo(o, dt) {
+      // Llegar al obstáculo: avisa una vez cada vez que se llega.
+      if (!o.resuelto && !o.animando) {
+        if (!o.cerca && j.x + j.w >= o.disparo && j.x < o.disparo + 60) {
+          o.cerca = true;
+          evento("obstaculo", { i: o.i, cogidas: letrasDe(o.i).length, total: totalLetras(o.i) });
+        } else if (o.cerca && j.x + j.w < o.disparo - 120) o.cerca = false;
+      }
+      if (o.animando) {
+        o.p = Math.min(1, o.p + dt / DURACION_SOLUCION);
+        if (animado && Math.random() < dt * 30) {
+          const zona = zonaSolucion(o);
+          chispas.push({ x: zona.x + Math.random() * zona.w * o.p, y: zona.y, vx: (Math.random() - 0.5) * 120, vy: -120 - Math.random() * 160, vida: 0.6 });
+        }
+        if (o.p >= 1) terminarSolucion(o);
+      }
+      if (o.barca) moverBarca(o, dt);
+    }
+    function zonaSolucion(o) {
+      if (o.tipo === "rio") return { x: o.x - 14, w: o.w + 28, y: 296 };
+      if (o.tipo === "muro") return { x: o.x - 4 * 42, w: 4 * 42, y: 300 - (300 - o.arriba) * o.p };
+      return { x: o.x, w: 44, y: 300 - 130 * o.p };
+    }
+    function quitarSolido(s) { const k = solidos.indexOf(s); if (k >= 0) solidos.splice(k, 1); }
+    function terminarSolucion(o) {
+      o.animando = false; o.resuelto = true;
+      if (o.barrera) { quitarSolido(o.barrera); o.barrera = null; }
+      if (o.tipo === "rio" && (o.solucion === "barca" || o.solucion === "balsa")) {
+        const w = o.solucion === "barca" ? 120 : 110;
+        const s = { x: o.x, y: 300, w, h: 16, invisible: true, movil: true };
+        solidos.push(s);
+        o.barca = { s, estado: "lista", destino: o.x + o.w - w };
+        // Mientras la barca no ha zarpado, el borde derecho del agua sigue cerrado.
+        o.tope = { x: o.x + w, y: -600, w: 8, h: 900, invisible: true };
+        solidos.push(o.tope);
+      } else if (o.tipo === "rio") {
+        solidos.push({ x: o.x - 14, y: 300, w: o.w + 28, h: 14, invisible: true });
+      } else if (o.tipo === "muro") {
+        const n = 4, alto = 300 - o.arriba;
+        let encima = null;
+        for (let k = 1; k <= n; k++) {
+          const y = 300 - k * alto / n;
+          const s = { x: o.x - (n - k + 1) * 42, y, w: (n - k + 1) * 42, h: 300 - y, tipo: "escalon", invisible: true };
+          solidos.push(s);
+          if (solapan(j, s)) encima = encima === null ? s.y : Math.min(encima, s.y);
+        }
+        // Si el peldaño nace donde está el jugador, lo sube encima en lugar de dejarlo atrapado.
+        if (encima !== null) { j.y = encima - j.h; j.vy = 0; }
+      }
+      m.fiesta = 2.2;
+      evento("resuelto", { i: o.i });
+    }
+    // Barca y balsa: zarpan cuando el jugador sube y lo llevan hasta la otra orilla.
+    function moverBarca(o, dt) {
+      const b = o.barca, s = b.s;
+      if (b.estado === "lista" && j.sobre === s && j.x >= s.x + 4) {
+        b.estado = "navegando";
+        if (o.tope) { quitarSolido(o.tope); o.tope = null; }
+        evento("zarpa", { i: o.i });
+      }
+      if (b.estado !== "navegando") return;
+      const dx = Math.min(VEL_BARCA * dt, b.destino - s.x);
+      s.x += dx;
+      if (j.sobre === s) j.x += dx;
+      // Barandillas invisibles: durante la travesía no se puede caer al agua.
+      if (j.x + j.w > s.x - 30 && j.x < s.x + s.w + 30) j.x = Math.max(s.x, Math.min(s.x + s.w - j.w, j.x));
+      if (s.x >= b.destino - 0.01) { b.estado = "atracada"; evento("atraca", { i: o.i }); }
     }
 
     function actualizarMascota(dt) {
@@ -197,30 +281,18 @@ PV.expedicionMotor = (function () {
       m.fiesta = Math.max(0, m.fiesta - dt);
     }
 
-    // Al resolver el reto: el puente vuelve, la barrera desaparece y se puede cruzar.
-    function construirPuente() {
-      if (!rio || puenteHecho) return;
-      puenteHecho = true; construyendo = true;
-      puenteP = animado ? 0 : 0.999;          // sin animaciones aparece casi de golpe
+    // Al resolver el reto de un obstáculo: su solución aparece poco a poco.
+    function resolver(i) {
+      const o = obs[i];
+      if (!o || o.resuelto || o.animando) return;
+      o.animando = true;
+      o.p = animado ? 0 : 0.999;          // sin animaciones aparece casi de golpe
       m.fiesta = 1.5;
       dibujar();
     }
 
     // Volver a jugar: todo como al principio, sin crear otra partida.
-    function reiniciar() {
-      Object.assign(j, { x: nivel.inicio.x, y: 300 - j.h, vx: 0, vy: 0, suelo: true, mira: 1, coyote: 0, buffer: 0,
-        cortado: false, tSalto: 0, aterriza: 0, seguroX: nivel.inicio.x, parpadeo: 0 });
-      solidos.length = 0;
-      nivel.solidos.forEach(x => solidos.push(Object.assign({}, x)));
-      barrera = nuevaBarrera();
-      if (barrera) solidos.push(barrera);
-      puenteHecho = false; construyendo = false; puenteP = 0; enOrilla = false; enMeta = false;
-      letras.forEach(l => { l.cogida = false; });
-      chispas.length = 0; rastro.length = 0;
-      Object.assign(m, { x: j.x - 46, y: 300 - 34, fiesta: 0, quieto: 0 });
-      colocarCamara(true);
-      dibujar();
-    }
+    function reiniciar() { preparar(); colocarCamara(true); dibujar(); }
 
     function aPantalla(x, y) {
       const r = lienzo.getBoundingClientRect();
@@ -245,6 +317,12 @@ PV.expedicionMotor = (function () {
       ctx.drawImage(c, -lado / 2, -lado * 0.88, lado, lado);
       ctx.restore();
     }
+    function redondo(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    function visible(x, w) { return x + w > vista.camX - 60 && x < vista.camX + vista.ancho + 60; }
 
     function colinas(factor, alturaBase, amp, periodo, color) {
       const off = vista.camX * factor;
@@ -260,98 +338,200 @@ PV.expedicionMotor = (function () {
       ctx.closePath();
       ctx.fill();
     }
+    function techoCueva() {
+      ctx.fillStyle = "#1c1730";
+      const x0 = Math.floor((vista.camX - 40) / 36) * 36, x1 = vista.camX + vista.ancho + 40;
+      ctx.fillRect(x0, vista.camY - 10, x1 - x0, 26 - vista.camY + 10);
+      ctx.beginPath();
+      for (let x = x0; x < x1; x += 36) {
+        const largo = 14 + ((x / 36) % 4) * 9;
+        ctx.moveTo(x, 16); ctx.lineTo(x + 18, 16 + largo); ctx.lineTo(x + 36, 16);
+      }
+      ctx.fill();
+    }
 
     function bloque(s) {
       if (s.tipo === "suelo") {
-        ctx.fillStyle = "#c98c5a"; ctx.fillRect(s.x, s.y, s.w, s.h + 400);
-        ctx.fillStyle = "#b27748";
+        ctx.fillStyle = tema.tierra; ctx.fillRect(s.x, s.y, s.w, s.h + 400);
+        ctx.fillStyle = tema.tierraOsc;
         for (let x = Math.floor(Math.max(s.x, vista.camX - 40) / 46) * 46; x < Math.min(s.x + s.w, vista.camX + vista.ancho + 40); x += 46) {
-          ctx.beginPath(); ctx.arc(x + 20, s.y + 34 + (x % 3) * 6, 4, 0, 6.3); ctx.fill();
+          for (let f = 0; f < (s.y < 300 ? 4 : 1); f++) { ctx.beginPath(); ctx.arc(x + 20 + f * 9, s.y + 34 + (x % 3) * 6 + f * 48, 4, 0, 6.3); ctx.fill(); }
         }
-        ctx.fillStyle = "#6cc070"; ctx.fillRect(s.x, s.y, s.w, 13);
-        ctx.fillStyle = "#4ea457"; ctx.fillRect(s.x, s.y + 13, s.w, 3);
+        ctx.fillStyle = tema.hierba; ctx.fillRect(s.x, s.y, s.w, 13);
+        ctx.fillStyle = tema.hierbaOsc; ctx.fillRect(s.x, s.y + 13, s.w, 3);
         return;
       }
       const r = 10;
-      ctx.fillStyle = s.tipo === "tocon" ? "#a8693d" : "#9aa3b2";
+      ctx.fillStyle = s.tipo === "tocon" ? "#a8693d" : (tema.oscuro ? "#6f6488" : "#9aa3b2");
       redondo(s.x, s.y, s.w, s.h, r); ctx.fill();
-      ctx.fillStyle = s.tipo === "tocon" ? "#e3b27a" : "#b9c1cd";
+      ctx.fillStyle = s.tipo === "tocon" ? "#e3b27a" : (tema.oscuro ? "#8c80a8" : "#b9c1cd");
       redondo(s.x + 4, s.y + 3, s.w - 8, 10, 5); ctx.fill();
     }
     function plataforma(p) {
-      ctx.fillStyle = "#8a5a35"; redondo(p.x, p.y, p.w, 20, 8); ctx.fill();
-      ctx.fillStyle = "#6cc070"; redondo(p.x - 2, p.y - 2, p.w + 4, 10, 5); ctx.fill();
-      ctx.fillStyle = "#6e4527";
+      ctx.fillStyle = tema.plataforma; redondo(p.x, p.y, p.w, 20, 8); ctx.fill();
+      ctx.fillStyle = tema.hierba; redondo(p.x - 2, p.y - 2, p.w + 4, 10, 5); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,.18)";
       for (let x = p.x + 18; x < p.x + p.w - 10; x += 34) ctx.fillRect(x, p.y + 10, 3, 8);
     }
-    function redondo(x, y, w, h, r) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-    }
-    function dibujarRio() {
-      if (!rio || !visible(rio.x - 20, rio.w + 40)) return;
+
+    function agua(o) {
       const arriba = 322, ola = animado ? tiempo * 3 : 0;
-      ctx.fillStyle = "#4fb3e8"; ctx.fillRect(rio.x, arriba, rio.w, 500);
-      ctx.fillStyle = "#3a9bd3"; ctx.fillRect(rio.x, arriba + 24, rio.w, 500);
+      ctx.fillStyle = tema.agua[0]; ctx.fillRect(o.x, arriba, o.w, 500);
+      ctx.fillStyle = tema.agua[1]; ctx.fillRect(o.x, arriba + 24, o.w, 500);
       ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 3;
       for (let f = 0; f < 2; f++) {
         ctx.beginPath();
-        for (let x = rio.x; x <= rio.x + rio.w; x += 8) {
+        for (let x = o.x; x <= o.x + o.w; x += 8) {
           const y = arriba + 6 + f * 18 + Math.sin(x / 18 + ola + f * 2) * 3;
-          if (x === rio.x) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          if (x === o.x) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
       }
-      if (puenteHecho) {
-        // Puente reconstruido: tablones y barandillas de cuerda. Mientras se construye, caen uno a uno.
-        const tablones = Math.ceil((rio.w + 28) / 22);
-        ctx.strokeStyle = "rgba(201,162,107," + Math.min(1, puenteP * 1.6) + ")"; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(rio.x - 8, 262); ctx.quadraticCurveTo(rio.x + rio.w / 2, 282, rio.x + rio.w + 8, 262); ctx.stroke();
-        for (let k = 0, x = rio.x - 14; x < rio.x + rio.w + 14; x += 22, k++) {
-          const t = Math.max(0, Math.min(1, puenteP * tablones * 1.15 - k));   // avance de este tablón (0..1)
+    }
+    function postes(o, color) {
+      for (const px of [o.x - 14, o.x + o.w + 2]) {
+        ctx.fillStyle = color || "#8a5a35"; redondo(px, 256, 12, 52, 4); ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,.2)"; ctx.fillRect(px, 256, 12, 6);
+      }
+    }
+    function silueta(o, curva) {
+      ctx.setLineDash([10, 9]); ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(o.x, 302); ctx.quadraticCurveTo(o.x + o.w / 2, 302 + curva, o.x + o.w, 302); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    function dibujarRio(o) {
+      if (!visible(o.x - 20, o.w + 40)) return;
+      agua(o);
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      if (o.solucion === "puente") {
+        if (!p) {
+          ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(o.x - 6, 264); ctx.quadraticCurveTo(o.x + 12, 290, o.x + 16, 312); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(o.x + o.w + 6, 264); ctx.quadraticCurveTo(o.x + o.w - 12, 290, o.x + o.w - 16, 312); ctx.stroke();
+          silueta(o, 20); postes(o); return;
+        }
+        // Tablones que caen uno a uno y barandillas de cuerda.
+        const tablones = Math.ceil((o.w + 28) / 22);
+        ctx.strokeStyle = "rgba(201,162,107," + Math.min(1, p * 1.6) + ")"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(o.x - 8, 262); ctx.quadraticCurveTo(o.x + o.w / 2, 282, o.x + o.w + 8, 262); ctx.stroke();
+        for (let k = 0, x = o.x - 14; x < o.x + o.w + 14; x += 22, k++) {
+          const t = Math.max(0, Math.min(1, p * tablones * 1.15 - k));
           if (t <= 0) continue;
-          ctx.save();
-          ctx.globalAlpha = t;
-          ctx.translate(0, -(1 - t) * 60);
+          ctx.save(); ctx.globalAlpha = t; ctx.translate(0, -(1 - t) * 60);
           ctx.fillStyle = "#a8693d"; redondo(x + 1, 300, 20, 12, 3); ctx.fill();
           ctx.fillStyle = "#c98c5a"; ctx.fillRect(x + 3, 301, 16, 3);
           ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 2;
-          const yc = 262 + 20 * (1 - Math.pow((x + 11 - rio.x - rio.w / 2) / (rio.w / 2 + 14), 2));
+          const yc = 262 + 20 * (1 - Math.pow((x + 11 - o.x - o.w / 2) / (o.w / 2 + 14), 2));
           ctx.beginPath(); ctx.moveTo(x + 11, yc); ctx.lineTo(x + 11, 300); ctx.stroke();
           ctx.restore();
         }
-        for (const px of [rio.x - 14, rio.x + rio.w + 2]) { ctx.fillStyle = "#8a5a35"; redondo(px, 256, 12, 52, 4); ctx.fill(); }
+        postes(o);
+      } else if (o.solucion === "hielo") {
+        if (!p) {
+          ctx.fillStyle = "rgba(255,255,255,.85)";
+          for (let k = 0; k < 4; k++) { redondo(o.x + 20 + k * (o.w - 60) / 3 + (animado ? Math.sin(tiempo + k) * 6 : 0), 318, 30, 8, 4); ctx.fill(); }
+          silueta(o, 0); return;
+        }
+        // El agua se congela de orilla a orilla.
+        const ancho = (o.w + 28) * p;
+        ctx.fillStyle = "rgba(214,240,255,.95)"; redondo(o.x - 14, 300, ancho, 16, 5); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.95)"; ctx.lineWidth = 2;
+        for (let x = o.x; x < o.x - 14 + ancho - 20; x += 46) { ctx.beginPath(); ctx.moveTo(x, 305); ctx.lineTo(x + 18, 305); ctx.stroke(); }
+        ctx.fillStyle = "#9fd4f2"; ctx.fillRect(o.x - 14, 312, ancho, 4);
+      } else {
+        // Barca o balsa: sale del agua en la orilla y después navega.
+        if (!p) { silueta({ x: o.x, w: o.solucion === "barca" ? 120 : 110 }, 26); return; }
+        const s = o.barca ? o.barca.s : { x: o.x, w: o.solucion === "barca" ? 120 : 110 };
+        const vaiven = o.barca && o.barca.estado === "navegando" && animado ? Math.sin(tiempo * 4) * 2 : 0;
+        ctx.save(); ctx.globalAlpha = Math.min(1, p * 1.5); ctx.translate(0, (1 - p) * 30 + vaiven);
+        if (o.solucion === "barca") {
+          ctx.fillStyle = "#b5653a";
+          ctx.beginPath(); ctx.moveTo(s.x - 6, 300); ctx.lineTo(s.x + s.w + 6, 300); ctx.lineTo(s.x + s.w - 14, 322); ctx.lineTo(s.x + 14, 322); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = "#e3b27a"; ctx.fillRect(s.x - 4, 300, s.w + 8, 5);
+          ctx.fillStyle = "#8a5a35"; ctx.fillRect(s.x + s.w / 2 - 3, 214, 6, 88);
+          ctx.fillStyle = "#fff";
+          ctx.beginPath(); ctx.moveTo(s.x + s.w / 2 + 4, 218); ctx.lineTo(s.x + s.w / 2 + 48, 286); ctx.lineTo(s.x + s.w / 2 + 4, 286); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = "#ff7aa8"; ctx.beginPath(); ctx.moveTo(s.x + s.w / 2 - 3, 214); ctx.lineTo(s.x + s.w / 2 - 22, 222); ctx.lineTo(s.x + s.w / 2 - 3, 230); ctx.fill();
+        } else {
+          for (let k = 0; k < 3; k++) { ctx.fillStyle = k % 2 ? "#9b6136" : "#b5743f"; redondo(s.x, 300 + k * 6, s.w, 7, 3.5); ctx.fill(); }
+          ctx.fillStyle = "#e3c48f"; ctx.fillRect(s.x + 16, 299, 5, 19); ctx.fillRect(s.x + s.w - 21, 299, 5, 19);
+        }
+        ctx.restore();
+      }
+    }
+    function dibujarMuro(o) {
+      if (!visible(o.x - 200, 220)) return;
+      const n = 4, alto = 300 - o.arriba;
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      if (!p) {
+        ctx.setLineDash([8, 8]); ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(o.x - n * 42, 300);
+        for (let k = 1; k <= n; k++) { const y = 300 - k * alto / n; ctx.lineTo(o.x - (n - k + 1) * 42, y); ctx.lineTo(o.x - (n - k) * 42, y); }
+        ctx.stroke(); ctx.setLineDash([]);
         return;
       }
-      // Lo que queda del puente: postes y cuerdas rotas, y su silueta punteada.
-      ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(rio.x - 6, 264); ctx.quadraticCurveTo(rio.x + 12, 290, rio.x + 16, 312); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(rio.x + rio.w + 6, 264); ctx.quadraticCurveTo(rio.x + rio.w - 12, 290, rio.x + rio.w - 16, 312); ctx.stroke();
-      ctx.setLineDash([10, 9]); ctx.strokeStyle = "rgba(255,255,255,.85)";
-      ctx.beginPath(); ctx.moveTo(rio.x, 302); ctx.quadraticCurveTo(rio.x + rio.w / 2, 322, rio.x + rio.w, 302); ctx.stroke();
-      ctx.setLineDash([]);
-      for (const px of [rio.x - 14, rio.x + rio.w + 2]) {
-        ctx.fillStyle = "#8a5a35"; redondo(px, 256, 12, 52, 4); ctx.fill();
-        ctx.fillStyle = "#6e4527"; ctx.fillRect(px, 256, 12, 6);
+      // Los peldaños de piedra suben uno tras otro.
+      for (let k = 1; k <= n; k++) {
+        const t = Math.max(0, Math.min(1, p * n * 1.1 - (k - 1)));
+        if (t <= 0) continue;
+        const yFinal = 300 - k * alto / n, y = 300 - (300 - yFinal) * t;
+        const x = o.x - (n - k + 1) * 42;
+        ctx.fillStyle = "#a99c8c"; ctx.fillRect(x, y, 42, 300 - y);
+        ctx.fillStyle = "#c9bfb1"; ctx.fillRect(x, y, 42, 7);
+        ctx.fillStyle = "rgba(0,0,0,.12)"; ctx.fillRect(x + 40, y, 2, 300 - y);
+      }
+    }
+    function dibujarPuerta(o) {
+      if (!visible(o.x - 30, 110)) return;
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      const subida = 130 * p, arriba = 170;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(o.x - 10, arriba, 64, 130); ctx.clip();
+      ctx.fillStyle = tema.oscuro ? "#120e1f" : "#3b3346"; ctx.fillRect(o.x, arriba, 44, 130);   // hueco de la entrada
+      const y = arriba - subida;
+      if (o.estilo === "reja") {
+        ctx.fillStyle = "#5d5a66";
+        for (let x = o.x + 2; x < o.x + 44; x += 10) ctx.fillRect(x, y, 4, 130);
+        ctx.fillRect(o.x, y + 30, 44, 5); ctx.fillRect(o.x, y + 90, 44, 5);
+        for (let x = o.x + 2; x < o.x + 44; x += 10) { ctx.beginPath(); ctx.moveTo(x - 2, y + 130); ctx.lineTo(x + 2, y + 140); ctx.lineTo(x + 6, y + 130); ctx.fill(); }
+      } else {
+        ctx.fillStyle = "#8a5a35"; ctx.fillRect(o.x, y, 44, 130);
+        ctx.fillStyle = "#6e4527"; for (let x = o.x + 10; x < o.x + 44; x += 11) ctx.fillRect(x, y, 2, 130);
+        ctx.fillStyle = "#4b4452"; ctx.fillRect(o.x, y + 24, 44, 7); ctx.fillRect(o.x, y + 96, 44, 7);
+        ctx.fillStyle = "#ffcc33"; ctx.beginPath(); ctx.arc(o.x + 32, y + 66, 6, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#3b2a1a"; ctx.fillRect(o.x + 31, y + 66, 2, 8);
+      }
+      ctx.restore();
+      // Muro de piedra alrededor y encima de la entrada.
+      ctx.fillStyle = tema.oscuro ? "#4a3f63" : "#9a948c";
+      ctx.fillRect(o.x - 16, vista.camY - 10, 76, arriba - vista.camY + 10);
+      ctx.fillRect(o.x - 16, arriba, 16, 130); ctx.fillRect(o.x + 44, arriba, 16, 130);
+      ctx.fillStyle = "rgba(0,0,0,.15)";
+      for (let yy = arriba - 30; yy > vista.camY - 30; yy -= 30) ctx.fillRect(o.x - 16, yy, 76, 3);
+      if (!p) emoji("🔒", o.x + 22, arriba - 6, 26);
+    }
+    function dibujarObstaculos() {
+      for (const o of obs) {
+        if (o.tipo === "rio") dibujarRio(o);
+        else if (o.tipo === "muro") dibujarMuro(o);
       }
     }
     function dibujarMeta() {
       if (!meta || !visible(meta.x - 40, 140)) return;
-      const x = meta.x, onda = animado ? tiempo * 5 : 0;
-      ctx.fillStyle = "#8a5a35"; redondo(x - 4, 170, 8, 132, 4); ctx.fill();
-      ctx.fillStyle = "#ffcc33"; ctx.beginPath(); ctx.arc(x, 168, 8, 0, 6.3); ctx.fill();
+      const x = meta.x, b = meta.y, onda = animado ? tiempo * 5 : 0;
+      ctx.fillStyle = "#8a5a35"; redondo(x - 4, b - 130, 8, 132, 4); ctx.fill();
+      ctx.fillStyle = "#ffcc33"; ctx.beginPath(); ctx.arc(x, b - 132, 8, 0, 6.3); ctx.fill();
       ctx.fillStyle = enMeta ? "#4cc764" : "#ff7aa8";
-      ctx.beginPath(); ctx.moveTo(x + 4, 178);
-      for (let k = 0; k <= 10; k++) ctx.lineTo(x + 4 + k * 7, 178 + k * 1.6 + Math.sin(onda + k * 0.6) * 3);
-      for (let k = 10; k >= 0; k--) ctx.lineTo(x + 4 + k * 7, 214 - k * 1.6 + Math.sin(onda + k * 0.6) * 3);
+      ctx.beginPath(); ctx.moveTo(x + 4, b - 122);
+      for (let k = 0; k <= 10; k++) ctx.lineTo(x + 4 + k * 7, b - 122 + k * 1.6 + Math.sin(onda + k * 0.6) * 3);
+      for (let k = 10; k >= 0; k--) ctx.lineTo(x + 4 + k * 7, b - 86 - k * 1.6 + Math.sin(onda + k * 0.6) * 3);
       ctx.closePath(); ctx.fill();
       ctx.font = "900 18px Nunito, 'Segoe UI', system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillStyle = "#fff"; ctx.fillText("META", x + 38, 196 + Math.sin(onda + 3) * 2);
+      ctx.fillStyle = "#fff"; ctx.fillText("META", x + 38, b - 104 + Math.sin(onda + 3) * 2);
     }
     function dibujarLetras() {
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.font = "900 25px Nunito, 'Segoe UI', system-ui, sans-serif";
+      ctx.font = FUENTE_LETRA;
       for (const l of letras) {
         if (l.cogida || !visible(l.x - 30, 60)) continue;
         const y = l.y + (animado ? Math.sin(tiempo * 3 + l.i) * 5 : 0);
@@ -371,11 +551,8 @@ PV.expedicionMotor = (function () {
       if (m.fiesta > 0) { bote = Math.abs(Math.sin(m.fiesta * 9)) * 22; rot = animado ? Math.sin(m.fiesta * 12) * 0.35 : 0; }
       else if (m.quieto > 1.5 && animado) rot = Math.sin(m.t * 2.2) * 0.18;   // espera mirando a los lados
       else if (animado) sy = 1 + Math.sin(m.t * 10) * 0.05;
-      ctx.fillStyle = "rgba(0,0,0,.08)"; ctx.beginPath(); ctx.ellipse(m.x, 300, 11, 3, 0, 0, 6.3); ctx.fill();
       emoji(op.mascota || "🐣", m.x, m.y - bote, 30, m.mira > 0 ? -1 : 1, sy, rot);
     }
-    function visible(x, w) { return x + w > vista.camX - 60 && x < vista.camX + vista.ancho + 60; }
-
     function dibujarJugador() {
       if (j.parpadeo > 0 && Math.floor(j.parpadeo * 10) % 2) return;
       const cx = j.x + j.w / 2, base = j.y + j.h;
@@ -385,19 +562,26 @@ PV.expedicionMotor = (function () {
       else if (moviendo && animado) { rot = Math.sin(j.t * 16) * 0.09; bote = Math.abs(Math.sin(j.t * 16)) * 4; }
       else if (animado) { sy = 1 + Math.sin(j.t * 3) * 0.025; }
       if (j.aterriza > 0) { sx *= 1 + 0.18 * j.aterriza; sy *= 1 - 0.16 * j.aterriza; }
-      // sombra
       if (j.suelo) { ctx.fillStyle = "rgba(0,0,0,.14)"; ctx.beginPath(); ctx.ellipse(cx, base, 20, 5, 0, 0, 6.3); ctx.fill(); }
       const tam = 54;
       // Los emojis de animales miran a la izquierda: se voltean al ir a la derecha.
       emoji(op.icono || "🦊", cx, base - bote, tam, sx * (j.mira > 0 ? -1 : 1), sy, rot);
       if (op.cabeza) emoji(op.cabeza, cx + j.mira * 2, base - bote - tam * 0.78 * sy, tam * 0.45, 1, 1, rot);
     }
+    function dibujarNieve() {
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+      for (const c of copos) {
+        const x = vista.camX + ((c.x + (animado ? Math.sin(tiempo + c.r) * 20 : 0)) % 1000) * vista.ancho / 1000;
+        const y = vista.camY + ((c.y + (animado ? tiempo * c.v : 0)) % 380) - 10;
+        ctx.beginPath(); ctx.arc(x, y, c.r, 0, 6.3); ctx.fill();
+      }
+    }
 
     function dibujar() {
       const k = vista.escala * vista.dpr;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       const g = ctx.createLinearGradient(0, 0, 0, lienzo.height);
-      g.addColorStop(0, nivel.cielo[0]); g.addColorStop(1, nivel.cielo[1]);
+      g.addColorStop(0, tema.cielo[0]); g.addColorStop(1, tema.cielo[1]);
       ctx.fillStyle = g; ctx.fillRect(0, 0, lienzo.width, lienzo.height);
       ctx.setTransform(k, 0, 0, k, -vista.camX * k, -vista.camY * k);
 
@@ -405,17 +589,20 @@ PV.expedicionMotor = (function () {
         const x = d.x + vista.camX * 0.7 + (animado ? (tiempo * 6) % 400 : 0);
         emoji(d.e, x, d.y + d.tam, d.tam);
       }
-      colinas(0.75, 250, 40, 160, "#cfeccf");
-      colinas(0.5, 275, 30, 110, "#a9dca8");
+      colinas(0.75, 250, 40, 160, tema.colinas[0]);
+      colinas(0.5, 275, 30, 110, tema.colinas[1]);
+      if (tema.techo) techoCueva();
       for (const d of nivel.deco) if (!d.nube && d.capa === 0 && visible(d.x - d.tam, d.tam * 2)) emoji(d.e, d.x, d.y + 4, d.tam);
       for (const p of nivel.plataformas) if (visible(p.x, p.w)) plataforma(p);
-      dibujarRio();
+      dibujarObstaculos();
       for (const s of solidos) if (!s.invisible && visible(s.x, s.w)) bloque(s);
+      for (const o of obs) if (o.tipo === "puerta") dibujarPuerta(o);
       dibujarMeta();
       dibujarLetras();
       dibujarMascota();
       dibujarJugador();
       for (const d of nivel.deco) if (!d.nube && d.capa === 1 && visible(d.x - d.tam, d.tam * 2)) emoji(d.e, d.x, d.y + 3, d.tam);
+      if (copos.length) dibujarNieve();
     }
 
     /* ---------- Bucle ---------- */
@@ -439,10 +626,11 @@ PV.expedicionMotor = (function () {
     }
     function destruir() { pausar(); destruido = true; }
 
+    preparar();
     medir();
     return {
-      iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, construirPuente, reiniciar,
-      letrasCogidas: () => letras.filter(l => l.cogida).map(l => l.l),
+      iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, resolver, reiniciar, letrasDe, totalLetras,
+      obstaculo: i => obs[i], get numObstaculos() { return obs.length; },
       get corriendo() { return corriendo; }
     };
   }
@@ -515,6 +703,7 @@ PV.expedicionMotor = (function () {
     window.addEventListener("keydown", ev => {
       const k = ev.key;
       if (![...IZQ, ...DER, ...SALTO].includes(k)) return;
+      if (ev.target && ev.target.closest && ev.target.closest(".ex-panel:not([hidden])")) return;   // en los paneles, el teclado es de los botones
       ev.preventDefault();
       if (SALTO.includes(k)) { if (!ev.repeat) e.saltoPulsado = true; e.saltoMantenido = true; }
       teclas.add(k); ejeTeclado();

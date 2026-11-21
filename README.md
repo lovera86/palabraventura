@@ -51,14 +51,26 @@ Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva ve
 
 ## La expedición de las palabras perdidas
 
-Primer juego de exploración y plataformas, pensado para el móvil en horizontal. Aparece como una tarjeta arriba del todo en Aventura para los perfiles de niño (con la etiqueta NUEVO y la pantalla empezando arriba hasta que se juega por primera vez). En los perfiles de adulto solo se ve si se activa en el dispositivo desde **Ajustes → Zona de adultos → «Mostrar también a adultos»** (o abriendo la app con `?expedicion`; `?expedicion=0` lo quita).
+Juego de exploración y plataformas, pensado para el móvil en horizontal. Aparece como una tarjeta arriba del todo en Aventura para los perfiles de niño (con la etiqueta NUEVO y la pantalla empezando arriba hasta que se abre su mapa). En los perfiles de adulto solo se ve si se activa en el dispositivo desde **Ajustes → Zona de adultos → «Mostrar también a adultos»** (o abriendo la app con `?expedicion`; `?expedicion=0` lo quita).
 
-- **Cómo se juega:** el compañero del jugador (con su accesorio de la cabeza) recorre un bosque con un joystick abajo a la izquierda y un botón de salto abajo a la derecha (se puede correr y saltar a la vez). En el ordenador, flechas o A/D y espacio. Le acompaña su mascota (la del hueco «mascota» o un pollito 🐣).
-- **Letras:** las seis letras de PUENTE están repartidas en desorden; se recogen solas al pasar cerca y vuelan al marcador de arriba.
-- **Reto:** al llegar al río con todas, se ordenan tocando fichas grandes; un hueco se toca para devolver su letra. Fallar no quita nada. Tras dos intentos hay pistas: imagen y definición; después, la voz dice la palabra y la primera letra queda fija.
-- **Final:** el puente se reconstruye tablón a tablón, se cruza hasta la meta y hay celebración con premio: la primera vez ⭐ 10, 🪙 20 y la insignia «Puente mágico»; al repetir, ⭐ 3 y 🪙 5. «Volver a jugar» reinicia el nivel.
+- **Mapa de 6 niveles**, que se abren en orden al completar el anterior y se pueden repetir:
+
+  | Nivel | Obstáculo | Palabra | Regla | Letra trampa |
+  |---|---|---|---|---|
+  | 1. El bosque | río → puente | PUENTE | ordenar letras | — |
+  | 2. El lago | lago → barca | BARCA | B / V | V |
+  | 3. El acantilado | acantilado → escalera | ESCALERA | S / Z | Z |
+  | 4. La cueva | puerta → se abre | LLAVE | LL / Y | Y |
+  | 5. La montaña | río → hielo | HIELO | H | Y |
+  | 6. El castillo | foso → balsa; reja → se abre | BALSA y REJA | S / Z · G / J | Z, G |
+
+- **Cómo se juega:** el compañero del jugador (con su accesorio de la cabeza) avanza con un joystick abajo a la izquierda y un botón de salto abajo a la derecha (se puede correr y saltar a la vez). En el ordenador, flechas o A/D y espacio. Le acompaña su mascota (la del hueco «mascota» o un pollito 🐣).
+- **Letras:** las de cada palabra están repartidas en desorden; se recogen solas al pasar cerca y vuelan al marcador de arriba, que muestra la palabra que toca.
+- **Reto:** al llegar al obstáculo con todas las letras, se ordenan tocando fichas grandes; un hueco se toca para devolver su letra. Hay una **letra trampa** con la falta de ortografía típica: si se usa, se explica la regla («Barca se escribe con B, como barco y bote»). Fallar no quita nada. Tras dos intentos hay pistas: imagen y definición; después, la voz dice la palabra y la primera letra queda fija.
+- **Al acertar**, la solución aparece animada (puente tablón a tablón, barca o balsa que navega con el jugador, escalera de piedra, río que se congela, puerta o reja que se levanta) y se sigue hasta la meta.
+- **Premio por nivel:** la primera vez ⭐ 10 y 🪙 20; al repetir, ⭐ 3 y 🪙 5. Insignias «Puente mágico» (nivel 1) y «Gran expedición» (todos), que solo se muestran al ganarlas.
 - **Móvil:** en vertical sale «Gira el móvil» (con «Jugar así»); en Android se intenta la pantalla completa en horizontal. Se pausa sola al cambiar de app o bloquear el móvil. Sin temporizadores, vidas ni castigos: caerse devuelve al último sitio seguro.
-- **Contenido separado del motor:** `js/expedicion/nivel-puente.js` tiene el escenario, las letras, la palabra, las pistas y los premios; cambiarlos no exige tocar el motor.
+- **Contenido separado del motor:** `js/expedicion/niveles.js` tiene escenarios, letras, palabras, letras trampa, pistas y premios. Para añadir un nivel basta con describirlo ahí y añadir su id a `PV.EXPEDICION_ORDEN`; el motor ya sabe hacer ríos (puente, hielo, barca, balsa), acantilados (escalera) y puertas (madera o reja).
 
 ## Estructura
 
@@ -74,7 +86,7 @@ js/motor.js           Motor adaptativo: registrarRespuesta, actualizarHabilidad,
                       seleccionarSesion (con reglas preferidas por misión), buscarComprobacion, estadoHabilidad
 js/recompensas.js     Estrellas, monedas, cofres, tesoros, mercadillo, insignias, evolución; sonidos
 js/app.js             Pantallas e interacción
-js/expedicion/        La expedición: nivel-puente.js (contenido), motor.js (física, dibujo en canvas y controles
+js/expedicion/        La expedición: niveles.js (contenido de los 6 niveles), motor.js (física, dibujo en canvas y controles
                       táctiles) y expedicion.js (pantallas del juego: intro, reto, pausa, meta)
 ```
 

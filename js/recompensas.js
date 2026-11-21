@@ -93,8 +93,10 @@ PV.recompensas = (function () {
     { id: "superacion", icono: "💪", nombre: "Superación", desc: "Supera 5 palabras de tu lista de repaso." },
     { id: "coleccionista", icono: "🖼️", nombre: "Coleccionista", desc: "Reúne 10 objetos del álbum." },
     { id: "rey-castillo", icono: "🏰", nombre: "Héroe del castillo", desc: "Supera el Gran Desafío del castillo." },
-    { id: "puente-magico", icono: "🌉", nombre: "Puente mágico", desc: "Reconstruye el puente de la expedición." }
+    { id: "puente-magico", icono: "🌉", nombre: "Puente mágico", desc: "Reconstruye el puente de la expedición." },
+    { id: "gran-expedicion", icono: "🏆", nombre: "Gran expedición", desc: "Completa todos los niveles de la expedición de las palabras perdidas." }
   ];
+  function expedicionCompleta(p) { return (PV.EXPEDICION_ORDEN || []).length > 0 && PV.EXPEDICION_ORDEN.every(id => ((p.expedicion || {})[id] || {}).completada); }
   const ESTRELLAS_POR_NIVEL = 25;
   const BONUS = { mision: { estrellas: 3, monedas: 5 }, jefe: { estrellas: 5, monedas: 10 }, decision: 6 };
 
@@ -113,6 +115,7 @@ PV.recompensas = (function () {
       else if (ins.id === "coleccionista") ok = p.coleccion.length >= 10;
       else if (ins.id === "rey-castillo") ok = !!(p.misiones["castillo-jefe"] || {}).completada;
       else if (ins.id === "puente-magico") ok = !!((p.expedicion || {}).puente || {}).completada;
+      else if (ins.id === "gran-expedicion") ok = expedicionCompleta(p);
       if (ok) { p.insignias.push(ins.id); nuevas.push(ins); }
     });
     return nuevas;
@@ -125,6 +128,7 @@ PV.recompensas = (function () {
     if (ins.hab) return t === "nino";
     if (ins.id === "rey-castillo") return t === "nino";
     if (ins.id === "puente-magico") return !!((p.expedicion || {}).puente || {}).completada;   // no adelanta la expedición
+    if (ins.id === "gran-expedicion") return expedicionCompleta(p);
     return true;
   }
 
