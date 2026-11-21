@@ -518,3 +518,53 @@ body.sin-animaciones .fondo { display: none; }
 @keyframes ss-num-b { from { translate: 0 8px; rotate: 6deg; } to { translate: 0 -8px; rotate: -4deg; } }
 @keyframes ss-baila { from { rotate: -5deg; } to { rotate: 5deg; } }
 @media (max-width: 420px) { .seis-siete { bottom: 230px; gap: 40px; } .ss-num { font-size: 2.3rem; } }
+
+/* ===== La expedición de las palabras perdidas ===== */
+.tarjeta-expedicion { display: flex; align-items: center; gap: 14px; width: 100%; margin: 0 0 18px; padding: 16px 18px; border: 0; border-radius: var(--radio);
+  background: linear-gradient(135deg, #3fa9f5, #6cc070); color: #fff; text-align: left; font: inherit; cursor: pointer; box-shadow: 0 5px 0 #2f8f4e; }
+.tarjeta-expedicion:active { translate: 0 3px; box-shadow: 0 2px 0 #2f8f4e; }
+.tarjeta-expedicion .te-icono { font-size: 2.6rem; line-height: 1; }
+.tarjeta-expedicion strong { display: block; font-size: 1.1rem; font-weight: 900; }
+.tarjeta-expedicion small { opacity: .92; font-weight: 700; }
+.tarjeta-expedicion .te-nuevo { margin-left: auto; background: #fff; color: #2f8f4e; font-weight: 900; font-size: .75rem; padding: 4px 10px; border-radius: 99px; }
+
+body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
+.expedicion { position: fixed; inset: 0; z-index: 200; background: #bfe7ff; overflow: hidden; touch-action: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.ex-lienzo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.ex-hud { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: center; gap: 10px;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); pointer-events: none; }
+.ex-hud > * { pointer-events: auto; }
+.ex-titulo { flex: 1; text-align: center; font-weight: 900; font-size: .95rem; color: #2a5a7a; text-shadow: 0 1px 0 #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.ex-boton { width: 44px; height: 44px; border-radius: 14px; border: 0; background: rgba(255,255,255,.9); font-size: 1.2rem; box-shadow: 0 3px 0 rgba(0,0,0,.15); cursor: pointer; touch-action: manipulation; }
+.ex-boton:active { translate: 0 2px; box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+
+/* Controles: solo en pantallas táctiles. Zonas grandes e invisibles; el joystick y el botón son la parte visible. */
+.ex-zona-joy, .ex-zona-salto { position: absolute; bottom: 0; z-index: 2; display: none; touch-action: none; }
+.expedicion.tactil .ex-zona-joy, .expedicion.tactil .ex-zona-salto { display: block; }
+.ex-zona-joy { left: 0; width: 44%; height: 62%; }
+.ex-zona-salto { right: 0; width: 38%; height: 70%; }
+.ex-joy-base { position: absolute; left: max(22px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); width: 116px; height: 116px; border-radius: 50%;
+  background: rgba(255,255,255,.35); border: 3px solid rgba(255,255,255,.8); box-shadow: 0 4px 12px rgba(0,0,0,.12); display: grid; place-items: center; transition: background .15s; }
+.ex-joy-base[style*="top"] { bottom: auto; }
+.ex-joy-base.activa { background: rgba(255,255,255,.5); }
+.ex-joy-mando { width: 54px; height: 54px; border-radius: 50%; background: #fff; box-shadow: 0 3px 0 rgba(0,0,0,.18); pointer-events: none; }
+.ex-salto { position: absolute; right: max(26px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); width: 96px; height: 96px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 2.4rem; font-weight: 900; color: #fff; background: linear-gradient(135deg, #ff9b2f, #ff7aa8);
+  border: 3px solid rgba(255,255,255,.9); box-shadow: 0 6px 0 #d0627e; pointer-events: none; transition: transform .08s; }
+.ex-salto.pulsado { transform: translateY(4px) scale(.95); box-shadow: 0 2px 0 #d0627e; }
+
+.ex-ayuda { position: absolute; left: 50%; top: 58px; translate: -50% 0; z-index: 3; display: flex; gap: 22px; padding: 8px 16px; border-radius: 99px;
+  background: rgba(60,60,74,.82); color: #fff; font-weight: 800; font-size: .9rem; white-space: nowrap; pointer-events: none; transition: opacity .5s; }
+.ex-ayuda.fuera { opacity: 0; }
+.expedicion [hidden] { display: none !important; }
+
+.ex-panel { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 16px; background: rgba(30,32,48,.45); touch-action: manipulation; }
+.ex-tarjeta { width: min(420px, 100%); max-height: 100%; overflow: auto; background: #fff; border-radius: 22px; padding: 18px 20px; text-align: center; box-shadow: 0 8px 0 rgba(0,0,0,.15); }
+.ex-tarjeta h2 { margin: 4px 0 6px; font-size: 1.25rem; }
+.ex-tarjeta p { margin: 0 0 14px; }
+.ex-tarjeta .btn { width: 100%; margin-top: 8px; touch-action: manipulation; }
+.ex-icono-grande { font-size: 3rem; line-height: 1; }
+.ex-girar { display: inline-block; animation: ex-girar 1.6s ease-in-out infinite; }
+@keyframes ex-girar { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@media (max-height: 420px) { .ex-tarjeta { padding: 12px 18px; } .ex-icono-grande { font-size: 2.2rem; } .ex-tarjeta p { margin-bottom: 8px; } }

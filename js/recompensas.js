@@ -228,7 +228,8 @@ PV.sonido = (function () {
     fallo:   [[392, 0, 0.18], [349, 0.14, 0.24]],
     cofre:   [[523, 0, 0.1], [659, 0.1, 0.1], [784, 0.2, 0.1], [1047, 0.3, 0.3]],
     fin:     [[523, 0, 0.15], [659, 0.12, 0.15], [784, 0.24, 0.35]],
-    toque:   [[740, 0, 0.06]]
+    toque:   [[740, 0, 0.06]],
+    salto:   [[523, 0, 0.07], [784, 0.05, 0.09]]
   };
   // En el móvil el audio empieza «suspendido» y se vuelve a suspender al salir de la app:
   // hay que crearlo y reanudarlo dentro de un toque del usuario.

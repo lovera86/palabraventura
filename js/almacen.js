@@ -28,7 +28,8 @@ PV.almacen = (function () {
       misiones: {},        // por misión: completada, veces, ultima
       sonido: true, reducirAnimaciones: false, pin: null,
       habilidades: {}, items: {}, consolidadas: 0, sesiones: [], actividad: {},
-      retoDiario: { fecha: null }, ultimaVisita: null, etapaVista: 0
+      retoDiario: { fecha: null }, ultimaVisita: null, etapaVista: 0,
+      expedicion: {}       // La expedición de las palabras perdidas: ayuda vista, niveles completados
     };
   }
 
@@ -40,7 +41,7 @@ PV.almacen = (function () {
     if (r.avatar.puestos && typeof r.avatar.puestos !== "object") r.avatar.puestos = {};
     r.mascota = Object.assign({ nombre: "" }, d.mascota || {});
     r.retoDiario = Object.assign({ fecha: null }, d.retoDiario || {});
-    ["habilidades", "items", "actividad", "misiones"].forEach(k => { if (!r[k] || typeof r[k] !== "object" || Array.isArray(r[k])) r[k] = {}; });
+    ["habilidades", "items", "actividad", "misiones", "expedicion"].forEach(k => { if (!r[k] || typeof r[k] !== "object" || Array.isArray(r[k])) r[k] = {}; });
     ["accesorios", "insignias", "sesiones", "coleccion"].forEach(k => { if (!Array.isArray(r[k])) r[k] = []; });
     ["estrellas", "monedas", "cofresPendientes", "consolidadas"].forEach(k => { if (typeof r[k] !== "number" || !isFinite(r[k])) r[k] = 0; });
     if (d.esquema < 2) r.etapaVista = PV.mundo ? PV.mundo.etapa(r) : 0; // no celebrar una evolución "antigua"

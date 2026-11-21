@@ -18,6 +18,16 @@
   const ANIMO = ["¡A mí también me pasa!", "¡Juntos lo sacamos!", "¡La próxima es nuestra!", "¡Equivocarse es parte de la aventura!"];
   const ZIGZAG = [0, 52, 78, 52, 0, -52, -78, -52];
   const N_MISION = 7, N_JEFE = 8;
+  // La expedición está en construcción: solo se ve tras abrir la app una vez con «?expedicion» en la dirección
+  // («?expedicion=0» la vuelve a ocultar).
+  const EXPEDICION_VISIBLE = (function () {
+    const K = "palabraventura.expedicion";
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.has("expedicion")) { if (q.get("expedicion") === "0") localStorage.removeItem(K); else localStorage.setItem(K, "1"); }
+      return localStorage.getItem(K) === "1";
+    } catch (e) { return false; }
+  })();
 
   /* ---------- Utilidades ---------- */
   function guardar() { A.guardar(P); }
@@ -228,6 +238,11 @@
     sesion = null;
     const sig = W.siguiente(P);
     let html = `<main class="camino">`;
+    if (EXPEDICION_VISIBLE && P.tipo !== "adulto" && PV.expedicion) {
+      html += `<button type="button" class="tarjeta-expedicion" data-accion="expedicion">
+        <span class="te-icono">🌉</span><span><strong>La expedición de las palabras perdidas</strong><small>Explora, salta y recupera las letras</small></span>
+        <span class="te-nuevo">NUEVO</span></button>`;
+    }
     W.zonas(P).forEach((z, ui) => {
       const ab = W.abierta(P, z);
       html += `<section class="unidad ${ab ? "" : "bloqueada"}" style="--c:${z.color}">
@@ -784,6 +799,15 @@
       sesion = null; pantallaCamino();
     },
     "confirmar-salir": () => { cerrarModal(); sesion = null; pantallaCamino(); },
+    "expedicion": () => {
+      const pu = R.puestos(P), cab = R.accesorio(pu.cabeza);
+      PV.expedicion.abrir({
+        icono: R.animal(P.avatar.animal).icono, cabeza: cab ? cab.icono : null,
+        sonar, animaciones: animacionesOn(),
+        estado: P.expedicion, guardarEstado: e => { P.expedicion = e; guardar(); },
+        alSalir: () => pantallaCamino()
+      });
+    },
     "ir-coleccion": v => pantallaColeccion(v || pestana),
     "elegir-animal": v => { P.avatar.animal = v; guardar(); pantallaColeccion(); },
     "equipar": v => { if (R.alternar(P, v)) { guardar(); sonar("toque"); pantallaColeccion(); } },
