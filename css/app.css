@@ -358,7 +358,7 @@ th { font-size: .85rem; color: var(--suave); }
 @keyframes subir { from { transform: translateY(100%); } }
 @keyframes pop { 0% { transform: scale(.9); opacity: .4; } 70% { transform: scale(1.03); } 100% { transform: scale(1); opacity: 1; } }
 @keyframes chispa { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.4); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { *:not(.seis-siete, .seis-siete *), *:not(.seis-siete *)::before, *:not(.seis-siete *)::after { animation: none !important; transition: none !important; } }
 .sin-animaciones *, .sin-animaciones *::before, .sin-animaciones *::after { animation: none !important; transition: none !important; }
 
 @media (max-width: 420px) {

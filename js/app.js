@@ -110,9 +110,11 @@
 
   /* Celebración «6 7»: el compañero aparece sobre el pie de la lección moviendo las dos manos
      con la palma hacia arriba, una arriba y otra abajo, mientras saltan un 6 y un 7. */
+  // Solo la apaga el ajuste «Menos animaciones» de la propia app (no el «reducir movimiento» del móvil,
+  // que en Android se activa solo con el ahorro de batería): la celebración se enciende o apaga en Ajustes.
   function seisSieteActivo() {
-    if (!animacionesOn()) return false;
-    return P.seisSiete === undefined ? P.tipo !== "adulto" : !!P.seisSiete;
+    if (P.reducirAnimaciones) return false;
+    return seisSieteActivoAjuste();
   }
   function seisSieteActivoAjuste() { return P.seisSiete === undefined ? P.tipo !== "adulto" : !!P.seisSiete; }
   function seisSiete() {
@@ -791,7 +793,7 @@
     "ajustes": () => pantallaAjustes(),
     "guardar-apodo": () => { P.apodo = (document.getElementById("nuevo-apodo").value || "").trim().slice(0, 16); guardar(); aviso("Apodo guardado."); pantallaAjustes(); },
     "sonido": () => { P.sonido = !P.sonido; guardar(); pantallaAjustes(); },
-    "seis-siete": () => { P.seisSiete = !seisSieteActivoAjuste(); guardar(); pantallaAjustes(); if (P.seisSiete && animacionesOn()) seisSiete(); },
+    "seis-siete": () => { P.seisSiete = !seisSieteActivoAjuste(); guardar(); pantallaAjustes(); if (seisSieteActivo()) seisSiete(); },
     "animaciones": () => { P.reducirAnimaciones = !P.reducirAnimaciones; guardar(); aplicarAjustes(); pantallaAjustes(); },
     "adultos": () => abrirAdultos(),
     "comprobar-adulto": () => comprobarAdulto(),
