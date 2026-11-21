@@ -26,13 +26,14 @@ PV.retos = (function () {
     let estado;
 
     function botonesPie(extra) {
-      return `<div class="ex-r-botones">${extra || ""}<button type="button" class="btn btn-gris" data-ex="rt" data-a="salir">Seguir explorando</button></div>`;
+      return `<div class="ex-r-botones">${extra || ""}<button type="button" class="btn btn-gris ex-rt-salir" data-ex="rt" data-a="salir">↩ Salir del reto</button></div>`;
     }
     function cabecera() {
       return `<p class="ex-r-enunciado">${esc(reto.enunciado || NOMBRE[reto.tipo] || "")}</p>`;
     }
     function exito() {
       estado.hecho = true;
+      clearTimeout(estado.temporizador);
       sonar("fin");
       if (reto.decir) h.hablar && h.hablar(reto.decir);
       h.mostrarPanel(`<div class="ex-icono-grande ex-meta-icono">✨</div>
@@ -51,26 +52,31 @@ PV.retos = (function () {
         <div class="ex-opciones">${estado.opciones.map((o, i) => `<button type="button" class="ex-opcion ${estado.marcas[i] || ""}" data-ex="rt" data-a="opcion" data-i="${i}"
           ${estado.marcas[i] === "mal" || estado.bloqueado ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
         <p class="ex-r-msg ${estado.msgClase}" role="status">${esc(estado.msg)}</p>
+        ${estado.listo ? `<button type="button" class="btn btn-verde" data-ex="rt" data-a="siguiente" data-foco>${estado.k + 1 < total ? "➜ SIGUIENTE" : "➜ ¡HECHO!"}</button>` : ""}
         ${botonesPie()}`, "ancha");
+    }
+    function avanzar() {
+      if (!estado || estado.hecho || !estado.listo) return;
+      clearTimeout(estado.temporizador);
+      estado.listo = false;
+      estado.k++;
+      if (estado.k >= estado.rondas.length) exito(); else nuevaRonda();
     }
     function nuevaRonda() {
       const r = estado.rondas[estado.k];
-      estado.opciones = mezclar(r.opciones); estado.marcas = {}; estado.msg = ""; estado.msgClase = ""; estado.bloqueado = false;
+      estado.opciones = mezclar(r.opciones); estado.marcas = {}; estado.msg = ""; estado.msgClase = ""; estado.bloqueado = false; estado.listo = false;
       pintarElegir();
     }
     function opcion(i) {
       const r = estado.rondas[estado.k];
       if (estado.bloqueado) return;
       if (estado.opciones[i] === r.respuesta) {
-        estado.marcas[i] = "bien"; estado.bloqueado = true;
+        estado.marcas[i] = "bien"; estado.bloqueado = true; estado.listo = true;
         estado.msg = r.explicacion ? `¡Eso es! ${r.explicacion}` : "¡Eso es!"; estado.msgClase = "bien";
         sonar("letra");
         pintarElegir();
-        setTimeout(() => {
-          if (!estado || estado.hecho) return;
-          estado.k++;
-          if (estado.k >= estado.rondas.length) exito(); else nuevaRonda();
-        }, r.explicacion ? 1700 : 900);
+        const k = estado.k;
+        estado.temporizador = setTimeout(() => { if (estado && estado.k === k && !fuera) avanzar(); }, r.explicacion ? 3500 : 2200);
       } else {
         estado.marcas[i] = "mal"; estado.fallos++;
         estado.msg = r.pista ? `Casi… Pista: ${r.pista}` : "Casi… ¡prueba otra!"; estado.msgClase = "mal";
@@ -150,10 +156,10 @@ PV.retos = (function () {
         if (a.par === b.par) {
           a.hecha = b.hecha = true; estado.abiertas = [];
           estado.msg = "¡Pareja! ✨"; estado.msgClase = "bien"; sonar("letra");
-          if (estado.cartas.every(x => x.hecha)) { pintarMemoria(); return setTimeout(() => { if (estado && !estado.hecho) exito(); }, 700); }
+          if (estado.cartas.every(x => x.hecha)) { estado.hecho = true; pintarMemoria(); return setTimeout(() => { if (estado && !fuera) exito(); }, 700); }
         } else {
           estado.bloqueado = true; estado.msg = "No son pareja. ¡Recuerda dónde estaban!"; estado.msgClase = "";
-          setTimeout(() => { if (!estado) return; estado.abiertas = []; estado.bloqueado = false; pintarMemoria(); }, 1100);
+          setTimeout(() => { if (!estado) return; estado.abiertas = []; estado.bloqueado = false; if (!fuera) pintarMemoria(); }, 1100);
         }
       }
       pintarMemoria();
@@ -179,7 +185,7 @@ PV.retos = (function () {
         setTimeout(() => {
           if (!estado || estado.hecho) return;
           estado.k++; estado.marcas = {}; estado.msg = ""; estado.msgClase = ""; estado.bloqueado = false;
-          if (estado.k >= estado.elementos.length) exito(); else pintarClasificar();
+          if (estado.k >= estado.elementos.length) { estado.hecho = true; if (!fuera) exito(); } else if (!fuera) pintarClasificar();
         }, 700);
       } else {
         estado.marcas = { [id]: "mal" }; estado.msg = e.porque ? `Casi… ${e.porque}` : "Casi… ¡prueba la otra!"; estado.msgClase = "mal"; sonar("fallo");
@@ -202,11 +208,14 @@ PV.retos = (function () {
         pintarMemoria();
       } else if (reto.tipo === "clasificar") { estado.elementos = mezclar(reto.elementos); pintarClasificar(); }
     }
+    let fuera = false, terminado = false;
     function accion(a, b) {
       if (!estado) return;
       const i = b && b.dataset.i !== undefined ? b.dataset.i : null;
-      if (a === "salir") { estado = null; return h.alSalir && h.alSalir(); }
-      if (a === "resolver") { estado = null; return h.alResolver && h.alResolver(); }
+      // Salir no borra lo hecho: al volver se sigue en el mismo punto.
+      if (a === "salir") { fuera = true; clearTimeout(estado.temporizador); return h.alSalir && h.alSalir(); }
+      if (a === "resolver") { terminado = true; estado = null; return h.alResolver && h.alResolver(); }
+      if (a === "siguiente") return avanzar();
       if (estado.hecho) return;
       if (a === "opcion") opcion(Number(i));
       else if (a === "poner") poner(Number(i));
@@ -215,16 +224,27 @@ PV.retos = (function () {
       else if (a === "carta") carta(Number(i));
       else if (a === "cesta") cesta(i);
     }
-    // Si el reto vuelve a abrirse (tras «Seguir explorando»), empieza de cero sin castigo.
+    // Volver a abrir un reto que se dejó a medias: se pinta tal como estaba.
+    function reabrir() {
+      fuera = false;
+      if (!estado || !estado.rondas && !estado.fichas && !estado.cartas && !estado.elementos) return empezar();
+      if (estado.hecho) return exito();
+      if (reto.tipo === "elegir") { if (estado.listo) avanzar(); else pintarElegir(); }
+      else if (reto.tipo === "frase") pintarFrase();
+      else if (reto.tipo === "memoria") { estado.abiertas = []; estado.bloqueado = false; pintarMemoria(); }
+      else if (reto.tipo === "clasificar") pintarClasificar();
+    }
+    const control = { accion, reabrir, get activo() { return !!estado; }, get terminado() { return terminado; } };
     if (reto.intro && !h.introVista) {
       estado = { hecho: false };
       h.mostrarPanel(`<div class="ex-icono-grande">${reto.icono || "🧩"}</div>
         <h2>${esc(NOMBRE[reto.tipo] || "Reto")}</h2><p>${esc(reto.intro)}</p>
         <button type="button" class="btn btn-verde" data-ex="rt" data-a="empezar" data-foco>¡EMPEZAR!</button>`, "ancha");
-      return { accion(a, b) { if (a === "empezar") { h.introLeida && h.introLeida(); empezar(); } else accion(a, b); }, get activo() { return !!estado; } };
+      control.accion = (a, b) => { if (a === "empezar") { h.introLeida && h.introLeida(); empezar(); } else accion(a, b); };
+      return control;
     }
     empezar();
-    return { accion, get activo() { return !!estado; } };
+    return control;
   }
 
   return { abrir, mezclar };

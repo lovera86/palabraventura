@@ -55,17 +55,17 @@ Modo de aventura por capítulos dentro de la expedición (al abrirla se elige en
 
 - **Capítulo 1: El mapa perdido.** El viento ha roto el mapa en 6 trozos y cada zona devuelve uno:
 
-  | Zona | Retos | Consecuencia |
+  | Zona | Retos (3 por zona) | Consecuencias |
   |---|---|---|
-  | 1. El bosque | buscar un objeto leyendo la pista (la llave dorada, no la inglesa ni la vieja) · formar TRONCO | se abre una jaula y una ardilla queda libre · un tronco cruza el río |
-  | 2. La cueva | adivinanzas | se enciende un farol y se ilumina la cueva · se abre una puerta |
-  | 3. El río | formar BARCO (con letra trampa) · letra que falta | sale un barco · se repara un ascensor |
-  | 4. El campamento | memoria (dibujo y palabra) · clasificar (animal o planta) | se enciende la hoguera · se abre la valla |
-  | 5. La montaña | ordenar frases | se abre una reja · aparece una escalera |
-  | 6. El castillo | formar CASTILLO · batalla final con sinónimos, antónimos, rimas, adivinanzas y ortografía | una balsa cruza el foso · el Guardián se convierte en mariposas |
+  | 1. El bosque | buscar leyendo la pista (la llave dorada, no la inglesa ni la vieja) · vocabulario con dibujos · formar TRONCO | jaula abierta · puerta · un tronco cruza el río |
+  | 2. La cueva | adivinanzas · más adivinanzas · buscar «lo que alumbra, se lleva en la mano y funciona con pilas» | farol que ilumina la cueva · puerta · jaula del ratón |
+  | 3. El río | formar BARCO (letra trampa) · corregir carteles con faltas · letra que falta | barco · compuerta · ascensor reparado |
+  | 4. El campamento | memoria dibujo–palabra · clasificar animal o planta · rimas | hoguera · valla · reja |
+  | 5. La montaña | ordenar una frase · clasificar acción o cosa · ordenar otra frase | reja · arroyo helado · escalera |
+  | 6. El castillo | formar CASTILLO · memoria de sinónimos · batalla final mezclada | balsa · muralla · el Guardián se convierte en mariposas |
 
-- **Retos:** se explican con una frase la primera vez; los errores dan una pista y otra oportunidad, sin quitar nada.
-- **Gemas secretas:** 3 por zona, opcionales; la mascota se acerca a ellas (✨) para dar una pista.
+- **Retos:** se explican con una frase la primera vez; los errores dan una pista y otra oportunidad, sin quitar nada. Al acertar sale «➜ SIGUIENTE»; si se sale del reto («↩ Salir del reto»), al volver se sigue en el mismo punto.
+- **Gemas secretas:** 4 por zona, opcionales; la mascota se acerca a ellas (✨) para dar una pista.
 - **Premios:** cada zona da ⭐ 3 y 🪙 5 la primera vez; el capítulo completo, ⭐ 25, 🪙 40 y la insignia «Mapa recuperado».
 - **Archivos:** `js/expedicion/capitulos.js` (zonas y contenido, solo datos: una zona se describe con `zona({…})` y el recorrido se monta solo) y `js/expedicion/retos.js` (paneles reutilizables de los retos: elegir, frase, memoria y clasificar). El contenido nuevo (adivinanzas, frases, relaciones, categorías) conviene revisarlo a mano.
 

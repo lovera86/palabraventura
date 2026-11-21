@@ -595,6 +595,7 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 /* Retos de la Gran Expedición */
 .ex-mapa.zonas, .expedicion .ex-mapa.zonas { grid-template-columns: repeat(3, 1fr) !important; }
 @media (max-width: 420px) { .ex-mapa.zonas, .expedicion .ex-mapa.zonas { grid-template-columns: repeat(2, 1fr) !important; } }
+.ex-rt-salir { font-size: .9rem; min-height: 40px; opacity: .85; }
 .ex-rt-puntos { display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
 .ex-rt-puntos span { width: 10px; height: 10px; border-radius: 50%; background: var(--linea); }
 .ex-rt-puntos span.hecho { background: var(--verde); }

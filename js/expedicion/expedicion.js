@@ -250,7 +250,7 @@ PV.expedicion = (function () {
       if (tipo === "par") { fraseBarca = d.q ? (d.q.frase || "¿Cuál está bien escrita?") : ""; pintarMarcador(); }
       if (tipo === "atraca") { ctx.sonar && ctx.sonar("cofre"); aviso("¡Has llegado al puerto! Baja y ve hasta la meta 🏁"); }
       if (tipo === "objeto") objetoTocado(d);
-      if (tipo === "secreto") { ctx.sonar && ctx.sonar("cofre"); aviso(`💎 ¡Gema secreta! (${d.cogidas} de ${d.total})`); pintarMarcador(); }
+      if (tipo === "secreto") { ctx.sonar && ctx.sonar("cofre"); aviso(`💎 ¡Gema secreta! (${d.cogidos} de ${d.total})`); pintarMarcador(); }
       const obT = tipo === "obstaculo" ? partida.obstaculo(d.i) : null;
       const tipoReto = obT && obT.reto && obT.reto.tipo;
       if (obT && obT.tipo === "jefe") abrirBatalla(d.i);
@@ -553,13 +553,15 @@ PV.expedicion = (function () {
     function abrirRetoNuevo(i) {
       const ob = partida.obstaculo(i), clave = nivel.id + "-" + i;
       pausar();
+      // Si se salió a medias, se vuelve al mismo punto (misma pregunta, mismas cartas…).
+      if (ob.control && !ob.control.terminado) { retoNuevo = ob.control; retoNuevo.reabrir(); return; }
       estado.intros = estado.intros || {};
-      retoNuevo = PV.retos.abrir(ob.reto, {
+      retoNuevo = ob.control = PV.retos.abrir(ob.reto, {
         mostrarPanel, esc, sonar: n => ctx.sonar && ctx.sonar(n), hablar,
         introVista: !!estado.intros[clave],
         introLeida() { estado.intros[clave] = true; guardar(); },
         alResolver() { retoNuevo = null; partida.resolver(i); seguir(); },
-        alSalir() { retoNuevo = null; seguir(); aviso("Cuando quieras, vuelve a intentarlo 👍"); }
+        alSalir() { retoNuevo = null; seguir(); aviso("Cuando vuelvas, seguirás donde lo dejaste 👍"); }
       });
     }
     /* Buscar: un personaje pide un objeto que hay en el escenario. Tocar otros objetos dice qué son. */
