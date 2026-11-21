@@ -273,7 +273,8 @@
     html += `</main>`;
     render(marco(html, "camino"), () => pantallaCamino(true), conservar);
     if (!conservar) {
-      const n = app.querySelector(".nodo.actual");
+      // Con la expedición activada, la pantalla empieza arriba para que su tarjeta se vea nada más entrar.
+      const n = app.querySelector(".tarjeta-expedicion") ? null : app.querySelector(".nodo.actual");
       if (n) n.scrollIntoView({ block: "center" });
     }
   }
