@@ -230,11 +230,28 @@ PV.sonido = (function () {
     fin:     [[523, 0, 0.15], [659, 0.12, 0.15], [784, 0.24, 0.35]],
     toque:   [[740, 0, 0.06]]
   };
+  // En el móvil el audio empieza «suspendido» y se vuelve a suspender al salir de la app:
+  // hay que crearlo y reanudarlo dentro de un toque del usuario.
+  function contexto() {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state !== "running" && ctx.resume) ctx.resume().catch(() => {});
+    return ctx;
+  }
+  // iPhone: que suene aunque el interruptor de silencio esté puesto (Safari 16.4+).
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no disponible */ }
+  function desbloquear() {
+    try {
+      const c = contexto();
+      const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource();
+      s.buffer = b; s.connect(c.destination); s.start(0);
+    } catch (e) { /* sin sonido */ }
+  }
+  ["pointerdown", "touchend", "keydown"].forEach(ev => document.addEventListener(ev, desbloquear, { capture: true, passive: true }));
   function play(nombre, activo) {
     if (!activo) return;
     try {
-      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-      const t0 = ctx.currentTime;
+      contexto();
+      const t0 = ctx.currentTime + 0.02;
       (SECUENCIAS[nombre] || []).forEach(([f, t, d]) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = "triangle"; o.frequency.value = f;

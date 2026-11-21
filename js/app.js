@@ -130,8 +130,10 @@
       try {
         const u = new SpeechSynthesisUtterance("six seven");
         u.lang = "en-US"; u.rate = 1.05; u.pitch = 1.25; u.volume = 0.9;
-        window.speechSynthesis.cancel();
-        setTimeout(() => window.speechSynthesis.speak(u), 180);
+        // En el móvil la voz solo arranca si se pide en el mismo toque del usuario: nada de setTimeout.
+        if (window.speechSynthesis.speaking || window.speechSynthesis.pending) window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(u);
       } catch (e) { /* sin voz */ }
     }
   }
