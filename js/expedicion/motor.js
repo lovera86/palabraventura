@@ -2,7 +2,11 @@
    Canvas 2D sin dependencias: física con paso fijo, colisiones de cajas, cámara lateral, dibujo con emojis
    (pintados una vez en lienzos pequeños y reutilizados) y entrada táctil multitoque con Pointer Events.
    Los obstáculos (río, acantilado, puerta) se superan formando una palabra; al resolverlos se anima su
-   solución (puente, hielo, barca o balsa, escalera, puerta que se abre).
+   solución (puente, hielo, barca o balsa, escalera, puerta que se abre). Los jefes son obstáculos que se
+   vencen en una batalla de palabras.
+   Personajes: Borrones (enemigos que pasean; si tocan al jugador le quitan una letra, y si les salta encima
+   se convierten en mariposas: nadie muere) y amiguitos (piden ayuda con una palabra y regalan un poder:
+   doble salto, imán de letras o escudo).
    Nada de este archivo toca el resto de la app: recibe un nivel y un lienzo y avisa con eventos. */
 PV.expedicionMotor = (function () {
   const ALTO = 360;                 // alto lógico del mundo que siempre se ve entero
@@ -61,25 +65,36 @@ PV.expedicionMotor = (function () {
 
     // Estado de la partida (copias propias: no se tocan los datos del nivel, así se puede volver a jugar).
     let solidos = [], obs = [], letras = [], enMeta = false, orden = 0;
-    const chispas = [];
+    let enemigos = [], amigos = [], congelado = false, foco = null;
+    const poderes = { dobleSalto: false, iman: false, escudo: false };
+    const chispas = [], rayos = [];
     // Mascota: sigue el rastro del jugador con un poco de retraso, flotando (no choca con nada, así nunca se atasca).
     const m = { x: 0, y: 0, mira: 1, fiesta: 0, quieto: 0, t: 0 };
     const rastro = [];
 
     function preparar() {
       Object.assign(j, { x: nivel.inicio.x, vx: 0, vy: 0, suelo: true, mira: 1, coyote: 0, buffer: 0, cortado: false, tSalto: 0,
-        aterriza: 0, parpadeo: 0, sobre: null });
+        aterriza: 0, parpadeo: 0, sobre: null, dobleUsado: false });
+      poderes.dobleSalto = poderes.iman = poderes.escudo = false;
+      congelado = false; foco = null; rayos.length = 0;
+      enemigos = (nivel.enemigos || []).map(e => ({ x: e.desde + (e.hasta - e.desde) / 2, desde: e.desde, hasta: e.hasta, w: 40, h: 34,
+        dir: e.dir || 1, vel: e.vel || 55, estado: "anda", t: 0 }));
+      amigos = (nivel.amigos || []).map((a, i) => Object.assign({ i, ayudado: false, cerca: false }, a));
       j.y = alturaSuelo(j.x) - j.h; j.seguroX = j.x; j.seguroY = j.y;
       solidos = nivel.solidos.map(s => Object.assign({}, s));
       obs = (nivel.obstaculos || []).map((o, i) => {
         const e = Object.assign({}, o, { i, resuelto: false, animando: false, p: 0, cerca: false, solidos: [] });
         if (o.tipo === "rio") e.barrera = { x: o.x - 10, y: -600, w: 10, h: 900, invisible: true };
+        if (o.tipo === "jefe") {
+          e.barrera = { x: o.x - 70, y: -600, w: 10, h: 900, invisible: true };
+          e.vida = o.vida || 3; e.golpe = 0; e.risa = 0;
+        }
         if (o.tipo === "puerta") {
           e.barrera = { x: o.x, y: -600, w: 44, h: 900, invisible: true };
           solidos.push({ x: o.x - 16, y: -600, w: 76, h: 600 + 170, invisible: true });     // roca sobre la puerta
         }
         if (e.barrera) solidos.push(e.barrera);
-        e.disparo = (o.tipo === "rio" ? o.x - 10 : o.x) - 6;
+        e.disparo = (o.tipo === "rio" ? o.x - 10 : o.tipo === "jefe" ? o.x - 70 : o.x) - 6;
         return e;
       });
       letras = (nivel.letras || []).map((l, i) => Object.assign({ i, o: 0, cogida: false, orden: 0 }, l));
@@ -116,7 +131,8 @@ PV.expedicionMotor = (function () {
     /* ---------- Física ---------- */
     function actualizar(dt) {
       tiempo += dt; j.t += dt;
-      const eje = entrada.eje || entrada.ejeTeclado;
+      const eje = congelado ? 0 : (entrada.eje || entrada.ejeTeclado);
+      if (congelado) entrada.saltoPulsado = false;
       const objetivo = eje * FIS.vel;
       const acelerando = objetivo !== 0 && Math.sign(objetivo) === Math.sign(j.vx || objetivo) && Math.abs(objetivo) >= Math.abs(j.vx);
       j.vx = acercar(j.vx, objetivo, (acelerando ? FIS.acel : FIS.frenado) * (j.suelo ? 1 : FIS.aire) * dt);
@@ -126,6 +142,11 @@ PV.expedicionMotor = (function () {
       j.coyote = j.suelo ? FIS.coyote : j.coyote - dt;
       if (j.buffer > 0 && j.coyote > 0) {
         j.vy = -FIS.salto; j.buffer = 0; j.coyote = 0; j.suelo = false; j.cortado = false; j.tSalto = 0;
+        evento("salto");
+      } else if (j.buffer > 0 && poderes.dobleSalto && !j.suelo && !j.dobleUsado) {
+        // Poder de un amiguito: un segundo salto en el aire.
+        j.vy = -FIS.salto * 0.85; j.buffer = 0; j.dobleUsado = true; j.cortado = false; j.tSalto = 0;
+        for (let k = 0; k < 8; k++) chispas.push({ x: j.x + j.w / 2, y: j.y + j.h, vx: (k - 3.5) * 40, vy: 60, vida: 0.4 });
         evento("salto");
       }
       // Salto variable: soltar pronto da un salto más bajo, pero un toque rápido siempre llega a las plataformas.
@@ -160,6 +181,7 @@ PV.expedicionMotor = (function () {
       if (j.suelo && !estabaEnSuelo) { j.aterriza = 1; evento("aterriza", { fuerza: Math.min(1, vyAntes / 900) }); }
       // El último sitio seguro es suelo firme (nunca una barca en marcha).
       if (j.suelo && !(j.sobre && j.sobre.movil)) { j.seguroX = j.x; j.seguroY = j.y; }
+      if (j.suelo) j.dobleUsado = false;
       j.aterriza = Math.max(0, j.aterriza - dt * 5);
 
       // Caerse no castiga: vuelve al último sitio seguro.
@@ -167,6 +189,9 @@ PV.expedicionMotor = (function () {
       j.parpadeo = Math.max(0, j.parpadeo - dt);
 
       recogerLetras();
+      actualizarEnemigos(dt);
+      actualizarAmigos();
+      for (let k = rayos.length - 1; k >= 0; k--) { rayos[k].t += dt * 1.8; if (rayos[k].t >= 1 + rayos[k].retraso) rayos.splice(k, 1); }
       for (let k = chispas.length - 1; k >= 0; k--) {
         const c = chispas[k];
         c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 500 * dt; c.vida -= dt;
@@ -185,7 +210,7 @@ PV.expedicionMotor = (function () {
     function recogerLetras() {
       const cx = j.x + j.w / 2, cy = j.y + j.h / 2;
       for (const l of letras) {
-        if (l.cogida || Math.hypot(l.x - cx, l.y - cy) > RADIO_LETRA) continue;
+        if (l.cogida || Math.hypot(l.x - cx, l.y - cy) > (poderes.iman ? 120 : RADIO_LETRA)) continue;
         l.cogida = true; l.orden = ++orden;
         const delObs = letras.filter(x => x.o === l.o);
         const n = delObs.filter(x => x.cogida).length;
@@ -194,6 +219,59 @@ PV.expedicionMotor = (function () {
         evento("letra", { letra: l.l, o: l.o, cogidas: n, total: delObs.length, pantalla: aPantalla(l.x, l.y) });
       }
     }
+    /* ---------- Borrones ---------- */
+    function actualizarEnemigos(dt) {
+      for (let k = enemigos.length - 1; k >= 0; k--) {
+        const e = enemigos[k];
+        e.t += dt;
+        if (e.estado === "vencido") { if (e.t > 1.6) enemigos.splice(k, 1); continue; }
+        e.x += e.dir * e.vel * dt;
+        if (e.x < e.desde) { e.x = e.desde; e.dir = 1; } else if (e.x + e.w > e.hasta) { e.x = e.hasta - e.w; e.dir = -1; }
+        const suelo = alturaSuelo(e.x + e.w / 2);
+        const caja = { x: e.x + 4, y: suelo - e.h, w: e.w - 8, h: e.h };
+        if (!solapan(j, caja) || congelado) continue;
+        const pieAntes = j.y + j.h - j.vy * PASO;
+        if (j.vy > 0 && pieAntes <= caja.y + 12) {
+          // ¡Salto encima! El Borrón se convierte en mariposa.
+          e.estado = "vencido"; e.t = 0;
+          j.vy = -560; j.cortado = true;
+          for (let q = 0; q < 12; q++) { const a = q / 12 * Math.PI * 2; chispas.push({ x: e.x + e.w / 2, y: suelo - 18, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150 - 60, vida: 0.6 }); }
+          evento("enemigo", { pantalla: aPantalla(e.x + e.w / 2, suelo - 20) });
+        } else if (j.parpadeo <= 0) {
+          // Choque: empuja al jugador hacia atrás y, si no tiene escudo, le quita la última letra.
+          j.vx = (j.x + j.w / 2 < e.x + e.w / 2 ? -1 : 1) * 320; j.vy = -380; j.suelo = false; j.parpadeo = 1.4;
+          e.dir = j.x + j.w / 2 < e.x + e.w / 2 ? 1 : -1;
+          if (poderes.escudo) { poderes.escudo = false; evento("escudo"); continue; }
+          const o = obs.findIndex(x => !x.resuelto && totalLetras(x.i) > 0);
+          const cogidas = letras.filter(l => l.o === o && l.cogida).sort((a, b) => b.orden - a.orden);
+          if (cogidas.length) { cogidas[0].cogida = false; evento("robo", { letra: cogidas[0].l, o }); }
+          else evento("robo", { letra: null, o });
+        }
+      }
+    }
+    /* ---------- Amiguitos ---------- */
+    function actualizarAmigos() {
+      const cx = j.x + j.w / 2;
+      for (const a of amigos) {
+        if (a.ayudado || congelado) continue;
+        const d = Math.abs(cx - a.x);
+        const aSuAltura = Math.abs(j.y + j.h - alturaSuelo(a.x)) < 24;   // no desde una plataforma de encima
+        if (!a.cerca && d < 60 && j.suelo && aSuAltura) { a.cerca = true; evento("amigo", { i: a.i }); }
+        else if (a.cerca && d > 160) a.cerca = false;
+      }
+    }
+    function darPoder(tipo) { if (tipo in poderes) poderes[tipo] = true; m.fiesta = 2; }
+    function ayudarAmigo(i) { const a = amigos[i]; if (a) { a.ayudado = true; m.fiesta = 2; } }
+    /* ---------- Jefes ---------- */
+    function golpearJefe(i) {
+      const o = obs[i], base = alturaSuelo(o.x + 45);
+      o.golpe = 1;
+      const abc = "ABCDEFGHIJLMNOPRSTUV";
+      for (let k = 0; k < 6; k++) rayos.push({ x0: j.x + j.w / 2, y0: j.y + 8, x1: o.x + 45, y1: base - 60, t: 0, retraso: k * 0.07, l: abc[Math.floor(Math.random() * abc.length)] });
+    }
+    function reirJefe(i) { obs[i].risa = 1.4; }
+    function congelar(si, x) { congelado = !!si; foco = si && x !== undefined ? x : null; if (si) { j.vx = 0; entrada.saltoMantenido = false; } }
+
     function letrasDe(o) { return letras.filter(l => l.o === o && l.cogida).sort((a, b) => a.orden - b.orden).map(l => l.l); }
     function totalLetras(o) { return letras.filter(l => l.o === o).length; }
 
@@ -213,9 +291,11 @@ PV.expedicionMotor = (function () {
         }
         if (o.p >= 1) terminarSolucion(o);
       }
+      if (o.tipo === "jefe") { o.golpe = Math.max(0, o.golpe - dt * 2.5); o.risa = Math.max(0, o.risa - dt); }
       if (o.barca) moverBarca(o, dt);
     }
     function zonaSolucion(o) {
+      if (o.tipo === "jefe") return { x: o.x, w: 90, y: alturaSuelo(o.x + 45) - 60 };
       if (o.tipo === "rio") return { x: o.x - 14, w: o.w + 28, y: 296 };
       if (o.tipo === "muro") return { x: o.x - 4 * 42, w: 4 * 42, y: 300 - (300 - o.arriba) * o.p };
       return { x: o.x, w: 44, y: 300 - 130 * o.p };
@@ -300,7 +380,9 @@ PV.expedicionMotor = (function () {
     }
 
     function colocarCamara(inmediata, dt) {
-      const objetivo = Math.max(0, Math.min(nivel.ancho - vista.ancho, j.x + j.w / 2 - vista.ancho * 0.42 + j.mira * 50));
+      // En una batalla, la cámara deja al jefe a la derecha para que el panel quepa a la izquierda.
+      const centro = foco !== null ? foco - vista.ancho * 0.72 : j.x + j.w / 2 - vista.ancho * 0.42 + j.mira * 50;
+      const objetivo = Math.max(0, Math.min(nivel.ancho - vista.ancho, centro));
       if (inmediata || nivel.ancho <= vista.ancho) vista.camX = nivel.ancho <= vista.ancho ? (nivel.ancho - vista.ancho) / 2 : objetivo;
       else vista.camX += (objetivo - vista.camX) * (1 - Math.exp(-dt * 5));
     }
@@ -510,6 +592,94 @@ PV.expedicionMotor = (function () {
       for (let yy = arriba - 30; yy > vista.camY - 30; yy -= 30) ctx.fillRect(o.x - 16, yy, 76, 3);
       if (!p) emoji("🔒", o.x + 22, arriba - 6, 26);
     }
+    // Borrón: una mancha de tinta con ojos. tam 1 = enemigo normal; los jefes son más grandes.
+    function borron(cx, base, tam, mira, opciones) {
+      const o = opciones || {};
+      const temblor = animado ? Math.sin(tiempo * 8 + cx) * 0.06 : 0;
+      ctx.save();
+      ctx.translate(cx + (o.sacudida || 0), base);
+      ctx.scale(tam * (1 - temblor), tam * (1 + temblor));
+      ctx.globalAlpha = o.alfa === undefined ? 1 : o.alfa;
+      ctx.fillStyle = o.color || "#3a3f8c";
+      ctx.beginPath();
+      ctx.moveTo(-22, 0); ctx.quadraticCurveTo(-27, -22, -14, -31); ctx.quadraticCurveTo(0, -40, 14, -31);
+      ctx.quadraticCurveTo(27, -22, 22, 0); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 2 / tam; ctx.stroke();   // borde claro: se ve también en la cueva
+      for (const [dx, r] of [[-15, 5], [-3, 4], [11, 5]]) { ctx.beginPath(); ctx.arc(dx, 0, r, 0, 6.3); ctx.fill(); }
+      ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.beginPath(); ctx.ellipse(-8, -26, 6, 3.5, -0.5, 0, 6.3); ctx.fill();
+      // ojos que miran al jugador
+      for (const ex of [-8, 8]) {
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ex, -18, 6, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#1c1c2e"; ctx.beginPath(); ctx.arc(ex + mira * 2.2, -17, 3, 0, 6.3); ctx.fill();
+      }
+      ctx.strokeStyle = "#1c1c2e"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-14, -27); ctx.lineTo(-3, -24); ctx.moveTo(14, -27); ctx.lineTo(3, -24); ctx.stroke();
+      if (o.risa) { ctx.fillStyle = "#1c1c2e"; ctx.beginPath(); ctx.ellipse(0, -8, 7, 4 + Math.abs(Math.sin(tiempo * 20)) * 2, 0, 0, 6.3); ctx.fill(); }
+      else { ctx.beginPath(); ctx.moveTo(-5, -8); ctx.quadraticCurveTo(0, -11, 5, -8); ctx.stroke(); }
+      if (o.golpe) { ctx.globalAlpha = o.golpe * 0.8; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(0, -18, 26, 0, 6.3); ctx.fill(); }
+      ctx.restore();
+    }
+    function dibujarEnemigos() {
+      for (const e of enemigos) {
+        if (!visible(e.x - 20, e.w + 40)) continue;
+        const base = alturaSuelo(e.x + e.w / 2);
+        if (e.estado === "vencido") {
+          // Se encoge y sale volando una mariposa.
+          if (e.t < 0.3) borron(e.x + e.w / 2, base, 1 - e.t / 0.3, e.dir, { alfa: 1 - e.t / 0.3 });
+          emoji("🦋", e.x + e.w / 2 + Math.sin(e.t * 6) * 12, base - 10 - e.t * 90, 28);
+          continue;
+        }
+        const mira = j.x + j.w / 2 < e.x + e.w / 2 ? -1 : 1;
+        borron(e.x + e.w / 2, base, 1, mira);
+      }
+    }
+    function dibujarAmigos() {
+      for (const a of amigos) {
+        if (!visible(a.x - 40, 80)) continue;
+        const base = alturaSuelo(a.x);
+        const bote = animado ? Math.abs(Math.sin(tiempo * 3 + a.i)) * 4 : 0;
+        emoji(a.e, a.x, base - bote, 44, j.x + j.w / 2 > a.x ? -1 : 1);
+        // Bocadillo: «?» si necesita ayuda, «❤️» si ya le has ayudado.
+        const by = base - 78 + (animado ? Math.sin(tiempo * 4 + a.i) * 3 : 0);
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(a.x + 14, by, 13, 0, 6.3); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(a.x + 6, by + 9); ctx.lineTo(a.x + 2, by + 18); ctx.lineTo(a.x + 13, by + 11); ctx.fill();
+        if (a.ayudado) emoji("❤️", a.x + 14, by + 9, 16);
+        else { ctx.fillStyle = "#ff9b2f"; ctx.font = FUENTE_LETRA; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("?", a.x + 14, by + 1); }
+      }
+    }
+    function dibujarJefe(o) {
+      if (!visible(o.x - 60, 220)) return;
+      const base = alturaSuelo(o.x + 45), cx = o.x + 45;
+      const p = o.resuelto ? 1 : (o.animando ? o.p : 0);
+      if (p < 1) {
+        const tam = (o.tam || 2.6) * (1 - p * 0.85);
+        const bote = o.risa && animado ? Math.abs(Math.sin(tiempo * 14)) * 10 : (animado ? Math.sin(tiempo * 2) * 3 : 0);
+        const sacudida = o.golpe && animado ? Math.sin(tiempo * 70) * 8 * o.golpe : 0;
+        // Palabras mal escritas dando vueltas a su alrededor.
+        if (!p && o.palabrasMal) {
+          ctx.font = "900 15px Nunito, 'Segoe UI', system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          o.palabrasMal.forEach((w, k) => {
+            const a = (animado ? tiempo * 0.9 : 0) + k * Math.PI * 2 / o.palabrasMal.length;
+            const x = cx + Math.cos(a) * 82, y = base - 24 * (o.tam || 2.6) + Math.sin(a) * 30;
+            ctx.fillStyle = "rgba(255,255,255,.85)"; redondo(x - 30, y - 11, 60, 22, 11); ctx.fill();
+            ctx.fillStyle = "#c0392b"; ctx.fillText(w, x, y + 1);
+          });
+        }
+        borron(cx, base - bote, tam, j.x < cx ? -1 : 1, { color: o.color || "#2f3477", alfa: 1 - p, risa: o.risa > 0, golpe: o.golpe, sacudida });
+        if (o.corona && !p) emoji("👑", cx, base - bote - 40 * tam + 6, 34);
+      }
+      if (p > 0) for (let k = 0; k < 5; k++) emoji("🦋", cx - 50 + k * 25 + Math.sin(tiempo * 5 + k) * 10, base - 40 - p * 120 - k * 12, 24);
+    }
+    function dibujarRayos() {
+      ctx.font = FUENTE_LETRA; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      for (const r of rayos) {
+        const t = Math.max(0, Math.min(1, r.t - r.retraso));
+        if (t <= 0 || t >= 1) continue;
+        const x = r.x0 + (r.x1 - r.x0) * t, y = r.y0 + (r.y1 - r.y0) * t - Math.sin(t * Math.PI) * 50;
+        ctx.fillStyle = "#ffcc33"; redondo(x - 14, y - 14, 28, 28, 8); ctx.fill();
+        ctx.fillStyle = "#7a4b00"; ctx.fillText(r.l, x, y + 1);
+      }
+    }
     function dibujarObstaculos() {
       for (const o of obs) {
         if (o.tipo === "rio") dibujarRio(o);
@@ -563,6 +733,10 @@ PV.expedicionMotor = (function () {
       else if (animado) { sy = 1 + Math.sin(j.t * 3) * 0.025; }
       if (j.aterriza > 0) { sx *= 1 + 0.18 * j.aterriza; sy *= 1 - 0.16 * j.aterriza; }
       if (j.suelo) { ctx.fillStyle = "rgba(0,0,0,.14)"; ctx.beginPath(); ctx.ellipse(cx, base, 20, 5, 0, 0, 6.3); ctx.fill(); }
+      if (poderes.escudo) {
+        ctx.strokeStyle = "rgba(79,179,232,.8)"; ctx.fillStyle = "rgba(79,179,232,.15)"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, base - 26, 38 + (animado ? Math.sin(tiempo * 5) * 2 : 0), 0, 6.3); ctx.fill(); ctx.stroke();
+      }
       const tam = 54;
       // Los emojis de animales miran a la izquierda: se voltean al ir a la derecha.
       emoji(op.icono || "🦊", cx, base - bote, tam, sx * (j.mira > 0 ? -1 : 1), sy, rot);
@@ -598,9 +772,13 @@ PV.expedicionMotor = (function () {
       for (const s of solidos) if (!s.invisible && visible(s.x, s.w)) bloque(s);
       for (const o of obs) if (o.tipo === "puerta") dibujarPuerta(o);
       dibujarMeta();
+      dibujarAmigos();
+      for (const o of obs) if (o.tipo === "jefe") dibujarJefe(o);
+      dibujarEnemigos();
       dibujarLetras();
       dibujarMascota();
       dibujarJugador();
+      dibujarRayos();
       for (const d of nivel.deco) if (!d.nube && d.capa === 1 && visible(d.x - d.tam, d.tam * 2)) emoji(d.e, d.x, d.y + 3, d.tam);
       if (copos.length) dibujarNieve();
     }
@@ -630,6 +808,7 @@ PV.expedicionMotor = (function () {
     medir();
     return {
       iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, resolver, reiniciar, letrasDe, totalLetras,
+      darPoder, ayudarAmigo, golpearJefe, reirJefe, congelar, poderes, amigo: i => amigos[i], enemigos: () => enemigos,
       obstaculo: i => obs[i], get numObstaculos() { return obs.length; },
       get corriendo() { return corriendo; }
     };

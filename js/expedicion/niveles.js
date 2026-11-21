@@ -355,4 +355,47 @@
     }
   });
   PV.EXPEDICION_ORDEN.push("selva", "templo", "eco", "nubes");
+
+  /* ---------- Personajes de cada nivel ----------
+     habilidades: de qué reglas del banco de ejercicios salen las preguntas de amiguitos y jefes.
+     enemigos: Borrones que pasean entre «desde» y «hasta» (por suelo llano, sin rocas en medio).
+     amigos: piden ayuda con una palabra y regalan un poder (dobleSalto, iman o escudo).
+     Los jefes se añaden como un obstáculo más (tipo «jefe»), después del obstáculo principal y antes de la meta. */
+  const jefe = (x, nombre, vida, palabrasMal, extra) => Object.assign({ tipo: "jefe", x, nombre, vida, palabrasMal,
+    tras: `¡El ${nombre} se ha convertido en mariposas! Sigue hasta la meta 🦋` }, extra || {});
+  const personajes = {
+    puente: { habilidades: ["bv", "h", "lly"], enemigos: [{ desde: 1320, hasta: 2030 }],
+      amigos: [{ x: 1040, e: "🐰", nombre: "Coneja Rita", regalo: "dobleSalto" }] },
+    lago: { habilidades: ["bv"], enemigos: [{ desde: 1120, hasta: 1480 }, { desde: 1600, hasta: 1960 }],
+      amigos: [{ x: 1040, e: "🦆", nombre: "Pato Lolo", regalo: "iman" }] },
+    acantilado: { habilidades: ["czs"], enemigos: [{ desde: 1240, hasta: 1880 }, { desde: 1980, hasta: 2500 }],
+      amigos: [{ x: 1040, e: "🦎", nombre: "Lagartija Lina", regalo: "escudo" }] },
+    cueva: { habilidades: ["lly"], enemigos: [{ desde: 1220, hasta: 1680 }, { desde: 1790, hasta: 2430 }],
+      amigos: [{ x: 1040, e: "🦔", nombre: "Erizo Tito", regalo: "dobleSalto" }],
+      jefe: jefe(2950, "Borrón Gigante", 3, ["yave", "yuvia", "cabayo"],
+        { saludo: "¡Soy el Borrón Gigante y lleno la cueva de faltas! Elige la palabra bien escrita para lanzarme un rayo de letras." }) },
+    montana: { habilidades: ["h"], enemigos: [{ desde: 1290, hasta: 1930 }, { desde: 2030, hasta: 2420 }],
+      amigos: [{ x: 1040, e: "🐧", nombre: "Pingüino Pin", regalo: "escudo" }] },
+    castillo: { habilidades: ["czs", "gj"], enemigos: [{ desde: 1190, hasta: 1780 }, { desde: 2120, hasta: 2630 }, { desde: 2730, hasta: 3200 }],
+      amigos: [{ x: 1040, e: "🐴", nombre: "Caballo Trote", regalo: "iman" }],
+      jefe: jefe(3470, "Rey Borrón", 4, ["zielo", "jenio", "baliente"],
+        { corona: true, color: "#4b2a7a", saludo: "¡Soy el Rey Borrón y este es mi castillo! A ver si sabes escribir mejor que yo…" }) },
+    selva: { habilidades: ["tildes"], enemigos: [{ desde: 1240, hasta: 1880 }, { desde: 1980, hasta: 2440 }],
+      amigos: [{ x: 1040, e: "🦜", nombre: "Loro Kiko", regalo: "dobleSalto" }] },
+    templo: { habilidades: ["tildes"], enemigos: [{ desde: 1240, hasta: 1880 }, { desde: 1980, hasta: 2600 }],
+      amigos: [{ x: 1040, e: "🐫", nombre: "Camello Cami", regalo: "escudo" }],
+      jefe: jefe(2950, "Guardián Borrón", 3, ["arbol", "cancion", "rapido"],
+        { color: "#6b4a2a", saludo: "¡Soy el Guardián Borrón y me he comido todas las tildes del templo! ¿Sabes dónde van?" }) },
+    eco: { habilidades: ["punt"], enemigos: [{ desde: 1240, hasta: 1880 }, { desde: 1980, hasta: 2600 }],
+      amigos: [{ x: 1040, e: "🐑", nombre: "Oveja Lana", regalo: "iman" }] },
+    nubes: { habilidades: ["punt", "tildes", "bv", "h"], enemigos: [{ desde: 1240, hasta: 1880 }, { desde: 1980, hasta: 2500 }, { desde: 2760, hasta: 3080 }],
+      amigos: [{ x: 1040, e: "🐦", nombre: "Pajarito Pío", regalo: "dobleSalto" }],
+      jefe: jefe(3200, "Monstruo de las Faltas", 5, ["¿Donde", "ola!", "vurro"],
+        { tam: 2.3, color: "#3d2466", saludo: "¡JA, JA! ¡Soy el Monstruo de las Faltas, el jefe de todos los Borrones! Véncenos con palabras bien escritas." }) }
+  };
+  Object.keys(personajes).forEach(id => {
+    const n = PV.EXPEDICION_NIVELES[id], extra = personajes[id];
+    n.habilidades = extra.habilidades; n.enemigos = extra.enemigos; n.amigos = extra.amigos;
+    if (extra.jefe) n.obstaculos = n.obstaculos.concat([extra.jefe]);
+  });
 })();

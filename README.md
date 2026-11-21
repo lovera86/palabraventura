@@ -60,14 +60,18 @@ Juego de exploración y plataformas, pensado para el móvil en horizontal. Apare
   | 1. El bosque | río → puente | PUENTE | ordenar letras | — |
   | 2. El lago | lago → barca | BARCA | B / V | V |
   | 3. El acantilado | acantilado → escalera | ESCALERA | S / Z | Z |
-  | 4. La cueva | puerta → se abre | LLAVE | LL / Y | Y |
+  | 4. La cueva | puerta → se abre; jefe | LLAVE | LL / Y | Y |
   | 5. La montaña | río → hielo | HIELO | H | Y |
-  | 6. El castillo | foso → balsa; reja → se abre | BALSA y REJA | S / Z · G / J | Z, G |
+  | 6. El castillo | foso → balsa; reja → se abre; jefe | BALSA y REJA | S / Z · G / J | Z, G |
   | 7. La selva | río → tablón | TABLÓN | tilde en las agudas | O |
-  | 8. El templo | puerta → se abre | BRÚJULA | tilde en las esdrújulas | U |
+  | 8. El templo | puerta → se abre; jefe | BRÚJULA | tilde en las esdrújulas | U |
   | 9. El valle del eco | reja → se abre al gritar | ¡ÁBRETE! | signos ¡ ! | ¿ |
-  | 10. Las nubes | nube alta → escalera | ¿SUBIMOS? | signos ¿ ? | ¡ |
+  | 10. Las nubes | nube alta → escalera; jefe final | ¿SUBIMOS? | signos ¿ ? | ¡ |
 
+- **Borrones (enemigos):** manchas de tinta que pasean por el camino. Si tocan al jugador le quitan la última letra recogida (vuelve a su sitio); si les salta encima se convierten en mariposas 🦋. Nadie muere ni pierde vidas.
+- **Amiguitos:** uno por nivel (Coneja Rita, Pato Lolo, Erizo Tito…). Piden ayuda con una palabra («¿cuál está bien escrita?») y, al acertar, regalan un poder para ese nivel: 🪽 doble salto, 🧲 imán de letras o 🛡️ escudo contra un Borrón. Si se fallan, se tacha la opción, se explica la regla y se puede volver a probar.
+- **Batallas de palabras:** jefes en la cueva (Borrón Gigante), el castillo (Rey Borrón), el templo (Guardián Borrón) y las nubes (Monstruo de las Faltas). Por turnos y sin prisa: cada palabra bien elegida lanza un rayo de letras y le quita un corazón; fallar solo hace que se ría y explica la regla. Al vencerlo se convierte en mariposas.
+- Las preguntas de amiguitos y jefes salen del banco de ejercicios de la app (tipos «detective» y «completa», dificultad 1–2) de las reglas de cada nivel (`habilidades`).
 - **Cómo se juega:** el compañero del jugador (con su accesorio de la cabeza) avanza con un joystick abajo a la izquierda y un botón de salto abajo a la derecha (se puede correr y saltar a la vez). En el ordenador, flechas o A/D y espacio. Le acompaña su mascota (la del hueco «mascota» o un pollito 🐣).
 - **Letras:** las de cada palabra están repartidas en desorden; se recogen solas al pasar cerca y vuelan al marcador de arriba, que muestra la palabra que toca.
 - **Reto:** al llegar al obstáculo con todas las letras, se ordenan tocando fichas grandes; un hueco se toca para devolver su letra. Hay una **letra trampa** con la falta de ortografía típica: si se usa, se explica la regla («Barca se escribe con B, como barco y bote»). Fallar no quita nada. Tras dos intentos hay pistas: imagen y definición; después, la voz dice la palabra y la primera letra queda fija.

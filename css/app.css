@@ -578,6 +578,36 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 .ex-tarjeta .btn { width: 100%; margin-top: 8px; touch-action: manipulation; }
 .ex-icono-grande { font-size: 3rem; line-height: 1; }
 .ex-tarjeta.ancha { width: min(560px, 100%); }
+/* Poderes de los amiguitos (debajo del botón de pausa) */
+.ex-poderes { position: absolute; z-index: 3; left: max(10px, env(safe-area-inset-left)); top: max(60px, calc(env(safe-area-inset-top) + 52px));
+  display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.ex-poderes span { width: 40px; height: 40px; display: grid; place-items: center; font-size: 1.3rem; border-radius: 12px; background: rgba(255,255,255,.85); box-shadow: 0 2px 0 rgba(0,0,0,.12); animation: ex-pop .4s ease; }
+.ex-poderes:empty { display: none; }
+.ex-jefe-chip { padding: 4px 10px; font-weight: 900; color: #5b2a86; white-space: nowrap; }
+/* Amiguitos */
+.ex-amigo { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 8px; }
+.ex-amigo-cara { font-size: 2.8rem; line-height: 1; flex: none; animation: ex-pop .4s ease; }
+.ex-bocadillo { position: relative; flex: 1; padding: 8px 12px; border-radius: 14px; background: #f3f8fb; font-weight: 700; }
+.ex-bocadillo b { display: block; color: #2a6f9e; }
+.ex-frase { margin: 4px 0 8px !important; font-weight: 800; font-size: 1.05rem; }
+.ex-blanco { display: inline-block; min-width: 3em; border-bottom: 3px dashed #a9c7d8; color: transparent; }
+.ex-opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.ex-opcion { flex: 1 1 120px; min-height: 52px; padding: 8px 12px; border: 2px solid var(--linea); border-radius: 14px; background: #fff; font: inherit;
+  font-size: 1.2rem; font-weight: 900; color: var(--tinta); cursor: pointer; box-shadow: 0 4px 0 var(--linea); touch-action: manipulation; }
+.ex-opcion:active { translate: 0 3px; box-shadow: 0 1px 0 var(--linea); }
+.ex-opcion.bien { border-color: var(--verde); background: var(--verde-claro); box-shadow: 0 4px 0 var(--verde); }
+.ex-opcion.mal { border-color: #ffb27a; background: #fff1e6; color: #c26a2a; text-decoration: line-through; box-shadow: none; }
+.ex-regalo { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 6px 0 4px; padding: 10px 14px; border-radius: 16px; background: #fff6d6; text-align: left; }
+.ex-regalo > span { font-size: 2.4rem; line-height: 1; animation: ex-pop .5s ease; }
+.ex-regalo b { display: block; font-size: 1.1rem; }
+.ex-regalo small { font-weight: 700; color: #6b6b7b; }
+/* Batalla: el panel va a la izquierda para que se vea al jefe a la derecha */
+.ex-panel.lado { justify-items: start; background: linear-gradient(90deg, rgba(30,32,48,.5), rgba(30,32,48,0) 70%); }
+.ex-tarjeta-batalla { width: min(400px, 56%); padding: 12px 14px; }
+.ex-batalla-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; color: #5b2a86; }
+.ex-vida { letter-spacing: 2px; white-space: nowrap; }
+@media (max-width: 560px) { .ex-panel.lado { align-items: end; justify-items: center; background: linear-gradient(0deg, rgba(30,32,48,.5), rgba(30,32,48,0) 70%); } .ex-tarjeta-batalla { width: 100%; } }
+@media (max-height: 420px) { .ex-opcion { min-height: 44px; padding: 4px 10px; font-size: 1.05rem; } .ex-frase { margin-bottom: 4px !important; font-size: .95rem; } .ex-amigo-cara { font-size: 2.2rem; } .ex-bocadillo { padding: 6px 10px; } }
 /* Mapa de niveles */
 .expedicion.en-mapa .ex-centro, .expedicion.en-mapa .ex-zona-joy, .expedicion.en-mapa .ex-zona-salto, .expedicion.en-mapa [data-ex=pausa] { visibility: hidden; }
 .expedicion.en-mapa .ex-panel { background: linear-gradient(160deg, rgba(63,169,245,.92), rgba(108,192,112,.92)); }

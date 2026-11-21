@@ -8,7 +8,27 @@ PV.expedicion = (function () {
   const ANIMOS = ["¡Casi! Prueba a cambiar alguna letra de sitio.", "¡Buen intento! Mira bien el orden.", "¡No pasa nada! Vuelve a probar."];
   const INTENTOS_PARA_PISTA = 2;
   const ID_TRAMPA = 99;
+  const PODERES = {
+    dobleSalto: { icono: "🪽", nombre: "Doble salto", desc: "Puedes saltar otra vez en el aire." },
+    iman: { icono: "🧲", nombre: "Imán de letras", desc: "Atraes las letras desde más lejos." },
+    escudo: { icono: "🛡️", nombre: "Escudo", desc: "Te protege del próximo Borrón." }
+  };
   let abierta = null;
+
+  function mezclar(lista) {
+    const a = lista.slice();
+    for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; }
+    return a;
+  }
+  /* Preguntas de «elige la bien escrita» sacadas del banco de ejercicios de la app (las de «detective» y las de
+     «completa», convertidas en palabras enteras), solo de las habilidades del nivel y de dificultad 1 o 2. */
+  function preguntas(habilidades) {
+    return (PV.banco || []).filter(e => habilidades.includes(e.habilidad) && (e.dificultad || 1) <= 2 &&
+      (e.tipo === "detective" || (e.tipo === "completa" && e.hueco && e.hueco.includes("_")))).map(e => {
+      const forma = o => e.tipo === "completa" ? e.hueco.replace("_", o) : o;
+      return { frase: e.frase || "", opciones: mezclar(e.opciones.map(forma)), correcta: forma(e.correcta), explicacion: e.explicacion || "" };
+    }).filter(q => q.opciones.includes(q.correcta) && new Set(q.opciones).size === q.opciones.length);
+  }
 
   function niveles() { return PV.EXPEDICION_ORDEN.map(id => PV.EXPEDICION_NIVELES[id]); }
   function completado(estado, id) { return !!(estado[id] && estado[id].completada); }
@@ -34,6 +54,7 @@ PV.expedicion = (function () {
         <div class="ex-centro"><div class="ex-letras" role="status"></div></div>
         <button type="button" class="ex-boton" data-ex="salir" aria-label="Salir">✕</button>
       </div>
+      <div class="ex-poderes" aria-label="Poderes"></div>
       <div class="ex-zona-joy" aria-hidden="true"><div class="ex-joy-base"><div class="ex-joy-mando"></div></div></div>
       <div class="ex-zona-salto" aria-hidden="true"><div class="ex-salto">⬆</div></div>
       <div class="ex-ayuda" hidden>${tactil
@@ -50,6 +71,8 @@ PV.expedicion = (function () {
     // Nivel en juego
     let nivel = null, partida = null, controlNivel = null, soltarControles = () => {};
     let jugando = false, obsActual = 0, reto = null, retoAbierto = false;
+    let amigo = null, batalla = null, bolsa = [], avisoBorron = false;
+    const poderesEl = $(".ex-poderes");
 
     /* ---------- Avisos y ayuda ---------- */
     function aviso(texto) {
@@ -66,6 +89,7 @@ PV.expedicion = (function () {
 
     /* ---------- Paneles ---------- */
     function mostrarPanel(html, clase) {
+      panel.classList.toggle("lado", clase === "ex-tarjeta-batalla");
       panel.innerHTML = `<div class="ex-tarjeta ${clase || ""}">${html}</div>`;
       panel.hidden = false;
       const b = panel.querySelector("[data-foco]"); if (b) b.focus({ preventScroll: true });
@@ -73,6 +97,8 @@ PV.expedicion = (function () {
     function ocultarPanel() { panel.hidden = true; panel.innerHTML = ""; }
     function pausar() { if (partida) partida.pausar(); soltarControles(); }
     function seguir() {
+      if (batalla) { if (partida && !partida.corriendo) partida.iniciar(); return pintarBatalla(); }
+      if (amigo) return pintarAmigo();
       if (retoAbierto) return pintarReto();
       ocultarPanel();
       if (!partida || !jugando) return;
@@ -107,7 +133,8 @@ PV.expedicion = (function () {
       if (partida) partida.destruir();
       if (controlNivel) controlNivel.abort();
       partida = null; controlNivel = null; soltarControles = () => {};
-      jugando = false; reto = null; retoAbierto = false; obsActual = 0;
+      jugando = false; reto = null; retoAbierto = false; obsActual = 0; amigo = null; batalla = null; bolsa = [];
+      panel.classList.remove("lado");
       clearTimeout(avisoT); avisoEl.hidden = true;
       raiz.querySelectorAll(".ex-confeti, .ex-vuela").forEach(c => c.remove());
     }
@@ -124,6 +151,7 @@ PV.expedicion = (function () {
         zonaSalto: $(".ex-zona-salto"), salto: $(".ex-salto")
       }, controlNivel.signal);
       pintarMarcador();
+      pintarPoderes();
       mostrarPanel(`<div class="ex-icono-grande">${nivel.icono}</div>
         <small class="ex-etiqueta">Nivel ${k + 1} · ${esc(nivel.regla)}</small>
         <h2>${esc(nivel.titulo)}</h2>
@@ -136,13 +164,26 @@ PV.expedicion = (function () {
       if (tipo === "salto") { ctx.sonar && ctx.sonar("salto"); saltos++; }
       if (tipo === "reaparece") ctx.sonar && ctx.sonar("toque");
       if (tipo === "letra") letraRecogida(d);
-      if (tipo === "obstaculo") {
+      if (tipo === "robo") {
+        ctx.sonar && ctx.sonar("fallo");
+        pintarMarcador();
+        aviso(d.letra ? `¡Un Borrón te ha quitado la ${d.letra}! Ha vuelto a su sitio 🔙` : "¡Cuidado con los Borrones! Sáltales encima 🦋");
+      }
+      if (tipo === "enemigo") {
+        ctx.sonar && ctx.sonar("letra");
+        if (!avisoBorron) { avisoBorron = true; aviso("¡Bien saltado! El Borrón se ha convertido en mariposa 🦋"); }
+      }
+      if (tipo === "escudo") { ctx.sonar && ctx.sonar("toque"); pintarPoderes(); aviso("¡Tu escudo te ha protegido! 🛡️"); }
+      if (tipo === "amigo") abrirAmigo(d.i);
+      if (tipo === "obstaculo" && partida.obstaculo(d.i).tipo === "jefe") abrirBatalla(d.i);
+      else if (tipo === "obstaculo") {
         if (d.cogidas < d.total) { const n = d.total - d.cogidas; aviso(`Te ${n === 1 ? "falta 1 letra" : `faltan ${n} letras`}. ¡Sigue buscando! 🔍`); }
         else abrirReto(d.i);
       }
       if (tipo === "resuelto") {
         ctx.sonar && ctx.sonar("cofre");
-        aviso(partida.obstaculo(d.i).reto.tras);
+        const ob = partida.obstaculo(d.i);
+        aviso(ob.reto ? ob.reto.tras : ob.tras);
         if (d.i + 1 < partida.numObstaculos) { obsActual = d.i + 1; pintarMarcador(); }
       }
       if (tipo === "zarpa") ctx.sonar && ctx.sonar("toque");
@@ -154,6 +195,8 @@ PV.expedicion = (function () {
     /* ---------- Marcador de letras (las de la palabra que toca) ---------- */
     function pintarMarcador() {
       const total = partida.totalLetras(obsActual), tengo = partida.letrasDe(obsActual);
+      const ob = partida.obstaculo(obsActual);
+      if (!total && ob && ob.tipo === "jefe") { tiraLetras.innerHTML = `<span class="ex-jefe-chip">⚔️ ${esc(ob.nombre)}</span>`; tiraLetras.setAttribute("aria-label", ob.nombre); return; }
       tiraLetras.innerHTML = Array.from({ length: total }, (_, i) => `<span class="ex-hueco ${tengo[i] ? "llena" : ""}">${tengo[i] || ""}</span>`).join("");
       tiraLetras.setAttribute("aria-label", `Letras recogidas: ${tengo.length} de ${total}`);
     }
@@ -290,6 +333,124 @@ PV.expedicion = (function () {
         <button type="button" class="btn btn-verde" data-ex="resolver" data-foco>${esc(reto.R.boton)}</button></div>`, "ancha");
     }
 
+    /* ---------- Poderes ---------- */
+    function pintarPoderes() {
+      const p = partida ? partida.poderes : {};
+      poderesEl.innerHTML = Object.keys(PODERES).filter(k => p[k]).map(k => `<span title="${PODERES[k].nombre}">${PODERES[k].icono}</span>`).join("");
+    }
+    function tomarPregunta() {
+      if (!bolsa.length) bolsa = mezclar(preguntas(nivel.habilidades || ["bv", "h", "lly"]));
+      return bolsa.pop();
+    }
+    function fraseHTML(f) { return esc(f).replace("___", `<span class="ex-blanco">___</span>`); }
+    function opcionesHTML(q, accion, marcas, bloqueado) {
+      return `<div class="ex-opciones">${q.opciones.map((o, k) => `<button type="button" class="ex-opcion ${marcas[k] || ""}" data-ex="${accion}" data-k="${k}"
+        ${bloqueado || marcas[k] === "mal" ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>`;
+    }
+
+    /* ---------- Amiguitos: piden ayuda con una palabra y regalan un poder ---------- */
+    function abrirAmigo(i) {
+      const a = partida.amigo(i);
+      if (!a || a.ayudado || retoAbierto || batalla) return;
+      amigo = { a, q: tomarPregunta(), marcas: {}, msg: "", estado: "" };
+      pausar();
+      ctx.sonar && ctx.sonar("toque");
+      pintarAmigo();
+    }
+    function cabezaAmigo(a, texto) {
+      return `<div class="ex-amigo"><span class="ex-amigo-cara">${a.e}</span><div class="ex-bocadillo"><b>${esc(a.nombre)}</b><span>${texto}</span></div></div>`;
+    }
+    function pintarAmigo() {
+      const { a, q } = amigo;
+      mostrarPanel(`${cabezaAmigo(a, esc(a.saludo || "¡Hola! ¿Me ayudas? No sé cuál está bien escrita."))}
+        ${q.frase ? `<p class="ex-frase">${fraseHTML(q.frase)}</p>` : ""}
+        ${opcionesHTML(q, "resp-amigo", amigo.marcas, false)}
+        <p class="ex-r-msg ${amigo.estado}" role="status">${esc(amigo.msg)}</p>
+        <div class="ex-r-botones"><button type="button" class="btn btn-gris" data-ex="cerrar-amigo">Ahora no</button></div>`, "ancha");
+    }
+    function responderAmigo(k) {
+      const { a, q } = amigo;
+      if (q.opciones[k] === q.correcta) {
+        partida.ayudarAmigo(a.i);
+        partida.darPoder(a.regalo);
+        pintarPoderes();
+        ctx.sonar && ctx.sonar("fin");
+        const pd = PODERES[a.regalo];
+        amigo = null;
+        mostrarPanel(`${cabezaAmigo(a, `¡Gracias! Se escribe <b>${esc(q.correcta)}</b>. Toma, un regalo para tu aventura:`)}
+          <div class="ex-regalo"><span>${pd.icono}</span><div><b>${pd.nombre}</b><small>${pd.desc}</small></div></div>
+          <button type="button" class="btn btn-verde" data-ex="seguir" data-foco>¡GENIAL!</button>`, "ancha");
+      } else {
+        amigo.marcas[k] = "mal"; amigo.estado = "mal";
+        amigo.msg = `Casi… ${q.explicacion} ¡Prueba otra!`;
+        ctx.sonar && ctx.sonar("fallo");
+        pintarAmigo();
+      }
+    }
+
+    /* ---------- Batalla de palabras contra un jefe ----------
+       Por turnos y sin prisa: el jefe enseña una palabra con varias formas de escribirla. Acertar lanza un rayo
+       de letras y le quita energía; fallar solo hace que se ría y explica la regla. Al vencerle se convierte en mariposas. */
+    function abrirBatalla(i) {
+      const o = partida.obstaculo(i);
+      batalla = { i, o, vida: o.vida || 3, max: o.vida || 3, q: tomarPregunta(), marcas: {}, estado: "", msg: "", bloqueado: false };
+      soltarControles();
+      partida.congelar(true, o.x + 45);
+      if (!partida.corriendo) partida.iniciar();
+      ctx.sonar && ctx.sonar("cofre");
+      if (!estado.batallaVista) { batalla.msg = o.saludo || "¡Elige la palabra bien escrita para lanzarle un rayo de letras!"; estado.batallaVista = true; guardar(); }
+      pintarBatalla();
+    }
+    function pintarBatalla() {
+      const b = batalla, q = b.q;
+      const vida = Array.from({ length: b.max }, (_, k) => k < b.vida ? "💜" : "🤍").join("");
+      mostrarPanel(`<div class="ex-batalla-cab"><b>⚔️ ${esc(b.o.nombre)}</b><span class="ex-vida" aria-label="Energía: ${b.vida} de ${b.max}">${vida}</span></div>
+        ${q.frase ? `<p class="ex-frase">${fraseHTML(q.frase)}</p>` : `<p class="ex-frase">¿Cuál está bien escrita?</p>`}
+        ${opcionesHTML(q, "resp-batalla", b.marcas, b.bloqueado)}
+        <p class="ex-r-msg ${b.estado}" role="status">${esc(b.msg)}</p>
+        <div class="ex-r-botones">
+          ${b.estado === "mal" ? `<button type="button" class="btn btn-verde" data-ex="otra-pregunta" data-foco>¡OTRA! ⚔️</button>` : ""}
+          <button type="button" class="btn btn-gris" data-ex="retirarse">Retirarse</button>
+        </div>`, "ex-tarjeta-batalla");
+    }
+    function nuevaPregunta() {
+      const b = batalla;
+      b.q = tomarPregunta(); b.marcas = {}; b.estado = ""; b.msg = ""; b.bloqueado = false;
+      pintarBatalla();
+    }
+    function responderBatalla(k) {
+      const b = batalla;
+      if (!b || b.bloqueado) return;
+      if (b.q.opciones[k] === b.q.correcta) {
+        b.bloqueado = true; b.estado = "bien"; b.marcas[k] = "bien"; b.vida--;
+        b.msg = b.vida ? "¡Rayo de letras! 💥" : "¡Rayo final! 💥💥";
+        partida.golpearJefe(b.i);
+        ctx.sonar && ctx.sonar("letra");
+        pintarBatalla();
+        setTimeout(() => { if (batalla !== b) return; if (b.vida <= 0) victoria(); else nuevaPregunta(); }, 1200);
+      } else {
+        b.bloqueado = true; b.estado = "mal"; b.marcas[k] = "mal";
+        b.marcas[b.q.opciones.indexOf(b.q.correcta)] = "bien";
+        b.msg = `¡Ja, ja! Se escribe «${b.q.correcta}». ${b.q.explicacion}`;
+        partida.reirJefe(b.i);
+        ctx.sonar && ctx.sonar("fallo");
+        pintarBatalla();
+      }
+    }
+    function terminarBatalla() {
+      batalla = null;
+      panel.classList.remove("lado");
+      partida.congelar(false);
+      ocultarPanel();
+    }
+    function victoria() {
+      const i = batalla.i;
+      terminarBatalla();
+      ctx.sonar && ctx.sonar("fin");
+      partida.resolver(i);
+      if (!partida.corriendo) partida.iniciar();
+    }
+
     /* ---------- Meta: celebración, premio y siguiente nivel ---------- */
     function panelMeta() {
       if (!abierta || !partida) return;
@@ -308,7 +469,7 @@ PV.expedicion = (function () {
       }
       mostrarPanel(`<div class="ex-icono-grande ex-meta-icono">${!hay && todo ? "🏆" : "🏁"}</div>
         <h2>${!hay && todo ? "¡Has completado toda la expedición!" : "¡Nivel completado!"}</h2>
-        <p>${esc(nivel.titulo)}: ${nivel.obstaculos.map(o => esc(o.palabra)).join(" y ")} ✔</p>
+        <p>${esc(nivel.titulo)}: ${nivel.obstaculos.filter(o => o.palabra).map(o => esc(o.palabra)).join(" y ")}${nivel.obstaculos.some(o => o.tipo === "jefe") ? " · ⚔️ jefe vencido" : ""} ✔</p>
         ${extra.join("")}
         <div class="ex-r-botones">
           ${hay ? `<button type="button" class="btn btn-verde" data-ex="siguiente" data-foco>▶ Siguiente nivel</button>` : ""}
@@ -331,8 +492,9 @@ PV.expedicion = (function () {
     }
     function volverAJugar() {
       partida.reiniciar();
-      reto = null; retoAbierto = false; obsActual = 0;
+      reto = null; retoAbierto = false; obsActual = 0; amigo = null; batalla = null;
       pintarMarcador();
+      pintarPoderes();
       clearTimeout(avisoT); avisoEl.hidden = true;
       raiz.querySelectorAll(".ex-confeti").forEach(c => c.remove());
       jugando = true;
@@ -388,6 +550,7 @@ PV.expedicion = (function () {
       if (partida && partida.corriendo) panelPausa();
       else if (!panel.hidden && panel.querySelector("[data-ex=seguir]")) seguir();
       else if (retoAbierto && reto.estado !== "bien") ACC["volver-reto"]();
+      else if (amigo) ACC["cerrar-amigo"]();
     }, { signal: senal });
     const ro = new ResizeObserver(() => { if (partida) partida.medir(); });
     ro.observe(raiz);
@@ -407,7 +570,7 @@ PV.expedicion = (function () {
       },
       seguir() { seguir(); },
       "jugar-asi"() { girarDescartado = true; seguir(); },
-      pausa() { if (jugando && !retoAbierto && partida && partida.corriendo) panelPausa(); },
+      pausa() { if (jugando && !retoAbierto && !batalla && partida && partida.corriendo) panelPausa(); },
       salir() { if (jugando && partida && partida.corriendo) panelPausa(); else if (raiz.classList.contains("en-mapa")) cerrar(); else mapa(); },
       mapa() { mapa(); },
       "confirmar-salir"() { cerrar(); },
@@ -423,6 +586,11 @@ PV.expedicion = (function () {
         seguir();
       },
       "otra-vez"() { volverAJugar(); },
+      "resp-amigo"(b) { responderAmigo(Number(b.dataset.k)); },
+      "cerrar-amigo"() { amigo = null; seguir(); },
+      "resp-batalla"(b) { responderBatalla(Number(b.dataset.k)); },
+      "otra-pregunta"() { nuevaPregunta(); },
+      retirarse() { terminarBatalla(); aviso("Cuando quieras, vuelve a la batalla ⚔️"); },
       siguiente() { cargarNivel(indiceNivel() + 1); }
     };
     raiz.addEventListener("click", e => {
@@ -430,7 +598,7 @@ PV.expedicion = (function () {
       if (!b || b.disabled) return;
       e.preventDefault(); e.stopPropagation();
       const f = ACC[b.dataset.ex];
-      if (f) { if (!["ficha", "hueco"].includes(b.dataset.ex)) ctx.sonar && ctx.sonar("toque"); f(b); }
+      if (f) { if (!["ficha", "hueco", "resp-amigo", "resp-batalla"].includes(b.dataset.ex)) ctx.sonar && ctx.sonar("toque"); f(b); }
     }, { signal: senal });
 
     function cerrar() {
