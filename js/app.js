@@ -33,8 +33,9 @@
     return n;
   }
   function avatarHTML(tam) {
-    const an = R.animal(P.avatar.animal), ac = R.accesorio(P.avatar.accesorio);
-    return `<span class="avatar avatar-${tam} etapa-${W.etapa(P)}" aria-hidden="true"><span class="avatar-animal">${an.icono}</span>${ac ? `<span class="avatar-acc">${ac.icono}</span>` : ""}</span>`;
+    const an = R.animal(P.avatar.animal), pu = R.puestos(P);
+    const capa = h => { const a = R.accesorio(pu[h]); return a ? `<span class="acc acc-${h}">${a.icono}</span>` : ""; };
+    return `<span class="avatar avatar-${tam} etapa-${W.etapa(P)}" aria-hidden="true">${capa("fondo")}<span class="avatar-animal">${an.icono}</span>${capa("cara")}${capa("cabeza")}${capa("cuello")}${capa("mano")}${capa("mascota")}</span>`;
   }
   function burbuja(texto, tam) {
     return `<div class="mascota-dice">${avatarHTML(tam || "m")}<p class="bocadillo"><strong>${esc(R.nombreMascota(P))}:</strong> ${esc(texto)}</p></div>`;
@@ -515,19 +516,27 @@
         <section class="tarjeta"><h2>Animal</h2>
           <div class="rejilla-animales">${R.ANIMALES.map(a => `<button type="button" class="animal ${P.avatar.animal === a.id ? "elegido" : ""}" data-accion="elegir-animal" data-valor="${a.id}" aria-label="${a.nombre}" aria-pressed="${P.avatar.animal === a.id}">${a.icono}</button>`).join("")}</div>
         </section>
-        <section class="tarjeta"><h2>Accesorios</h2>
-          ${P.accesorios.length ? `<div class="rejilla-animales">${R.ACCESORIOS.filter(a => P.accesorios.includes(a.id)).map(a => `<button type="button" class="animal ${P.avatar.accesorio === a.id ? "elegido" : ""}" data-accion="equipar" data-valor="${a.id}" aria-label="${a.nombre}" aria-pressed="${P.avatar.accesorio === a.id}">${a.icono}</button>`).join("")}</div>
-            <p class="nota">Toca uno para ponérselo o quitárselo.</p>` : `<p class="nota">Todavía no tiene. ¡Cómpralos en la tienda!</p>`}
+        <section class="tarjeta"><h2>Accesorios <small>${P.accesorios.length} de ${R.ACCESORIOS.length}</small></h2>
+          ${P.accesorios.length ? R.HUECOS.map(h => {
+              const mios = R.ACCESORIOS.filter(a => a.hueco === h.id && P.accesorios.includes(a.id));
+              return mios.length ? `<p class="hueco-titulo">${h.icono} ${h.nombre}</p><div class="rejilla-animales">${mios.map(a => `<button type="button" class="animal ${R.llevaPuesto(P, a.id) ? "elegido" : ""}" data-accion="equipar" data-valor="${a.id}" aria-label="${a.nombre}" aria-pressed="${R.llevaPuesto(P, a.id)}" title="${a.nombre}">${a.icono}</button>`).join("")}</div>` : "";
+            }).join("") + `<p class="nota">Toca uno para ponérselo o quitárselo. Puede llevar una cosa en cada sitio, ¡todas a la vez!</p>
+            <button type="button" class="enlace" data-accion="quitar-todo">Quitárselo todo</button>`
+            : `<p class="nota">Todavía no tiene. ¡Cómpralos en la tienda!</p>`}
         </section>`;
     } else if (pestana === "mercadillo") {
-      cuerpo = `<p class="nota">Tienes <b>🪙 ${P.monedas}</b>. Ganas monedas en cada lección.</p>
-        <section class="tarjeta"><div class="tienda">${R.ACCESORIOS.map(a => {
-          const tiene = P.accesorios.includes(a.id), falta = a.precio - P.monedas;
-          return `<div class="producto ${tiene ? "tenido" : ""}"><span class="producto-icono">${a.icono}</span><b>${a.nombre}</b>
-            ${tiene ? `<span class="pill">✔ Es tuyo</span>`
-              : falta > 0 ? `<span class="precio">🪙 ${a.precio}</span><small>Faltan ${falta}</small>`
-              : `<button type="button" class="btn btn-verde btn-comprar" data-accion="comprar" data-valor="${a.id}">🪙 ${a.precio}</button>`}</div>`;
-        }).join("")}</div></section>`;
+      cuerpo = `<section class="tarjeta escaparate">
+          <div class="escaparate-avatar">${avatarHTML("xl")}</div>
+          <div><p class="tarjeta-titulo">Tienes 🪙 ${P.monedas}</p><p class="nota">Ganas monedas en cada lección. Lo que compras se lo pone al momento.</p>
+          <p class="nota">${P.accesorios.length} de ${R.ACCESORIOS.length} cosas conseguidas</p></div>
+        </section>
+        ${R.HUECOS.map(h => `<section class="tarjeta"><h2>${h.icono} ${h.nombre}</h2><div class="tienda">${R.ACCESORIOS.filter(a => a.hueco === h.id).map(a => {
+          const tiene = P.accesorios.includes(a.id), puesto = R.llevaPuesto(P, a.id), falta = a.precio - P.monedas;
+          return `<div class="producto ${tiene ? "tenido" : ""} ${puesto ? "puesto" : ""}"><span class="producto-icono">${a.icono}</span><b>${a.nombre}</b>
+            ${tiene ? `<button type="button" class="btn ${puesto ? "btn-gris" : "btn-azul"} btn-comprar" data-accion="equipar" data-valor="${a.id}">${puesto ? "Quitármelo" : "Ponérmelo"}</button>`
+              : falta > 0 ? `<span class="precio">🪙 ${a.precio}</span><span class="falta"><span style="width:${Math.round(P.monedas / a.precio * 100)}%"></span></span><small>Faltan ${falta}</small>`
+              : `<button type="button" class="btn btn-verde btn-comprar" data-accion="comprar" data-valor="${a.id}">Comprar · 🪙 ${a.precio}</button>`}</div>`;
+        }).join("")}</div></section>`).join("")}`;
     } else {
       cuerpo = `<section class="tarjeta"><div class="insignias">
         ${R.INSIGNIAS.filter(n => R.insigniaVisible(P, n)).map(n => `<div class="insignia ${P.insignias.includes(n.id) ? "" : "bloqueada"}"><span class="insignia-icono">${P.insignias.includes(n.id) ? n.icono : "🔒"}</span><b>${n.nombre}</b><small>${n.desc}</small></div>`).join("")}
@@ -537,6 +546,21 @@
         <div class="pestanas" role="tablist">${tabs.map(([id, ic, txt]) => `<button type="button" role="tab" aria-selected="${pestana === id}" class="${pestana === id ? "activa" : ""}" data-accion="ir-coleccion" data-valor="${id}"><span>${ic}</span>${txt}</button>`).join("")}</div>
         ${cuerpo}
       </main>`, "ir-coleccion"), () => pantallaColeccion());
+  }
+
+  /* Animación al comprar: el compañero estrena su compra con saltos, destellos y confeti. */
+  function celebrarCompra(a) {
+    sonar("cofre");
+    modal(`<div class="estreno">
+        <div class="estreno-rayos" aria-hidden="true"></div>
+        <div class="estreno-avatar">${avatarHTML("xl")}</div>
+        <span class="estreno-objeto" aria-hidden="true">${a.icono}</span>
+      </div>
+      <h2 class="centro">¡${esc(a.nombre)}!</h2>
+      <p class="nota centro">${U.azar(["¡Te queda genial!", "¡Qué estilazo!", "¡Vas guapísimo!", "¡Nuevo look!"])}</p>
+      <button type="button" class="btn btn-verde btn-xl" data-accion="cerrar" data-foco>¡GENIAL!</button>`);
+    capa.querySelector(".modal").classList.add("modal-estreno");
+    if (animacionesOn()) { confeti(); setTimeout(() => chispas(capa.querySelector(".estreno-avatar")), 450); }
   }
 
   /* ---------- Ajustes ---------- */
@@ -726,9 +750,10 @@
     "confirmar-salir": () => { cerrarModal(); sesion = null; pantallaCamino(); },
     "ir-coleccion": v => pantallaColeccion(v || pestana),
     "elegir-animal": v => { P.avatar.animal = v; guardar(); pantallaColeccion(); },
-    "equipar": v => { P.avatar.accesorio = P.avatar.accesorio === v ? null : v; guardar(); pantallaColeccion(); },
+    "equipar": v => { if (R.alternar(P, v)) { guardar(); sonar("toque"); pantallaColeccion(); } },
+    "quitar-todo": () => { R.quitarTodo(P); guardar(); pantallaColeccion(); },
     "guardar-nombre-mascota": () => { P.mascota.nombre = (document.getElementById("nuevo-nombre-mascota").value || "").trim().slice(0, 14); guardar(); aviso("¡Nombre guardado!"); pantallaColeccion(); },
-    "comprar": v => { if (R.comprar(P, v)) { const a = R.accesorio(v); P.avatar.accesorio = v; guardar(); sonar("cofre"); aviso(`${a.icono} ¡${a.nombre} es tuyo!`); pantallaColeccion(); } },
+    "comprar": v => { if (R.comprar(P, v)) { guardar(); pantallaColeccion(); celebrarCompra(R.accesorio(v)); } },
     "ajustes": () => pantallaAjustes(),
     "guardar-apodo": () => { P.apodo = (document.getElementById("nuevo-apodo").value || "").trim().slice(0, 16); guardar(); aviso("Apodo guardado."); pantallaAjustes(); },
     "sonido": () => { P.sonido = !P.sonido; guardar(); pantallaAjustes(); },

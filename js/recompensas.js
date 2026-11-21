@@ -7,12 +7,69 @@ PV.recompensas = (function () {
     { id: "dragon", icono: "🐲", nombre: "Dragón", nombreDefecto: "Brasa" }, { id: "gato", icono: "🐱", nombre: "Gato", nombreDefecto: "Bigotes" },
     { id: "perro", icono: "🐶", nombre: "Perro", nombreDefecto: "Trufa" }, { id: "tortuga", icono: "🐢", nombre: "Tortuga", nombreDefecto: "Rocas" }
   ];
+  /* Accesorios del avatar. Cada uno va en un hueco («hueco») y se pueden llevar todos a la vez,
+     uno por hueco: cabeza, cara, mano, cuello, fondo (efecto mágico) y mascota. */
+  const HUECOS = [
+    { id: "cabeza", nombre: "Para la cabeza", icono: "👑" },
+    { id: "cara", nombre: "Para la cara", icono: "🕶️" },
+    { id: "mano", nombre: "En la mano", icono: "🪄" },
+    { id: "cuello", nombre: "Al cuello", icono: "🧣" },
+    { id: "fondo", nombre: "Efectos mágicos", icono: "🌈" },
+    { id: "mascota", nombre: "Mascotas", icono: "🐣" }
+  ];
   const ACCESORIOS = [
-    { id: "lazo", icono: "🎀", nombre: "Lazo", precio: 15 }, { id: "flor", icono: "🌼", nombre: "Flor", precio: 15 },
-    { id: "gorra", icono: "🧢", nombre: "Gorra", precio: 20 }, { id: "gafas", icono: "🕶️", nombre: "Gafas de sol", precio: 25 },
-    { id: "pluma", icono: "🪶", nombre: "Pluma mágica", precio: 25 }, { id: "casco", icono: "⛑️", nombre: "Casco de explorador", precio: 30 },
-    { id: "birrete", icono: "🎓", nombre: "Birrete", precio: 35 }, { id: "chistera", icono: "🎩", nombre: "Chistera", precio: 40 },
-    { id: "estrella", icono: "🌟", nombre: "Estrella brillante", precio: 50 }, { id: "corona", icono: "👑", nombre: "Corona", precio: 60 }
+    // Cabeza
+    { id: "lazo", hueco: "cabeza", icono: "🎀", nombre: "Lazo", precio: 15 },
+    { id: "flor", hueco: "cabeza", icono: "🌼", nombre: "Flor", precio: 15 },
+    { id: "gorra", hueco: "cabeza", icono: "🧢", nombre: "Gorra", precio: 20 },
+    { id: "pamela", hueco: "cabeza", icono: "👒", nombre: "Pamela", precio: 25 },
+    { id: "casco", hueco: "cabeza", icono: "⛑️", nombre: "Casco de explorador", precio: 30 },
+    { id: "birrete", hueco: "cabeza", icono: "🎓", nombre: "Birrete", precio: 35 },
+    { id: "chistera", hueco: "cabeza", icono: "🎩", nombre: "Chistera", precio: 40 },
+    { id: "corona", hueco: "cabeza", icono: "👑", nombre: "Corona", precio: 60 },
+    // Cara
+    { id: "gafas-redondas", hueco: "cara", icono: "👓", nombre: "Gafas redondas", precio: 15 },
+    { id: "gafas", hueco: "cara", icono: "🕶️", nombre: "Gafas de sol", precio: 25 },
+    { id: "gafas-buceo", hueco: "cara", icono: "🥽", nombre: "Gafas de buceo", precio: 30 },
+    // Mano
+    { id: "piruleta", hueco: "mano", icono: "🍭", nombre: "Piruleta", precio: 10 },
+    { id: "helado", hueco: "mano", icono: "🍦", nombre: "Helado", precio: 10 },
+    { id: "globo-mano", hueco: "mano", icono: "🎈", nombre: "Globo", precio: 12 },
+    { id: "libros", hueco: "mano", icono: "📚", nombre: "Montón de libros", precio: 12 },
+    { id: "paraguas", hueco: "mano", icono: "🌂", nombre: "Paraguas", precio: 15 },
+    { id: "linterna-mano", hueco: "mano", icono: "🔦", nombre: "Linterna", precio: 18 },
+    { id: "balon", hueco: "mano", icono: "⚽", nombre: "Balón", precio: 20 },
+    { id: "cometa-mano", hueco: "mano", icono: "🪁", nombre: "Cometa", precio: 22 },
+    { id: "pluma", hueco: "mano", icono: "🪶", nombre: "Pluma mágica", precio: 25 },
+    { id: "osito", hueco: "mano", icono: "🧸", nombre: "Osito de peluche", precio: 25 },
+    { id: "mando", hueco: "mano", icono: "🎮", nombre: "Mando de videojuegos", precio: 35 },
+    { id: "escudo-mano", hueco: "mano", icono: "🛡️", nombre: "Escudo", precio: 40 },
+    { id: "varita", hueco: "mano", icono: "🪄", nombre: "Varita mágica", precio: 45 },
+    { id: "estrella", hueco: "mano", icono: "🌟", nombre: "Estrella brillante", precio: 50 },
+    { id: "guitarra", hueco: "mano", icono: "🎸", nombre: "Guitarra", precio: 55 },
+    { id: "trofeo-mano", hueco: "mano", icono: "🏆", nombre: "Trofeo de campeón", precio: 90 },
+    // Cuello
+    { id: "bufanda", hueco: "cuello", icono: "🧣", nombre: "Bufanda", precio: 20 },
+    { id: "collar", hueco: "cuello", icono: "📿", nombre: "Collar", precio: 30 },
+    { id: "medalla-oro", hueco: "cuello", icono: "🏅", nombre: "Medalla de oro", precio: 45 },
+    { id: "diamante", hueco: "cuello", icono: "💎", nombre: "Colgante de diamante", precio: 95 },
+    // Efectos mágicos (detrás del compañero)
+    { id: "petalos", hueco: "fondo", icono: "🌸", nombre: "Lluvia de pétalos", precio: 30 },
+    { id: "nieve", hueco: "fondo", icono: "❄️", nombre: "Copos de nieve", precio: 35 },
+    { id: "purpurina", hueco: "fondo", icono: "✨", nombre: "Purpurina", precio: 40 },
+    { id: "luna", hueco: "fondo", icono: "🌙", nombre: "Luna mágica", precio: 50 },
+    { id: "arcoiris", hueco: "fondo", icono: "🌈", nombre: "Arcoíris", precio: 70 },
+    { id: "fuego", hueco: "fondo", icono: "🔥", nombre: "Aura de fuego", precio: 80 },
+    { id: "planeta", hueco: "fondo", icono: "🪐", nombre: "Planeta", precio: 90 },
+    { id: "fuegos", hueco: "fondo", icono: "🎆", nombre: "Fuegos artificiales", precio: 120 },
+    // Mascotas
+    { id: "mariquita", hueco: "mascota", icono: "🐞", nombre: "Mariquita", precio: 20 },
+    { id: "abeja", hueco: "mascota", icono: "🐝", nombre: "Abeja", precio: 20 },
+    { id: "mariposa", hueco: "mascota", icono: "🦋", nombre: "Mariposa", precio: 25 },
+    { id: "pez", hueco: "mascota", icono: "🐠", nombre: "Pececito", precio: 25 },
+    { id: "pollito", hueco: "mascota", icono: "🐣", nombre: "Pollito", precio: 30 },
+    { id: "unicornio", hueco: "mascota", icono: "🦄", nombre: "Unicornio", precio: 140 },
+    { id: "dragoncito", hueco: "mascota", icono: "🐉", nombre: "Dragoncito", precio: 150 }
   ];
   const INSIGNIAS = [
     { id: "primera", icono: "🗺️", nombre: "Primera aventura", desc: "Completa tu primera misión." },
@@ -120,7 +177,7 @@ PV.recompensas = (function () {
     }
     if (tirada < 0.7) {
       const libres = ACCESORIOS.filter(a => !p.accesorios.includes(a.id) && a.precio <= 30);
-      if (libres.length) { const a = U.azar(libres); p.accesorios.push(a.id); return { tipo: "accesorio", accesorio: a }; }
+      if (libres.length) { const a = U.azar(libres); p.accesorios.push(a.id); if (!puestos(p)[a.hueco]) puestos(p)[a.hueco] = a.id; return { tipo: "accesorio", accesorio: a }; }
     }
     const n = 5 + Math.floor(Math.random() * 6);
     p.monedas += n;
@@ -131,14 +188,35 @@ PV.recompensas = (function () {
     const a = ACCESORIOS.find(x => x.id === idAcc);
     if (!a || p.accesorios.includes(a.id) || p.monedas < a.precio) return false;
     p.monedas -= a.precio; p.accesorios.push(a.id);
+    puestos(p)[a.hueco] = a.id;   // al comprar, se lo pone
     return true;
   }
+
+  /* Lo que lleva puesto el avatar: { cabeza, cara, mano, cuello, fondo, mascota } (un accesorio por hueco). */
+  function puestos(p) {
+    if (!p.avatar.puestos || typeof p.avatar.puestos !== "object") {
+      p.avatar.puestos = {};
+      const viejo = accesorio(p.avatar.accesorio);   // versión anterior: un solo accesorio
+      if (viejo) p.avatar.puestos[viejo.hueco] = viejo.id;
+    }
+    return p.avatar.puestos;
+  }
+  function llevaPuesto(p, id) { const a = accesorio(id); return !!a && puestos(p)[a.hueco] === id; }
+  // Poner o quitar: si ya lo lleva, se lo quita; si no, se lo pone (sustituyendo lo que hubiera en ese hueco).
+  function alternar(p, id) {
+    const a = accesorio(id);
+    if (!a || !p.accesorios.includes(id)) return false;
+    const pu = puestos(p);
+    if (pu[a.hueco] === id) delete pu[a.hueco]; else pu[a.hueco] = id;
+    return true;
+  }
+  function quitarTodo(p) { p.avatar.puestos = {}; }
 
   function animal(id) { return ANIMALES.find(a => a.id === id) || ANIMALES[0]; }
   function accesorio(id) { return ACCESORIOS.find(a => a.id === id) || null; }
   function nombreMascota(p) { return (p.mascota && p.mascota.nombre) || animal(p.avatar.animal).nombreDefecto; }
 
-  return { ANIMALES, ACCESORIOS, INSIGNIAS, BONUS, insigniaVisible, nivelJugador, progresoNivel, revisarInsignias, completarMision,
+  return { ANIMALES, ACCESORIOS, HUECOS, puestos, llevaPuesto, alternar, quitarTodo, INSIGNIAS, BONUS, insigniaVisible, nivelJugador, progresoNivel, revisarInsignias, completarMision,
            abrirCofre, comprar, animal, accesorio, nombreMascota, sortearObjeto };
 })();
 

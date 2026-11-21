@@ -37,6 +37,7 @@ PV.almacen = (function () {
     if (!d || typeof d !== "object" || typeof d.esquema !== "number" || d.esquema > ESQUEMA) return null;
     const r = Object.assign(nuevo(d.id), d, { esquema: ESQUEMA });
     r.avatar = Object.assign({ animal: "zorro", accesorio: null }, d.avatar || {});
+    if (r.avatar.puestos && typeof r.avatar.puestos !== "object") r.avatar.puestos = {};
     r.mascota = Object.assign({ nombre: "" }, d.mascota || {});
     r.retoDiario = Object.assign({ fecha: null }, d.retoDiario || {});
     ["habilidades", "items", "actividad", "misiones"].forEach(k => { if (!r[k] || typeof r[k] !== "object" || Array.isArray(r[k])) r[k] = {}; });

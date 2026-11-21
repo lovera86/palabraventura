@@ -42,7 +42,7 @@ git remote add origin https://github.com/TU-USUARIO/palabraventura.git && git pu
 4. **Formatos de reto:** Detective de palabras, Hechizo de letras, Robot corrector y Construye la palabra. Botón «💡 Pista» en cada reto, sin penalización.
 5. **Final de lección:** estrellas, monedas y % de aciertos; tesoros y cofres se abren solos; evolución del compañero, nuevas unidades e insignias; una frase que anticipa la siguiente aventura.
 6. **Arriba:** racha de días seguidos 🔥 (no castiga: solo cuenta), estrellas ⭐ y monedas 🪙.
-7. **Colección:** álbum de tesoros, compañero (nombre, animal, accesorios, evolución), tienda de accesorios e insignias.
+7. **Colección:** álbum de tesoros, compañero (nombre, animal, accesorios, evolución), tienda e insignias. La tienda tiene 46 accesorios en 6 sitios (cabeza, cara, mano, cuello, efecto mágico de fondo y mascota): el compañero puede llevar uno en cada sitio a la vez, lo que se compra se lo pone al momento con una animación de «estreno», y lo comprado se puede poner o quitar desde la tienda o la ficha del compañero.
 8. **Ajustes:** sonido, menos animaciones, cambiar o añadir jugador y acceso a la zona de adultos.
 
 En el móvil la navegación está abajo; en el ordenador hay un menú lateral y un panel con el compañero, la racha y el álbum. Fondo con letras y estrellas flotando, unidades con su color y adornos animados, lecciones teñidas con el color de su unidad y confeti al terminar (todo se desactiva con «Menos animaciones»).

@@ -67,7 +67,16 @@ h2 small { color: var(--suave); font-weight: 700; font-size: .85rem; }
 .avatar-m { width: 58px; height: 58px; font-size: 2rem; }
 .avatar-l { width: 92px; height: 92px; font-size: 3.2rem; }
 .avatar-xl { width: 130px; height: 130px; font-size: 4.6rem; }
-.avatar-acc { position: absolute; top: -18%; right: -14%; font-size: .55em; filter: drop-shadow(0 2px 1px rgba(0,0,0,.2)); }
+.avatar-animal { position: relative; z-index: 2; line-height: 1; }
+/* Accesorios: uno por hueco, colocados alrededor del compañero */
+.acc { position: absolute; line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 1px rgba(0,0,0,.18)); }
+.acc-fondo { z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 1.15em; opacity: .85; animation: girar-suave 14s linear infinite; }
+.acc-cara { z-index: 3; left: 50%; top: 44%; transform: translate(-50%, -50%); font-size: .44em; }
+.acc-cabeza { z-index: 4; left: 50%; top: -30%; transform: translateX(-50%); font-size: .56em; }
+.acc-cuello { z-index: 3; left: 50%; bottom: -4%; transform: translateX(-50%); font-size: .4em; }
+.acc-mano { z-index: 5; right: -18%; bottom: -6%; font-size: .5em; animation: balanceo 2.6s ease-in-out infinite; }
+.acc-mascota { z-index: 5; left: -20%; bottom: -8%; font-size: .44em; animation: bote 1.7s ease-in-out infinite; }
+@keyframes girar-suave { to { transform: translate(-50%, -50%) rotate(360deg); } }
 .etapa-1 { box-shadow: 0 3px 0 rgba(0,0,0,.12), 0 0 0 3px #f4d3a8; }
 .etapa-2 { box-shadow: 0 3px 0 rgba(0,0,0,.12), 0 0 0 4px #b8c9e2, 0 0 14px #dfe9ff; }
 .etapa-3 { box-shadow: 0 3px 0 rgba(0,0,0,.12), 0 0 0 4px var(--amarillo), 0 0 20px #ffe58a; }
@@ -469,3 +478,23 @@ body.sin-animaciones .fondo { display: none; }
 .tipo.elegido { border-color: #84c8fb; background: var(--azul-claro); box-shadow: 0 4px 0 #84c8fb; }
 .tipo:active { transform: translateY(3px); box-shadow: none; }
 .perfil-tarjeta .pill { margin-top: -4px; }
+
+/* Tienda */
+.escaparate { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #fff7d6, #ffe6f1); }
+.escaparate-avatar { padding: 22px 26px 14px; }
+.producto.puesto { border-color: #84c8fb; background: var(--azul-claro); }
+.falta { display: block; width: 80%; height: 8px; background: var(--gris); border-radius: 99px; overflow: hidden; }
+.falta span { display: block; height: 100%; background: var(--amarillo); border-radius: 99px; }
+.hueco-titulo { font-weight: 900; margin: 14px 0 6px; color: var(--suave); }
+/* Estreno al comprar */
+.modal-estreno { overflow: hidden; }
+.estreno { position: relative; height: 210px; display: grid; place-items: center; margin-bottom: 6px; }
+.estreno-rayos { position: absolute; width: 320px; height: 320px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255,204,51,.45) 0 12deg, rgba(255,255,255,0) 12deg 24deg);
+  animation: rayos 6s linear infinite; }
+.estreno-avatar { position: relative; z-index: 1; animation: estreno-salto .9s ease .35s both; }
+.estreno-objeto { position: absolute; z-index: 2; font-size: 4.5rem; left: 50%; top: 50%; animation: estreno-cae .9s cubic-bezier(.3,1.4,.5,1) both; }
+@keyframes rayos { to { transform: rotate(360deg); } }
+@keyframes estreno-cae { 0% { transform: translate(-50%, -260%) scale(1.6) rotate(-20deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0) rotate(15deg); opacity: 0; } }
+@keyframes estreno-salto { 0%, 100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-22px) scale(1.08); } 60% { transform: translateY(0) scale(.96); } }
+.tarjeta.centro { text-align: center; }
