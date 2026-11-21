@@ -22,10 +22,41 @@ PV.expedicion = (function () {
     for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; }
     return a;
   }
+  /* Niveles de dificultad (se eligen en el menú y se guardan por jugador). Afectan al lenguaje (qué preguntas del
+     banco salen, letras trampa de más, preguntas y palabras extra en los retos, cuándo aparecen las pistas) y al
+     juego (velocidad y número de Borrones, corazones de los jefes, velocidad de la barca) y al premio. */
+  const DIFICULTADES = {
+    facil: { nombre: "Fácil", icono: "🌱", desc: "Para empezar", banco: [1], extraHab: [], enemigosVel: 0.75, enemigosDoble: false, jefeVida: 0,
+      barcaVel: 1, barcaParejas: 8, trampas: 0, pistaTras: 1, pistaDesde: 1, rondasExtra: false, sobra: false, parejasExtra: false,
+      elementosExtra: false, vistazo: 2.5, tapar: 1300, premio: 1 },
+    normal: { nombre: "Normal", icono: "🌟", desc: "Un reto de verdad", banco: [1, 2], extraHab: [], enemigosVel: 1.25, enemigosDoble: false, jefeVida: 1,
+      barcaVel: 1.25, barcaParejas: 10, trampas: 1, pistaTras: 2, pistaDesde: 1, rondasExtra: true, sobra: false, parejasExtra: false,
+      elementosExtra: true, vistazo: 0, tapar: 1100, premio: 1 },
+    dificil: { nombre: "Difícil", icono: "🔥", desc: "Para expertos", banco: [2, 3], extraHab: ["diac", "homo", "porq"], enemigosVel: 1.6, enemigosDoble: true, jefeVida: 2,
+      barcaVel: 1.5, barcaParejas: 12, trampas: 2, pistaTras: 3, pistaDesde: 2, rondasExtra: true, sobra: true, parejasExtra: true,
+      elementosExtra: true, vistazo: 0, tapar: 800, premio: 1.5 }
+  };
+  // Letras con las que es fácil confundirse: sirven de letras trampa extra en los retos de formar palabras.
+  const CONFUSAS = { B: ["V"], V: ["B"], L: ["Y"], Y: ["L"], C: ["Z", "S"], Z: ["S", "C"], S: ["Z", "C"], G: ["J"], J: ["G"], N: ["Ñ"], Ñ: ["N"],
+    A: ["Á"], E: ["É"], I: ["Í"], O: ["Ó"], U: ["Ú"], Á: ["A"], É: ["E"], Í: ["I"], Ó: ["O"], Ú: ["U"], "¡": ["¿"], "!": ["?"], "¿": ["¡"], "?": ["!"] };
+  function letrasTrampa(palabra, cuantas, yaHay) {
+    const posibles = [];
+    for (const l of new Set([...palabra])) for (const c of CONFUSAS[l] || []) if (!palabra.includes(c) && c !== yaHay && !posibles.includes(c)) posibles.push(c);
+    if (!palabra.includes("H") && yaHay !== "H") posibles.push("H");
+    return mezclar(posibles).slice(0, cuantas);
+  }
+
   /* Preguntas de «elige la bien escrita» sacadas del banco de ejercicios de la app (las de «detective» y las de
-     «completa», convertidas en palabras enteras), solo de las habilidades del nivel y de dificultad 1 o 2. */
-  function preguntas(habilidades) {
-    return (PV.banco || []).filter(e => habilidades.includes(e.habilidad) && (e.dificultad || 1) <= 2 &&
+     «completa», convertidas en palabras o frases enteras), de las habilidades del nivel y de la dificultad elegida. */
+  function preguntas(habilidades, dif) {
+    const d = dif || DIFICULTADES.normal;
+    const habs = habilidades.concat(d.extraHab);
+    let lista = preguntasDe(habs, d.banco);
+    if (lista.length < 8) lista = lista.concat(preguntasDe(habilidades, [1, 2, 3]).filter(q => !lista.some(x => x.correcta === q.correcta)));
+    return lista;
+  }
+  function preguntasDe(habilidades, niveles) {
+    return (PV.banco || []).filter(e => habilidades.includes(e.habilidad) && niveles.includes(e.dificultad || 1) &&
       (e.tipo === "detective" || (e.tipo === "completa" && e.hueco && e.hueco.includes("_")))).map(e => {
       const forma = o => e.tipo === "completa" ? e.hueco.replace("_", o) : o;
       return { frase: e.frase || "", opciones: mezclar(e.opciones.map(forma)), correcta: forma(e.correcta), explicacion: e.explicacion || "" };
@@ -75,6 +106,7 @@ PV.expedicion = (function () {
     let jugando = false, obsActual = 0, reto = null, retoAbierto = false;
     let amigo = null, batalla = null, bolsa = [], avisoBorron = false, fraseBarca = "";
     let escena = null;          // { tipo: "corta", k } o { tipo: "zona", ci, zi }
+    function dif() { return DIFICULTADES[estado.dificultad] || DIFICULTADES.normal; }
     let retoNuevo = null;       // reto de la Gran Expedición abierto (js/expedicion/retos.js)
     const poderesEl = $(".ex-poderes");
 
@@ -129,6 +161,10 @@ PV.expedicion = (function () {
           <button type="button" class="ex-modo" data-ex="cortas">
             <span class="ex-modo-icono">🏕️</span>
             <span><strong>Expediciones cortas</strong><small>${lista.length} niveles · ${cortas} completados</small></span></button>
+        </div>
+        <div class="ex-dificultad" role="radiogroup" aria-label="Dificultad">
+          <span>Dificultad:</span>
+          ${Object.entries(DIFICULTADES).map(([k, d]) => `<button type="button" role="radio" aria-checked="${dif() === d}" class="ex-dif ${dif() === d ? "activa" : ""}" data-ex="dificultad" data-v="${k}">${d.icono} ${d.nombre}</button>`).join("")}
         </div>
         <button type="button" class="btn btn-gris" data-ex="confirmar-salir">Salir</button>`, "ex-tarjeta-mapa");
     }
@@ -193,17 +229,39 @@ PV.expedicion = (function () {
       clearTimeout(avisoT); avisoEl.hidden = true;
       raiz.querySelectorAll(".ex-confeti, .ex-vuela").forEach(c => c.remove());
     }
+    // Copia del nivel con los ajustes de juego de la dificultad (no toca los datos originales).
+    function ajustarNivel(n, d) {
+      const c = Object.assign({}, n);
+      let enemigos = (n.enemigos || []).map(e => Object.assign({}, e, { vel: (e.vel || 55) * d.enemigosVel }));
+      // En difícil, cada zona de paseo tiene dos Borrones (cada uno en una mitad).
+      if (d.enemigosDoble) enemigos = enemigos.flatMap(e => { const m = (e.desde + e.hasta) / 2; return [Object.assign({}, e, { hasta: m }), Object.assign({}, e, { desde: m, dir: -1 })]; });
+      c.enemigos = enemigos;
+      c.obstaculos = (n.obstaculos || []).map(o => o.tipo === "jefe" ? Object.assign({}, o, { vida: (o.vida || 3) + d.jefeVida }) : o);
+      if (n.barca) {
+        const parejas = d.barcaParejas;
+        c.barca = Object.assign({}, n.barca, { velocidad: n.barca.velocidad * d.barcaVel, parejas,
+          separacion: Math.floor((n.barca.puerto - 400 - n.barca.primera) / Math.max(1, parejas - 1)) });
+      }
+      c.premio = escalarPremio(n.premio, d);
+      return c;
+    }
+    function escalarPremio(p, d) {
+      if (!p || d.premio === 1) return p;
+      const e = x => ({ estrellas: Math.round(x.estrellas * d.premio), monedas: Math.round(x.monedas * d.premio) });
+      return { primera: e(p.primera), repetir: e(p.repetir) };
+    }
     function cargarNivel(k) { cargarEscena(niveles()[k], { tipo: "corta", k }); }
     function cargarZona(ci, zi) { cargarEscena(PV.GRAN_EXPEDICION[ci].zonas[zi], { tipo: "zona", ci, zi }); }
     function cargarEscena(n, info) {
       cerrarNivel();
       raiz.classList.remove("en-mapa");
-      nivel = n; escena = info;
+      nivel = ajustarNivel(n, dif()); escena = info;
       (nivel.objetos || []).forEach(o => { o.entregado = false; });
       controlNivel = new AbortController();
       let palabras = null;
       if (nivel.modo === "barca") {
-        palabras = mezclar(preguntas(nivel.habilidades)).slice(0, nivel.barca.parejas).map(q => ({
+        // En la barca solo caben palabras cortas.
+        palabras = mezclar(preguntas(nivel.habilidades, dif()).filter(q => q.opciones.every(o => o.length <= 14))).slice(0, nivel.barca.parejas).map(q => ({
           frase: q.frase, correcta: q.correcta, incorrecta: q.opciones.find(o => o !== q.correcta), explicacion: q.explicacion }));
       }
       fraseBarca = "";
@@ -218,7 +276,7 @@ PV.expedicion = (function () {
       pintarPoderes();
       const cap = info.tipo === "zona" ? PV.GRAN_EXPEDICION[info.ci] : null;
       mostrarPanel(`<div class="ex-icono-grande">${nivel.icono}</div>
-        <small class="ex-etiqueta">${cap ? `Zona ${info.zi + 1} de ${cap.zonas.length}` : `Nivel ${info.k + 1}`} · ${esc(nivel.regla)}</small>
+        <small class="ex-etiqueta">${cap ? `Zona ${info.zi + 1} de ${cap.zonas.length}` : `Nivel ${info.k + 1}`} · ${esc(nivel.regla)} · ${dif().icono} ${dif().nombre}</small>
         <h2>${esc(nivel.titulo)}</h2>
         ${cap && info.zi === 0 ? `<p class="ex-mision">🗺️ ${esc(cap.mision)}</p>` : ""}
         <p>${esc(nivel.intro)}</p>
@@ -331,6 +389,8 @@ PV.expedicion = (function () {
       if (!reto || reto.i !== i) {
         const fichas = partida.letrasDe(i).map((l, k) => ({ id: k, l }));
         if (o.reto.trampa) fichas.push({ id: ID_TRAMPA, l: o.reto.trampa.letra, trampa: true });
+        letrasTrampa(o.palabra, dif().trampas, o.reto.trampa && o.reto.trampa.letra).forEach((l, k) => fichas.push({ id: ID_TRAMPA - 1 - k, l, trampa: true,
+          explicacion: `${o.palabra.charAt(0) + o.palabra.slice(1).toLowerCase()} no lleva ${"¡!¿?".includes(l) ? "el signo" : "la letra"} «${l}».` }));
         reto = { i, R: o.reto, palabra: o.palabra, fichas: barajar(fichas, o.palabra), huecos: Array(o.palabra.length).fill(null),
           fijos: new Set(), intentos: 0, pista: 0, msg: "", estado: "" };
       }
@@ -350,7 +410,7 @@ PV.expedicion = (function () {
       const banco = reto.fichas.map(f => usadas.has(f.id)
         ? `<button type="button" class="ex-r-ficha" disabled aria-hidden="true"></button>`
         : `<button type="button" class="ex-r-ficha" data-ex="ficha" data-i="${f.id}" aria-label="Letra ${f.l}">${f.l}</button>`).join("");
-      const verPista = reto.intentos >= INTENTOS_PARA_PISTA || reto.pista > 0;
+      const verPista = reto.intentos >= dif().pistaTras || reto.pista > 0;
       const pistas = [];
       if (reto.pista >= 1) pistas.push(`<div class="ex-r-pista"><span class="ex-r-imagen">${R.imagen}</span><span>${esc(R.definicion)}</span></div>`);
       if (reto.pista >= 2) pistas.push(`<p class="ex-r-nota">🔊 Escucha la palabra. Empieza por <b>${esc(palabra[0])}</b>.</p>`);
@@ -387,8 +447,8 @@ PV.expedicion = (function () {
       reto.intentos++;
       reto.estado = "mal";
       const trampa = fichas.find(f => f.trampa);
-      reto.msg = trampa ? `¡Ojo con ${"¡!¿?".includes(trampa.l) ? "el signo" : "la"} ${trampa.l}! ${reto.R.trampa.explicacion}`
-        : ANIMOS[(reto.intentos - 1) % ANIMOS.length] + (reto.intentos === INTENTOS_PARA_PISTA ? " Si quieres, pide una pista 💡" : "");
+      reto.msg = trampa ? `¡Ojo con ${"¡!¿?".includes(trampa.l) ? "el signo" : "la"} ${trampa.l}! ${trampa.explicacion || reto.R.trampa.explicacion}`
+        : ANIMOS[(reto.intentos - 1) % ANIMOS.length] + (reto.intentos === dif().pistaTras ? " Si quieres, pide una pista 💡" : "");
       ctx.sonar && ctx.sonar("fallo");
       pintarReto();
     }
@@ -434,7 +494,7 @@ PV.expedicion = (function () {
     }
     function tomarPregunta() {
       if (!bolsa.length) {
-        bolsa = mezclar(preguntas(nivel.habilidades || ["bv", "h", "lly"]));
+        bolsa = mezclar(preguntas(nivel.habilidades || ["bv", "h", "lly"], dif()));
         // Las preguntas propias del nivel (relaciones, adivinanzas…) salen primero, mezcladas.
         if (nivel.preguntas) bolsa = bolsa.concat(mezclar(nivel.preguntas.map(q => Object.assign({}, q, { opciones: mezclar(q.opciones) }))));
       }
@@ -557,7 +617,7 @@ PV.expedicion = (function () {
       if (ob.control && !ob.control.terminado) { retoNuevo = ob.control; retoNuevo.reabrir(); return; }
       estado.intros = estado.intros || {};
       retoNuevo = ob.control = PV.retos.abrir(ob.reto, {
-        mostrarPanel, esc, sonar: n => ctx.sonar && ctx.sonar(n), hablar,
+        mostrarPanel, esc, sonar: n => ctx.sonar && ctx.sonar(n), hablar, dif: dif(),
         introVista: !!estado.intros[clave],
         introLeida() { estado.intros[clave] = true; guardar(); },
         alResolver() { retoNuevo = null; partida.resolver(i); seguir(); },
@@ -605,7 +665,7 @@ PV.expedicion = (function () {
       const r = ctx.alCompletar ? ctx.alCompletar(nivel.id, nivel.premio) : null;
       const g = partida.secretos();
       if (estado[nivel.id]) { estado[nivel.id].gemas = Math.max(estado[nivel.id].gemas || 0, g.cogidos); guardar(); }
-      const rc = ultima && ctx.alCompletar ? ctx.alCompletar("cap-" + cap.id, cap.premio) : null;
+      const rc = ultima && ctx.alCompletar ? ctx.alCompletar("cap-" + cap.id, escalarPremio(cap.premio, dif())) : null;
       ctx.sonar && ctx.sonar("fin");
       if (animado) confeti();
       const trozos = cap.zonas.map((z, k) => `<span class="${zonaHecha(z) ? "hecho" : ""} ${k === zi ? "nuevo" : ""}">${zonaHecha(z) ? "🗺️" : ""}</span>`).join("");
@@ -759,6 +819,7 @@ PV.expedicion = (function () {
       inicio() { inicio(); },
       gran() { pantallaCapitulo(0); },
       cortas() { mapa(); },
+      dificultad(b) { estado.dificultad = b.dataset.v; guardar(); inicio(); aviso(`Dificultad: ${dif().icono} ${dif().nombre}`); },
       capitulo() { pantallaCapitulo(escena ? escena.ci : 0); },
       zona(b) {
         const ci = Number(b.dataset.ci), zi = Number(b.dataset.zi), cap = PV.GRAN_EXPEDICION[ci];

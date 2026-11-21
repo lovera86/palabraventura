@@ -4,7 +4,9 @@
    - reto.tipo «construir»: recoger las letras de la zona y ordenarlas (como en las expediciones cortas).
    - reto.tipo «buscar»: encontrar en el escenario el objeto que describe la instrucción.
    - reto.tipo «elegir», «frase», «memoria» o «clasificar»: panel de reto.
-   Para añadir una zona basta con describirla con zona({…}); el recorrido (plataformas, rocas, suelos) se monta solo. */
+   Para añadir una zona basta con describirla con zona({…}); el recorrido (plataformas, rocas, suelos) se monta solo.
+   Contenido extra según la dificultad (normal y difícil): «rondasExtra» (elegir), «elementosExtra» (clasificar);
+   solo en difícil: «sobra» (frase: una palabra de más) y «parejasExtra» (memoria). */
 (function () {
   const suelo = (x, w, y) => ({ x, y: y === undefined ? 300 : y, w, h: 360 - (y === undefined ? 300 : y), tipo: "suelo" });
   const roca = (x, w, h) => ({ x, y: 300 - h, w, h, tipo: "roca" });
@@ -108,6 +110,10 @@
             { estimulo: { imagen: "🍄", texto: "¿Cómo se llama?" }, opciones: ["seta", "cesta", "sota"], respuesta: "seta", pista: "Sale en el bosque cuando llueve y tiene sombrero." },
             { estimulo: { imagen: "🌰", texto: "¿Cómo se llama?" }, opciones: ["castaña", "cabaña", "montaña"], respuesta: "castaña", pista: "Es el fruto del castaño; se come asada en otoño." },
             { estimulo: { imagen: "🦔", texto: "¿Cómo se llama?" }, opciones: ["erizo", "rizo", "hielo"], respuesta: "erizo", pista: "Es un animal pequeño lleno de pinchos." }
+          ],
+          rondasExtra: [
+            { estimulo: { imagen: "🦉", texto: "¿Cómo se escribe?" }, opciones: ["búho", "buho", "búo"], respuesta: "búho", pista: "Lleva una letra que no suena y una tilde.", explicacion: "Búho lleva H y tilde en la ú." },
+            { estimulo: { imagen: "🐌", texto: "¿Cómo se escribe?" }, opciones: ["caracol", "caracól", "karacol"], respuesta: "caracol", pista: "Es aguda y acaba en L: no lleva tilde.", explicacion: "Caracol es aguda acabada en L, así que no lleva tilde." }
           ] } },
         o3: { tipo: "rio", w: 230, solucion: "puente", palabra: "TRONCO", reto: { enunciado: "Forma la palabra que te ayuda a cruzar el río.", imagen: "🪵",
           definicion: "Parte gruesa de un árbol, de la que salen las ramas.", decir: "tronco", trampa: null,
@@ -136,6 +142,10 @@
             { estimulo: { imagen: "🤔", texto: "Alumbro sin ser el sol y en la oscuridad soy tu mejor amigo. ¿Qué soy?" },
               opciones: ["El farol", "La luna", "El gato"], respuesta: "El farol",
               pista: "Lleva una vela o una bombilla dentro y se cuelga.", explicacion: "¡Como el que vas a encender!" }
+          ],
+          rondasExtra: [
+            { estimulo: { imagen: "🤔", texto: "Vuela sin alas, silba sin boca, empuja sin manos y nadie lo ve. ¿Qué es?" },
+              opciones: ["El viento", "El pájaro", "La pelota"], respuesta: "El viento", pista: "Mueve las hojas de los árboles." }
           ] } },
         o2: { tipo: "puerta", estilo: "madera", reto: { tipo: "elegir",
           enunciado: "Dos adivinanzas más y la puerta se abrirá.", boton: "¡A ABRIR! 🚪", tras: "¡La puerta se abre! Sigue por la cueva 🦇",
@@ -146,6 +156,10 @@
             { estimulo: { imagen: "🤔", texto: "Oro parece, plata no es. ¿Qué es?" },
               opciones: ["El plátano", "El limón", "El oro"], respuesta: "El plátano",
               pista: "Junta «plata» y «no es»: pla-ta-no." }
+          ],
+          rondasExtra: [
+            { estimulo: { imagen: "🤔", texto: "Tiene dientes y no come; tiene cabeza y no es persona. ¿Qué es?" },
+              opciones: ["El ajo", "El peine", "El tiburón"], respuesta: "El ajo", pista: "Se usa en la cocina y huele mucho; sus trocitos se llaman dientes." }
           ] } },
         o3: { tipo: "jaula", preso: "🐭", reto: { tipo: "buscar", objetivo: "linterna",
           instruccion: "¡Hola! Soy Pipo, el ratón. Se me apagó la luz y me quedé encerrado. Tráeme lo que alumbra, se lleva en la mano y funciona con pilas.",
@@ -183,6 +197,10 @@
             { estimulo: { imagen: "✏️", texto: "¿Cómo se escribe bien?" }, opciones: ["barco", "varco"], respuesta: "barco", explicacion: "Barco se escribe con B, como barca." },
             { estimulo: { imagen: "🪧", texto: "Hay una ormiga en la orilla." }, opciones: ["Hay", "ormiga", "orilla"], respuesta: "ormiga", pista: "Busca el animal pequeño." },
             { estimulo: { imagen: "✏️", texto: "¿Cómo se escribe bien?" }, opciones: ["hormiga", "ormiga"], respuesta: "hormiga", explicacion: "Hormiga empieza por H, como hormiguero." }
+          ],
+          rondasExtra: [
+            { estimulo: { imagen: "🪧", texto: "Las vallenas saltan en el mar." }, opciones: ["Las", "vallenas", "saltan", "mar"], respuesta: "vallenas", pista: "Busca el animal más grande del mar." },
+            { estimulo: { imagen: "✏️", texto: "¿Cómo se escribe bien?" }, opciones: ["ballenas", "vallenas", "bayenas"], respuesta: "ballenas", explicacion: "Ballena se escribe con B y con LL." }
           ] } },
         o3: { tipo: "muro", arriba: 130, solucion: "ascensor", reto: { tipo: "elegir", icono: "🔤",
           intro: "A estas palabras les falta una letra. Mira el dibujo, lee la palabra y elige la letra que va en el hueco.",
@@ -192,6 +210,10 @@
             { estimulo: { imagen: "📚", texto: "LI _ RO" }, opciones: ["B", "V"], respuesta: "B", explicacion: "Libro: delante de R siempre va B." },
             { estimulo: { imagen: "🥚", texto: "_ UEVO" }, opciones: ["H", "Sin letra"], respuesta: "H", explicacion: "Las palabras que empiezan por hue- llevan H." },
             { estimulo: { imagen: "🐔", texto: "GA _ INA" }, opciones: ["LL", "Y"], respuesta: "LL", explicacion: "Gallina se escribe con LL." }
+          ],
+          rondasExtra: [
+            { estimulo: { imagen: "🚚", texto: "CAMI _ N" }, opciones: ["Ó", "O"], respuesta: "Ó", explicacion: "Camión es aguda y acaba en N: lleva tilde." },
+            { estimulo: { imagen: "🦒", texto: "_ IRAFA" }, opciones: ["J", "G"], respuesta: "J", explicacion: "Jirafa se escribe con J." }
           ] } },
         gemas: [["A", 3], ["B", 1], ["B", 5], ["C", 1]],
         enemigos: [["A", 1], ["B", 0], ["B", 1], ["C", 0]],
@@ -211,7 +233,8 @@
           intro: "Toca dos cartas para darles la vuelta. Si el dibujo y la palabra van juntos, ¡pareja! Si no, se vuelven a tapar: recuerda dónde estaban.",
           enunciado: "Encuentra las parejas de dibujo y palabra para encender la hoguera.", boton: "¡A ENCENDER! 🔥",
           exito: "¡Todas las parejas! La hoguera se enciende.", tras: "¡Qué calorcito! Sigue por el campamento 🔥",
-          parejas: [["🔥", "fuego"], ["⛺", "tienda"], ["🌙", "luna"], ["🦉", "búho"], ["⭐", "estrella"], ["🪵", "leña"]] } },
+          parejas: [["🔥", "fuego"], ["⛺", "tienda"], ["🌙", "luna"], ["🦉", "búho"], ["⭐", "estrella"], ["🪵", "leña"]],
+          parejasExtra: [["🦊", "zorro"], ["🌲", "pino"]] } },
         o2: { tipo: "puerta", estilo: "madera", reto: { tipo: "clasificar", icono: "🧺",
           intro: "Lee cada palabra y toca el grupo al que pertenece.",
           enunciado: "¿Animal o planta? Ordena las fichas del campamento.", boton: "¡A ABRIR! 🚪",
@@ -224,6 +247,11 @@
             { texto: "helecho", cat: "planta", porque: "El helecho es una planta con hojas grandes." },
             { texto: "zorro", cat: "animal", porque: "El zorro es un animal." },
             { texto: "margarita", cat: "planta", porque: "La margarita es una flor, y las flores son plantas." }
+          ],
+          elementosExtra: [
+            { texto: "musgo", cat: "planta", porque: "El musgo es una planta pequeñita que crece sobre las piedras." },
+            { texto: "lombriz", cat: "animal", porque: "La lombriz es un animal: se mueve bajo la tierra." },
+            { texto: "roble", cat: "planta", porque: "El roble es un árbol, y los árboles son plantas." }
           ] } },
         o3: { tipo: "puerta", estilo: "reja", reto: { tipo: "elegir", icono: "🎵",
           intro: "Dos palabras riman cuando terminan igual: luna y cuna, ratón y botón.",
@@ -233,6 +261,10 @@
             { estimulo: { imagen: "⭐", texto: "¿Qué rima con ESTRELLA?" }, opciones: ["botella", "luna", "cielo"], respuesta: "botella", explicacion: "Estrella y botella terminan en -ella." },
             { estimulo: { imagen: "🔥", texto: "¿Qué rima con FUEGO?" }, opciones: ["juego", "leña", "agua"], respuesta: "juego", explicacion: "Fuego y juego terminan en -uego." },
             { estimulo: { imagen: "⛺", texto: "¿Qué rima con TIENDA?" }, opciones: ["merienda", "casa", "saco"], respuesta: "merienda", explicacion: "Tienda y merienda terminan en -ienda." }
+          ],
+          rondasExtra: [
+            { estimulo: { imagen: "🐸", texto: "¿Qué rima con RANA?" }, opciones: ["ventana", "rama", "sapo"], respuesta: "ventana", explicacion: "Rana y ventana terminan en -ana." },
+            { estimulo: { imagen: "🍰", texto: "¿Qué rima con PASTEL?" }, opciones: ["papel", "pasta", "tarta"], respuesta: "papel", explicacion: "Pastel y papel terminan en -el." }
           ] } },
         gemas: [["A", 1], ["A", 6], ["B", 5], ["C", 1]],
         enemigos: [["A", 0], ["B", 1], ["C", 0], ["C", 1]],
@@ -250,7 +282,7 @@
         o1: { tipo: "puerta", estilo: "reja", reto: { tipo: "frase", icono: "📝",
           intro: "Una frase empieza con mayúscula y termina con punto. Toca las palabras en orden; si te equivocas, toca una de arriba para quitarla.",
           enunciado: "Ordena las palabras para formar una frase y abrir la reja.", imagen: "🐐",
-          palabras: ["La", "cabra", "sube", "a", "la", "montaña."],
+          palabras: ["La", "cabra", "sube", "a", "la", "montaña."], sobra: "las",
           pista: "Empieza por «La» (con mayúscula) y termina en «montaña.» (con punto).",
           boton: "¡A ABRIR! 🚪", exito: "«La cabra sube a la montaña.» ¡Frase perfecta!", tras: "¡La reja se abre! Sigue subiendo ⛰️" } },
         o2: { tipo: "rio", w: 230, solucion: "hielo", reto: { tipo: "clasificar", icono: "🧊",
@@ -265,10 +297,15 @@
             { texto: "cuerda", cat: "cosa", porque: "La cuerda es una cosa." },
             { texto: "dormir", cat: "accion", porque: "Dormir es algo que hacemos: es una acción." },
             { texto: "gorro", cat: "cosa", porque: "El gorro es una cosa." }
+          ],
+          elementosExtra: [
+            { texto: "pensar", cat: "accion", porque: "Pensar es algo que hacemos con la cabeza: es una acción." },
+            { texto: "linterna", cat: "cosa", porque: "La linterna es una cosa." },
+            { texto: "respirar", cat: "accion", porque: "Respirar es algo que hacemos todo el rato: es una acción." }
           ] } },
         o3: { tipo: "muro", arriba: 130, solucion: "escalera", reto: { tipo: "frase",
           enunciado: "Ordena la frase para que aparezca la escalera.", imagen: "🪜",
-          palabras: ["Mi", "mascota", "me", "ayuda", "a", "subir."],
+          palabras: ["Mi", "mascota", "me", "ayuda", "a", "subir."], sobra: "nos",
           pista: "Empieza por «Mi» y termina en «subir.».",
           boton: "¡A SUBIR! 🪜", exito: "«Mi mascota me ayuda a subir.» ¡Muy bien!", tras: "¡Escalera lista! Sube hasta el trozo de mapa 🗺️" } },
         gemas: [["A", 1], ["A", 5], ["B", 3], ["C", 5]],
@@ -293,7 +330,8 @@
           intro: "Ahora las parejas son palabras que significan lo mismo (sinónimos), como contento y alegre.",
           enunciado: "Encuentra las parejas de sinónimos para abrir la muralla.", boton: "¡A ABRIR! 🏰",
           exito: "¡Todas las parejas de sinónimos! La muralla se abre.", tras: "¡Muralla abierta! El Guardián te espera ⚔️",
-          parejas: [["contento", "alegre"], ["rápido", "veloz"], ["grande", "enorme"], ["bonito", "precioso"], ["empezar", "comenzar"]] } },
+          parejas: [["contento", "alegre"], ["rápido", "veloz"], ["grande", "enorme"], ["bonito", "precioso"], ["empezar", "comenzar"]],
+          parejasExtra: [["cansado", "agotado"], ["hablar", "conversar"]] } },
         o3: { tipo: "jefe", nombre: "Borrón Guardián del Mapa", vida: 5, tam: 2.6, corona: true, color: "#4b2a7a",
           palabrasMal: ["kastiyo", "mapa?", "jirafa!"],
           saludo: "¡Soy el Guardián del Mapa! Para recuperar el último trozo tendrás que demostrar todo lo que sabes.",

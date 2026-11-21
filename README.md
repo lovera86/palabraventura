@@ -49,6 +49,25 @@ En el móvil la navegación está abajo; en el ordenador hay un menú lateral y 
 
 Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva versión, y la clave antigua se conserva como copia (`palabraventura.progreso`).
 
+## Dificultad de la expedición
+
+En el menú de la expedición se elige 🌱 Fácil, 🌟 Normal (por defecto) o 🔥 Difícil; se guarda para cada jugador y vale para La Gran Expedición y las expediciones cortas.
+
+| | 🌱 Fácil | 🌟 Normal | 🔥 Difícil |
+|---|---|---|---|
+| Preguntas del banco (amiguitos, jefes, barca) | dificultad 1 | 1 y 2 | 2 y 3, más tilde diacrítica, homófonos y porque/por qué |
+| Formar palabras | solo la letra trampa del nivel | + 1 letra trampa | + 2 letras trampa |
+| Retos de elegir y clasificar | contenido base | + preguntas y palabras extra | + preguntas y palabras extra |
+| Frases | — | — | una palabra que sobra |
+| Memoria | vistazo inicial a las cartas | sin vistazo | más parejas y se tapan antes |
+| Pistas | antes | normal | más tarde |
+| Borrones | más lentos | más rápidos | mucho más rápidos y el doble |
+| Jefes | corazones base | +1 | +2 |
+| Barca del río | lenta, 8 parejas | más rápida, 10 | más rápida aún, 12 |
+| Premio | normal | normal | ×1,5 |
+
+Los datos de cada dificultad están en `DIFICULTADES` (`js/expedicion/expedicion.js`); el contenido extra de los retos, en `rondasExtra`, `elementosExtra`, `parejasExtra` y `sobra` (`js/expedicion/capitulos.js`).
+
 ## La Gran Expedición
 
 Modo de aventura por capítulos dentro de la expedición (al abrirla se elige entre «La Gran Expedición» y «Expediciones cortas»). Cada capítulo tiene una misión y varias zonas conectadas; el avance se guarda por zona y se puede continuar otro día.

@@ -22,6 +22,7 @@ PV.retos = (function () {
 
   function abrir(reto, h) {
     const esc = h.esc;
+    const d = h.dif || { pistaTras: 2, pistaDesde: 1, tapar: 1100, vistazo: 0 };
     const sonar = n => h.sonar && h.sonar(n);
     let estado;
 
@@ -64,7 +65,7 @@ PV.retos = (function () {
     }
     function nuevaRonda() {
       const r = estado.rondas[estado.k];
-      estado.opciones = mezclar(r.opciones); estado.marcas = {}; estado.msg = ""; estado.msgClase = ""; estado.bloqueado = false; estado.listo = false;
+      estado.opciones = mezclar(r.opciones); estado.marcas = {}; estado.msg = ""; estado.msgClase = ""; estado.bloqueado = false; estado.listo = false; estado.fallosRonda = 0;
       pintarElegir();
     }
     function opcion(i) {
@@ -78,8 +79,8 @@ PV.retos = (function () {
         const k = estado.k;
         estado.temporizador = setTimeout(() => { if (estado && estado.k === k && !fuera) avanzar(); }, r.explicacion ? 3500 : 2200);
       } else {
-        estado.marcas[i] = "mal"; estado.fallos++;
-        estado.msg = r.pista ? `Casi… Pista: ${r.pista}` : "Casi… ¡prueba otra!"; estado.msgClase = "mal";
+        estado.marcas[i] = "mal"; estado.fallos++; estado.fallosRonda++;
+        estado.msg = r.pista && estado.fallosRonda >= d.pistaDesde ? `Casi… Pista: ${r.pista}` : "Casi… ¡piénsalo otra vez!"; estado.msgClase = "mal";
         sonar("fallo");
         pintarElegir();
       }
@@ -95,7 +96,7 @@ PV.retos = (function () {
       const banco = estado.fichas.map((f, i) => usadas.has(i)
         ? `<button type="button" class="ex-rt-palabra" disabled aria-hidden="true">${esc(f)}</button>`
         : `<button type="button" class="ex-rt-palabra" data-ex="rt" data-a="poner" data-i="${i}">${esc(f)}</button>`).join("");
-      const pista = estado.fallos >= 2 && reto.pista ? `<button type="button" class="btn btn-gris" data-ex="rt" data-a="pista">💡 Pista</button>` : "";
+      const pista = estado.fallos >= d.pistaTras && reto.pista ? `<button type="button" class="btn btn-gris" data-ex="rt" data-a="pista">💡 Pista</button>` : "";
       h.mostrarPanel(`${cabecera()}
         ${reto.imagen ? `<div class="ex-rt-estimulo"><span class="ex-rt-imagen">${reto.imagen}</span></div>` : ""}
         <div class="ex-rt-frase">${huecos}</div>
@@ -113,7 +114,7 @@ PV.retos = (function () {
         const frase = estado.huecos.map(k => estado.fichas[k]).join(" ");
         if (frase === reto.palabras.join(" ")) return exito();
         estado.fallos++;
-        estado.msg = estado.fallos >= 2 && reto.pista ? "Casi… Toca 💡 Pista si la necesitas." : "Casi… Toca una palabra de arriba para quitarla y prueba otro orden.";
+        estado.msg = estado.fallos >= d.pistaTras && reto.pista ? "Casi… Toca 💡 Pista si la necesitas." : `Casi… Toca una palabra de arriba para quitarla y prueba otro orden.${d.sobra && reto.sobra ? " ¡Ojo: hay una palabra que sobra!" : ""}`;
         estado.msgClase = "mal";
         sonar("fallo");
       }
@@ -159,7 +160,7 @@ PV.retos = (function () {
           if (estado.cartas.every(x => x.hecha)) { estado.hecho = true; pintarMemoria(); return setTimeout(() => { if (estado && !fuera) exito(); }, 700); }
         } else {
           estado.bloqueado = true; estado.msg = "No son pareja. ¡Recuerda dónde estaban!"; estado.msgClase = "";
-          setTimeout(() => { if (!estado) return; estado.abiertas = []; estado.bloqueado = false; if (!fuera) pintarMemoria(); }, 1100);
+          setTimeout(() => { if (!estado) return; estado.abiertas = []; estado.bloqueado = false; if (!fuera) pintarMemoria(); }, d.tapar || 1100);
         }
       }
       pintarMemoria();
@@ -196,17 +197,24 @@ PV.retos = (function () {
     /* ---------- arranque ---------- */
     function empezar() {
       estado = { k: 0, msg: "", msgClase: "", fallos: 0, marcas: {}, bloqueado: false, hecho: false };
-      if (reto.tipo === "elegir") { estado.rondas = reto.rondas; nuevaRonda(); }
+      if (reto.tipo === "elegir") { estado.rondas = reto.rondas.concat(d.rondasExtra && reto.rondasExtra ? reto.rondasExtra : []); nuevaRonda(); }
       else if (reto.tipo === "frase") {
-        estado.fichas = mezclar(reto.palabras);
-        while (estado.fichas.join(" ") === reto.palabras.join(" ") && reto.palabras.length > 1) estado.fichas = mezclar(reto.palabras);
+        const todas = reto.palabras.concat(d.sobra && reto.sobra ? [reto.sobra] : []);
+        estado.fichas = mezclar(todas);
+        while (estado.fichas.slice(0, reto.palabras.length).join(" ") === reto.palabras.join(" ") && reto.palabras.length > 1) estado.fichas = mezclar(todas);
         estado.huecos = Array(reto.palabras.length).fill(null); estado.fijos = new Set();
         pintarFrase();
       } else if (reto.tipo === "memoria") {
-        estado.cartas = mezclar(reto.parejas.flatMap((p, k) => [{ texto: p[0], par: k }, { texto: p[1], par: k }]));
+        const parejas = reto.parejas.concat(d.parejasExtra && reto.parejasExtra ? reto.parejasExtra : []);
+        estado.cartas = mezclar(parejas.flatMap((p, k) => [{ texto: p[0], par: k }, { texto: p[1], par: k }]));
         estado.abiertas = [];
-        pintarMemoria();
-      } else if (reto.tipo === "clasificar") { estado.elementos = mezclar(reto.elementos); pintarClasificar(); }
+        if (d.vistazo) {
+          // En fácil, todas las cartas se ven un momento al empezar.
+          estado.bloqueado = true; estado.abiertas = estado.cartas.map((_, i) => i); estado.msg = "¡Mira bien dónde está cada una!";
+          pintarMemoria();
+          setTimeout(() => { if (!estado) return; estado.abiertas = []; estado.bloqueado = false; estado.msg = ""; if (!fuera) pintarMemoria(); }, d.vistazo * 1000);
+        } else pintarMemoria();
+      } else if (reto.tipo === "clasificar") { estado.elementos = mezclar(reto.elementos.concat(d.elementosExtra && reto.elementosExtra ? reto.elementosExtra : [])); pintarClasificar(); }
     }
     let fuera = false, terminado = false;
     function accion(a, b) {
