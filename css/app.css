@@ -581,9 +581,9 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 /* Mapa de niveles */
 .expedicion.en-mapa .ex-centro, .expedicion.en-mapa .ex-zona-joy, .expedicion.en-mapa .ex-zona-salto, .expedicion.en-mapa [data-ex=pausa] { visibility: hidden; }
 .expedicion.en-mapa .ex-panel { background: linear-gradient(160deg, rgba(63,169,245,.92), rgba(108,192,112,.92)); }
-.ex-tarjeta-mapa { width: min(640px, 100%); }
+.ex-tarjeta-mapa { width: min(780px, 100%); }
 .ex-mapa-nota { margin: 0 0 10px !important; font-weight: 700; color: #6b6b7b; }
-.ex-mapa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.ex-mapa { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px; }
 .ex-nivel { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px; border: 2px solid var(--linea); border-radius: 16px; background: #fff;
   font: inherit; text-align: left; cursor: pointer; box-shadow: 0 3px 0 var(--linea); touch-action: manipulation; min-height: 64px; }
 .ex-nivel:active { translate: 0 2px; box-shadow: 0 1px 0 var(--linea); }
@@ -597,8 +597,8 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 .ex-nivel.siguiente .ex-nivel-estado { color: #ff9b2f; }
 .ex-nivel.bloqueado { opacity: .55; cursor: default; }
 .ex-etiqueta { display: inline-block; margin-top: 2px; padding: 2px 10px; border-radius: 99px; background: #eaf6ff; color: #2a6f9e; font-weight: 900; font-size: .75rem; }
-@media (max-width: 560px) { .ex-mapa { grid-template-columns: repeat(2, 1fr); } }
-@media (max-height: 420px) { .ex-nivel { min-height: 52px; padding: 6px 8px; } .ex-nivel-icono { font-size: 1.5rem; } .ex-tarjeta-mapa h2 { font-size: 1.05rem; margin: 0 0 2px; } .ex-mapa-nota { margin-bottom: 6px !important; } }
+@media (max-width: 420px) { .ex-mapa { grid-template-columns: repeat(2, 1fr); } }
+@media (max-height: 420px) { .ex-mapa { gap: 6px; grid-template-columns: repeat(5, 1fr); } .ex-nivel { min-height: 46px; padding: 4px 6px; gap: 5px; } .ex-nivel-icono { font-size: 1.3rem; } .ex-nivel-texto strong { font-size: .78rem; } .ex-nivel-texto small { font-size: .64rem; } .ex-nivel-estado { font-size: 1rem; } .ex-tarjeta-mapa .btn { min-height: 40px; padding-top: 6px; padding-bottom: 6px; } .ex-tarjeta-mapa h2 { font-size: 1.05rem; margin: 0 0 2px; } .ex-mapa-nota { margin-bottom: 6px !important; } }
 .ex-premios { display: flex; justify-content: center; gap: 12px; margin: 4px 0 8px; }
 .ex-premios span { padding: 6px 14px; border-radius: 99px; background: #fff6d6; font-weight: 900; font-size: 1.1rem; }
 .ex-logro { margin: 4px 0 !important; font-weight: 800; color: var(--verde-osc); }

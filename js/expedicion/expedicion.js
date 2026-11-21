@@ -247,11 +247,12 @@ PV.expedicion = (function () {
     }
     function comprobarReto() {
       const fichas = reto.huecos.map(fichaPorId);
-      if (fichas.map(f => f.l).join("") === reto.palabra && !fichas.some(f => f.trampa)) return exitoReto();
+      // Vale si la palabra queda bien escrita (la ficha trampa puede ser igual que una letra buena, como la U de BRÚJULA).
+      if (fichas.map(f => f.l).join("") === reto.palabra) return exitoReto();
       reto.intentos++;
       reto.estado = "mal";
       const trampa = fichas.find(f => f.trampa);
-      reto.msg = trampa ? `¡Ojo con la ${trampa.l}! ${reto.R.trampa.explicacion}`
+      reto.msg = trampa ? `¡Ojo con ${"¡!¿?".includes(trampa.l) ? "el signo" : "la"} ${trampa.l}! ${reto.R.trampa.explicacion}`
         : ANIMOS[(reto.intentos - 1) % ANIMOS.length] + (reto.intentos === INTENTOS_PARA_PISTA ? " Si quieres, pide una pista 💡" : "");
       ctx.sonar && ctx.sonar("fallo");
       pintarReto();
@@ -285,7 +286,7 @@ PV.expedicion = (function () {
       hablar(reto.R.decir + "!");
       mostrarPanel(`<div class="ex-reto">
         <div class="ex-r-huecos ex-r-final">${reto.palabra.split("").map((l, i) => `<span class="ex-r-hueco llena bien" style="--i:${i}">${l}</span>`).join("")}</div>
-        <p class="ex-r-msg bien" role="status">¡Has formado ${esc(reto.palabra)}!</p>
+        <p class="ex-r-msg bien" role="status">¡Muy bien! Has escrito ${esc(reto.palabra)}</p>
         <button type="button" class="btn btn-verde" data-ex="resolver" data-foco>${esc(reto.R.boton)}</button></div>`, "ancha");
     }
 

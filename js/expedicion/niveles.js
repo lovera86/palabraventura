@@ -226,4 +226,133 @@
       premio
     }
   };
+
+  /* ---------- Niveles de tildes y puntuación ----------
+     Comparten el mismo recorrido de plataformas; cambian el escenario, el obstáculo y la palabra.
+     En los de puntuación, los signos (¡ ! ¿ ?) se recogen como una ficha más y hay que colocarlos en su sitio. */
+  const PLATAFORMAS = [
+    { x: 400, y: 214, w: 140 }, { x: 580, y: 150, w: 120 }, { x: 900, y: 200, w: 140 }, { x: 1250, y: 210, w: 130 },
+    { x: 1430, y: 145, w: 140 }, { x: 2000, y: 205, w: 150 }, { x: 2250, y: 150, w: 130 }
+  ];
+  const ROCAS = [roca(780, 64, 38), tocon(1150, 70, 56), roca(1900, 56, 34)];
+  // Sitios para las letras, en orden de recorrido (encima de plataformas, en el suelo o para coger saltando).
+  const SITIOS = [[470, 170], [640, 106], [970, 156], [1110, 252], [1320, 166], [1500, 101], [1780, 190], [2075, 161], [2315, 106]];
+  // Reparte las letras de «orden» (ya desordenadas) por los sitios indicados.
+  const repartir = (orden, sitios) => [...orden].map((l, k) => ({ l, x: SITIOS[sitios[k]][0], y: SITIOS[sitios[k]][1] }));
+
+  Object.assign(PV.EXPEDICION_NIVELES, {
+
+    /* ---------- 7. Selva: TABLÓN (tilde en las agudas) ---------- */
+    selva: {
+      id: "selva", nombre: "La selva", icono: "🌴", regla: "Tildes: agudas",
+      titulo: "El tablón de la selva",
+      intro: "Un río salvaje corta la selva. Busca las letras y forma la palabra que te dejará cruzarlo. ¡Fíjate en las tildes!",
+      ancho: 3640, inicio: { x: 280 }, limites: [210, 3430],
+      tema: { cielo: ["#c8f0d0", "#effbe8"], colinas: ["#8fd18a", "#5fb35f"], hierba: "#4fae4a", hierbaOsc: "#3d8f3a", agua: ["#4fc3c9", "#2fa3a9"] },
+      solidos: [suelo(0, 2500), suelo(2740, 900), ...ROCAS],
+      plataformas: [...PLATAFORMAS, { x: 2900, y: 210, w: 140 }],
+      obstaculos: [{
+        tipo: "rio", x: 2500, w: 240, solucion: "puente", palabra: "TABLÓN",
+        reto: { enunciado: "Forma la palabra que cruza el río. ¡Ojo, hay una letra de más!", imagen: "🪵",
+          definicion: "Una tabla de madera grande y fuerte.", decir: "tablón",
+          trampa: { letra: "O", explicacion: "Tablón lleva tilde: es aguda (suena fuerte al final, ta-BLÓN) y termina en n." },
+          boton: "¡A CRUZAR! 🌴", tras: "¡El tablón está puesto! Crúzalo hasta la meta 🌴" }
+      }],
+      letras: repartir("LÓTNAB", [0, 1, 2, 5, 7, 8]),
+      meta: { x: 3300 },
+      deco: [
+        { x: 60, y: 300, e: "🌴", tam: 120, capa: 0 }, { x: 330, y: 300, e: "🌺", tam: 30, capa: 1 }, { x: 720, y: 300, e: "🌴", tam: 130, capa: 0 },
+        { x: 1020, y: 300, e: "🍌", tam: 30, capa: 1 }, { x: 1300, y: 300, e: "🌴", tam: 120, capa: 0 }, { x: 1650, y: 300, e: "🐒", tam: 40, capa: 1 },
+        { x: 1850, y: 300, e: "🌺", tam: 30, capa: 1 }, { x: 2180, y: 300, e: "🌴", tam: 126, capa: 0 }, { x: 2430, y: 300, e: "🪧", tam: 44, capa: 0 },
+        { x: 2820, y: 300, e: "🌺", tam: 30, capa: 1 }, { x: 3100, y: 300, e: "🌴", tam: 124, capa: 0 }, { x: 3560, y: 300, e: "🌴", tam: 120, capa: 0 },
+        ...nubes([400, 1400, 2400, 3300], "🦜")
+      ],
+      premio
+    },
+
+    /* ---------- 8. Templo: BRÚJULA (tilde en las esdrújulas) ---------- */
+    templo: {
+      id: "templo", nombre: "El templo", icono: "🧭", regla: "Tildes: esdrújulas",
+      titulo: "La brújula del templo",
+      intro: "La puerta del templo antiguo solo se abre con una palabra que lleva tilde. Recoge sus letras.",
+      ancho: 3600, inicio: { x: 280 }, limites: [210, 3390],
+      tema: { cielo: ["#f9e3b4", "#fff6e0"], colinas: ["#e7cf98", "#d4b679"], tierra: "#b98a55", tierraOsc: "#9c7244", hierba: "#c9a86a", hierbaOsc: "#a98a52", plataforma: "#9c7244" },
+      solidos: [suelo(0, 3600), ...ROCAS],
+      plataformas: PLATAFORMAS,
+      obstaculos: [{
+        tipo: "puerta", x: 2700, solucion: "abrir", estilo: "madera", palabra: "BRÚJULA",
+        reto: { enunciado: "Forma la palabra que abre el templo. ¡Ojo, hay una letra de más!", imagen: "🧭",
+          definicion: "Su aguja señala siempre el norte para no perderse.", decir: "brújula",
+          trampa: { letra: "U", explicacion: "Brújula lleva tilde: es esdrújula (suena fuerte en BRÚ-ju-la) y todas las esdrújulas llevan tilde." },
+          boton: "¡A ABRIR! 🧭", tras: "¡El templo se ha abierto! Entra 🧭" }
+      }],
+      letras: repartir("ULBAJÚR", [0, 1, 2, 3, 5, 7, 8]),
+      meta: { x: 3250 },
+      deco: [
+        { x: 60, y: 300, e: "🌵", tam: 76, capa: 0 }, { x: 330, y: 300, e: "🏺", tam: 34, capa: 1 }, { x: 720, y: 300, e: "🗿", tam: 80, capa: 0 },
+        { x: 1050, y: 300, e: "🌵", tam: 70, capa: 0 }, { x: 1370, y: 300, e: "🏺", tam: 34, capa: 1 }, { x: 1700, y: 300, e: "🗿", tam: 84, capa: 0 },
+        { x: 2150, y: 300, e: "🌵", tam: 76, capa: 0 }, { x: 2550, y: 300, e: "🏺", tam: 34, capa: 1 }, { x: 2950, y: 300, e: "🌴", tam: 110, capa: 0 },
+        { x: 3450, y: 300, e: "🗿", tam: 80, capa: 0 },
+        ...nubes([500, 1500, 2600])
+      ],
+      premio
+    },
+
+    /* ---------- 9. Valle del eco: ¡ÁBRETE! (signos de exclamación) ---------- */
+    eco: {
+      id: "eco", nombre: "El valle del eco", icono: "📣", regla: "Signos ¡ !",
+      titulo: "La puerta que escucha",
+      intro: "En el valle del eco hay una puerta que solo se abre si le gritas la palabra mágica… ¡con sus signos!",
+      ancho: 3600, inicio: { x: 280 }, limites: [210, 3390],
+      tema: { cielo: ["#bde3ff", "#eef7ff"], colinas: ["#b7dca9", "#8cc47e"] },
+      solidos: [suelo(0, 3600), ...ROCAS],
+      plataformas: PLATAFORMAS,
+      obstaculos: [{
+        tipo: "puerta", x: 2700, solucion: "abrir", estilo: "reja", palabra: "¡ÁBRETE!",
+        reto: { enunciado: "Escribe la palabra mágica con sus signos. ¡Ojo, hay un signo de más!", imagen: "📣",
+          definicion: "Se grita para que una puerta mágica se abra. Al gritar, se escribe entre ¡ y !.", decir: "¡Ábrete!",
+          trampa: { letra: "¿", explicacion: "Para exclamar o gritar se usan ¡ al principio y ! al final. Los signos ¿ ? son para preguntar." },
+          boton: "¡A GRITAR! 📣", tras: "¡La puerta te ha oído! Pasa 📣" }
+      }],
+      letras: repartir("E¡T!BÁRE", [0, 1, 2, 3, 5, 6, 7, 8]),
+      meta: { x: 3250 },
+      deco: [
+        { x: 60, y: 300, e: "🌳", tam: 116, capa: 0 }, { x: 330, y: 300, e: "🌻", tam: 34, capa: 1 }, { x: 700, y: 300, e: "🐑", tam: 40, capa: 1 },
+        { x: 1000, y: 300, e: "🏔️", tam: 150, capa: 0 }, { x: 1380, y: 300, e: "🌻", tam: 34, capa: 1 }, { x: 1700, y: 300, e: "🌳", tam: 120, capa: 0 },
+        { x: 2150, y: 300, e: "🐑", tam: 40, capa: 1 }, { x: 2450, y: 300, e: "🏔️", tam: 160, capa: 0 }, { x: 2950, y: 300, e: "🌻", tam: 34, capa: 1 },
+        { x: 3450, y: 300, e: "🌳", tam: 116, capa: 0 },
+        ...nubes([300, 1200, 2100, 3000])
+      ],
+      premio
+    },
+
+    /* ---------- 10. Las nubes: ¿SUBIMOS? (signos de interrogación) ---------- */
+    nubes: {
+      id: "nubes", nombre: "Las nubes", icono: "☁️", regla: "Signos ¿ ?",
+      titulo: "La escalera a las nubes",
+      intro: "Tu mascota quiere subir a las nubes, pero antes hay que preguntarlo bien… ¡con sus signos!",
+      ancho: 3900, inicio: { x: 280 }, limites: [210, 3690],
+      tema: { cielo: ["#a8d8ff", "#e9f6ff"], colinas: ["#ffffff", "#e6f2ff"], tierra: "#f4f8fd", tierraOsc: "#dbe7f3", hierba: "#ffffff", hierbaOsc: "#cfe0f1", plataforma: "#dfeaf6" },
+      solidos: [suelo(0, 2700), suelo(2700, 1200, 130), ...ROCAS],
+      plataformas: PLATAFORMAS,
+      obstaculos: [{
+        tipo: "muro", x: 2700, arriba: 130, solucion: "escalera", palabra: "¿SUBIMOS?",
+        reto: { enunciado: "Escribe la pregunta con sus signos. ¡Ojo, hay un signo de más!", imagen: "☁️",
+          definicion: "Una pregunta para invitar a alguien a subir contigo. Al preguntar, se escribe entre ¿ y ?.", decir: "¿Subimos?",
+          trampa: { letra: "¡", explicacion: "Las preguntas llevan ¿ al principio y ? al final. Los signos ¡ ! son para exclamar." },
+          boton: "¡A SUBIR! ☁️", tras: "¡Escalera a las nubes! Sube hasta arriba ☁️" }
+      }],
+      letras: repartir("M?SU¿OBSI", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+      meta: { x: 3480, y: 130 },
+      deco: [
+        { x: 60, y: 300, e: "🎈", tam: 44, capa: 0 }, { x: 330, y: 300, e: "🌈", tam: 80, capa: 0 }, { x: 760, y: 300, e: "🪁", tam: 40, capa: 0 },
+        { x: 1050, y: 300, e: "🎈", tam: 44, capa: 0 }, { x: 1700, y: 300, e: "🌈", tam: 90, capa: 0 }, { x: 2150, y: 300, e: "🎈", tam: 44, capa: 0 },
+        { x: 2600, y: 300, e: "🪧", tam: 44, capa: 0 }, { x: 2950, y: 130, e: "🌈", tam: 90, capa: 0 }, { x: 3300, y: 130, e: "🎈", tam: 44, capa: 0 },
+        { x: 3700, y: 130, e: "🪁", tam: 40, capa: 0 },
+        ...nubes([200, 700, 1300, 1900, 2500, 3100, 3600])
+      ],
+      premio
+    }
+  });
+  PV.EXPEDICION_ORDEN.push("selva", "templo", "eco", "nubes");
 })();
