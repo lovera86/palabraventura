@@ -398,4 +398,31 @@
     n.habilidades = extra.habilidades; n.enemigos = extra.enemigos; n.amigos = extra.amigos;
     if (extra.jefe) n.obstaculos = n.obstaculos.concat([extra.jefe]);
   });
+
+  /* ---------- El río de las palabras: nivel en barca ----------
+     La barca avanza sola; las palabras flotan por parejas (una bien escrita y otra con falta, una arriba y otra
+     abajo). Saltando se coge la de arriba; sin saltar, la de abajo. Las parejas salen del banco de ejercicios. */
+  PV.EXPEDICION_NIVELES.rio = {
+    id: "rio", nombre: "El río de las palabras", icono: "🛶", regla: "Elige la buena",
+    modo: "barca",
+    titulo: "El río de las palabras",
+    intro: "Navega por el río. Las palabras flotan de dos en dos: salta para coger la de arriba o quédate quieto para coger la de abajo. ¡Atrapa las bien escritas!",
+    ancho: 6000, inicio: { x: 466 }, limites: [210, 5790],
+    tema: { cielo: ["#bfe9ff", "#f0fbff"], colinas: ["#bfe6c8", "#8fd1a0"], agua: ["#5cc1ef", "#3a9bd3"] },
+    solidos: [suelo(0, 420), suelo(5300, 700)],
+    plataformas: [],
+    aguas: [{ x: 420, w: 4880 }],
+    barca: { x: 420, velocidad: 120, primera: 1000, separacion: 420, puerto: 5300, parejas: 10 },
+    habilidades: ["bv", "h", "lly", "tildes", "czs", "gj"],
+    obstaculos: [], letras: [], enemigos: [], amigos: [],
+    meta: { x: 5620 },
+    deco: [
+      { x: 80, y: 300, e: "🌳", tam: 120, capa: 0 }, { x: 300, y: 300, e: "🪧", tam: 44, capa: 0 },
+      { x: 5380, y: 300, e: "⚓", tam: 40, capa: 1 }, { x: 5480, y: 300, e: "🌳", tam: 120, capa: 0 }, { x: 5900, y: 300, e: "🏡", tam: 90, capa: 0 },
+      ...nubes([300, 1100, 1900, 2700, 3500, 4300, 5100]),
+      ...[800, 1700, 2600, 3500, 4400].map((x, i) => ({ x, y: 60 + (i % 2) * 30, e: "🦆", tam: 34, capa: 0, nube: true }))
+    ],
+    premio
+  };
+  PV.EXPEDICION_ORDEN.splice(PV.EXPEDICION_ORDEN.indexOf("lago") + 1, 0, "rio");
 })();

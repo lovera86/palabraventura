@@ -53,23 +53,25 @@ Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva ve
 
 Juego de exploración y plataformas, pensado para el móvil en horizontal. Aparece como una tarjeta arriba del todo en Aventura para los perfiles de niño (con la etiqueta NUEVO y la pantalla empezando arriba hasta que se abre su mapa). En los perfiles de adulto solo se ve si se activa en el dispositivo desde **Ajustes → Zona de adultos → «Mostrar también a adultos»** (o abriendo la app con `?expedicion`; `?expedicion=0` lo quita).
 
-- **Mapa de 10 niveles**, que se abren en orden al completar el anterior y se pueden repetir:
+- **Mapa de 11 niveles**, que se abren en orden al completar el anterior (los ya completados siguen abiertos aunque se añadan niveles nuevos) y se pueden repetir:
 
   | Nivel | Obstáculo | Palabra | Regla | Letra trampa |
   |---|---|---|---|---|
   | 1. El bosque | río → puente | PUENTE | ordenar letras | — |
   | 2. El lago | lago → barca | BARCA | B / V | V |
-  | 3. El acantilado | acantilado → escalera | ESCALERA | S / Z | Z |
-  | 4. La cueva | puerta → se abre; jefe | LLAVE | LL / Y | Y |
-  | 5. La montaña | río → hielo | HIELO | H | Y |
-  | 6. El castillo | foso → balsa; reja → se abre; jefe | BALSA y REJA | S / Z · G / J | Z, G |
-  | 7. La selva | río → tablón | TABLÓN | tilde en las agudas | O |
-  | 8. El templo | puerta → se abre; jefe | BRÚJULA | tilde en las esdrújulas | U |
-  | 9. El valle del eco | reja → se abre al gritar | ¡ÁBRETE! | signos ¡ ! | ¿ |
-  | 10. Las nubes | nube alta → escalera; jefe final | ¿SUBIMOS? | signos ¿ ? | ¡ |
+  | 3. El río de las palabras | en barca: elegir la palabra bien escrita | 10 parejas del banco | mezcla | la de cada pareja |
+  | 4. El acantilado | acantilado → escalera | ESCALERA | S / Z | Z |
+  | 5. La cueva | puerta → se abre; jefe | LLAVE | LL / Y | Y |
+  | 6. La montaña | río → hielo | HIELO | H | Y |
+  | 7. El castillo | foso → balsa; reja → se abre; jefe | BALSA y REJA | S / Z · G / J | Z, G |
+  | 8. La selva | río → tablón | TABLÓN | tilde en las agudas | O |
+  | 9. El templo | puerta → se abre; jefe | BRÚJULA | tilde en las esdrújulas | U |
+  | 10. El valle del eco | reja → se abre al gritar | ¡ÁBRETE! | signos ¡ ! | ¿ |
+  | 11. Las nubes | nube alta → escalera; jefe final | ¿SUBIMOS? | signos ¿ ? | ¡ |
 
+- **El río de las palabras (nivel en barca):** la barca avanza sola (el joystick o las flechas aceleran o frenan) y las palabras flotan por parejas, una bien escrita y otra con falta, una arriba y otra abajo. Saltando se coge la de arriba; sin saltar, la de abajo. Arriba se ve la frase de la pareja que viene. Las buenas suman ⭐; las otras explican la regla. Al llegar al puerto se baja y se camina a la meta.
 - **Borrones (enemigos):** manchas de tinta que pasean por el camino. Si tocan al jugador le quitan la última letra recogida (vuelve a su sitio); si les salta encima se convierten en mariposas 🦋. Nadie muere ni pierde vidas.
-- **Amiguitos:** uno por nivel (Coneja Rita, Pato Lolo, Erizo Tito…). Piden ayuda con una palabra («¿cuál está bien escrita?») y, al acertar, regalan un poder para ese nivel: 🪽 doble salto, 🧲 imán de letras o 🛡️ escudo contra un Borrón. Si se fallan, se tacha la opción, se explica la regla y se puede volver a probar.
+- **Amiguitos:** uno por nivel (Coneja Rita, Pato Lolo, Erizo Tito…). Piden ayuda con una palabra («¿cuál está bien escrita?») y, al acertar, regalan un poder para ese nivel: 🪽 doble salto, 🧲 imán de letras o 🛡️ escudo (durante todo el nivel, los Borrones que te tocan se convierten en mariposas). Si se fallan, se tacha la opción, se explica la regla y se puede volver a probar.
 - **Batallas de palabras:** jefes en la cueva (Borrón Gigante), el castillo (Rey Borrón), el templo (Guardián Borrón) y las nubes (Monstruo de las Faltas). Por turnos y sin prisa: cada palabra bien elegida lanza un rayo de letras y le quita un corazón; fallar solo hace que se ría y explica la regla. Al vencerlo se convierte en mariposas.
 - Las preguntas de amiguitos y jefes salen del banco de ejercicios de la app (tipos «detective» y «completa», dificultad 1–2) de las reglas de cada nivel (`habilidades`).
 - **Cómo se juega:** el compañero del jugador (con su accesorio de la cabeza) avanza con un joystick abajo a la izquierda y un botón de salto abajo a la derecha (se puede correr y saltar a la vez). En el ordenador, flechas o A/D y espacio. Le acompaña su mascota (la del hueco «mascota» o un pollito 🐣).

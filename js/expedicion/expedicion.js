@@ -11,7 +11,7 @@ PV.expedicion = (function () {
   const PODERES = {
     dobleSalto: { icono: "🪽", nombre: "Doble salto", desc: "Puedes saltar otra vez en el aire." },
     iman: { icono: "🧲", nombre: "Imán de letras", desc: "Atraes las letras desde más lejos." },
-    escudo: { icono: "🛡️", nombre: "Escudo", desc: "Te protege del próximo Borrón." }
+    escudo: { icono: "🛡️", nombre: "Escudo", desc: "Durante todo el nivel, los Borrones que te toquen se convierten en mariposas." }
   };
   let abierta = null;
 
@@ -33,7 +33,7 @@ PV.expedicion = (function () {
   function niveles() { return PV.EXPEDICION_ORDEN.map(id => PV.EXPEDICION_NIVELES[id]); }
   function completado(estado, id) { return !!(estado[id] && estado[id].completada); }
   // Los niveles se abren en orden: el primero siempre, y cada uno al completar el anterior.
-  function abiertoNivel(estado, k) { return k === 0 || completado(estado, PV.EXPEDICION_ORDEN[k - 1]); }
+  function abiertoNivel(estado, k) { return k === 0 || completado(estado, PV.EXPEDICION_ORDEN[k]) || completado(estado, PV.EXPEDICION_ORDEN[k - 1]); }
 
   function abrir(ctx) {
     if (abierta) return;
@@ -71,7 +71,7 @@ PV.expedicion = (function () {
     // Nivel en juego
     let nivel = null, partida = null, controlNivel = null, soltarControles = () => {};
     let jugando = false, obsActual = 0, reto = null, retoAbierto = false;
-    let amigo = null, batalla = null, bolsa = [], avisoBorron = false;
+    let amigo = null, batalla = null, bolsa = [], avisoBorron = false, fraseBarca = "";
     const poderesEl = $(".ex-poderes");
 
     /* ---------- Avisos y ayuda ---------- */
@@ -143,8 +143,14 @@ PV.expedicion = (function () {
       raiz.classList.remove("en-mapa");
       nivel = niveles()[k];
       controlNivel = new AbortController();
+      let palabras = null;
+      if (nivel.modo === "barca") {
+        palabras = mezclar(preguntas(nivel.habilidades)).slice(0, nivel.barca.parejas).map(q => ({
+          frase: q.frase, correcta: q.correcta, incorrecta: q.opciones.find(o => o !== q.correcta), explicacion: q.explicacion }));
+      }
+      fraseBarca = "";
       partida = PV.expedicionMotor.crear(lienzo, nivel, {
-        icono: ctx.icono, cabeza: ctx.cabeza, mascota: ctx.mascota, animaciones: animado, tactil, alEvento
+        icono: ctx.icono, cabeza: ctx.cabeza, mascota: ctx.mascota, animaciones: animado, tactil, alEvento, palabras
       });
       soltarControles = PV.expedicionMotor.conectarControles(partida, {
         lienzo, zonaJoy: $(".ex-zona-joy"), base: $(".ex-joy-base"), mando: $(".ex-joy-mando"),
@@ -171,10 +177,17 @@ PV.expedicion = (function () {
       }
       if (tipo === "enemigo") {
         ctx.sonar && ctx.sonar("letra");
-        if (!avisoBorron) { avisoBorron = true; aviso("¡Bien saltado! El Borrón se ha convertido en mariposa 🦋"); }
+        if (d.escudo) aviso("¡Tu escudo te protege! El Borrón se ha convertido en mariposa 🛡️🦋");
+        else if (!avisoBorron) { avisoBorron = true; aviso("¡Bien saltado! El Borrón se ha convertido en mariposa 🦋"); }
       }
-      if (tipo === "escudo") { ctx.sonar && ctx.sonar("toque"); pintarPoderes(); aviso("¡Tu escudo te ha protegido! 🛡️"); }
       if (tipo === "amigo") abrirAmigo(d.i);
+      if (tipo === "palabra") {
+        ctx.sonar && ctx.sonar(d.buena ? "letra" : "fallo");
+        aviso(d.buena ? `¡Bien! «${d.texto}» está bien escrita ⭐` : `¡Uy! Se escribe «${d.correcta}». ${d.explicacion}`);
+        pintarMarcador();
+      }
+      if (tipo === "par") { fraseBarca = d.q ? (d.q.frase || "¿Cuál está bien escrita?") : ""; pintarMarcador(); }
+      if (tipo === "atraca") { ctx.sonar && ctx.sonar("cofre"); aviso("¡Has llegado al puerto! Baja y ve hasta la meta 🏁"); }
       if (tipo === "obstaculo" && partida.obstaculo(d.i).tipo === "jefe") abrirBatalla(d.i);
       else if (tipo === "obstaculo") {
         if (d.cogidas < d.total) { const n = d.total - d.cogidas; aviso(`Te ${n === 1 ? "falta 1 letra" : `faltan ${n} letras`}. ¡Sigue buscando! 🔍`); }
@@ -194,6 +207,12 @@ PV.expedicion = (function () {
 
     /* ---------- Marcador de letras (las de la palabra que toca) ---------- */
     function pintarMarcador() {
+      if (partida.modoBarca) {
+        const r = partida.resultadoBarca();
+        tiraLetras.innerHTML = `<span class="ex-jefe-chip">⭐ ${r.bien} / ${r.total}</span>${fraseBarca ? `<span class="ex-frase-barca">${esc(fraseBarca)}</span>` : ""}`;
+        tiraLetras.setAttribute("aria-label", `Palabras bien escritas: ${r.bien} de ${r.total}. ${fraseBarca}`);
+        return;
+      }
       const total = partida.totalLetras(obsActual), tengo = partida.letrasDe(obsActual);
       const ob = partida.obstaculo(obsActual);
       if (!total && ob && ob.tipo === "jefe") { tiraLetras.innerHTML = `<span class="ex-jefe-chip">⚔️ ${esc(ob.nombre)}</span>`; tiraLetras.setAttribute("aria-label", ob.nombre); return; }
@@ -466,10 +485,11 @@ PV.expedicion = (function () {
         r.insignias.forEach(i => extra.push(`<p class="ex-logro">${i.icono} Nueva insignia: <b>${esc(i.nombre)}</b></p>`));
         if (r.etapaNueva) extra.push(`<p class="ex-logro">✨ ¡Tu compañero ha evolucionado!</p>`);
         if (!r.primeraVez) extra.push(`<p class="ex-r-nota">Premio por volver a completar el nivel.</p>`);
+        if (partida.modoBarca) { const rb = partida.resultadoBarca(); extra.unshift(`<p class="ex-logro">⭐ Palabras bien escritas: ${rb.bien} de ${rb.total}</p>`); }
       }
       mostrarPanel(`<div class="ex-icono-grande ex-meta-icono">${!hay && todo ? "🏆" : "🏁"}</div>
         <h2>${!hay && todo ? "¡Has completado toda la expedición!" : "¡Nivel completado!"}</h2>
-        <p>${esc(nivel.titulo)}: ${nivel.obstaculos.filter(o => o.palabra).map(o => esc(o.palabra)).join(" y ")}${nivel.obstaculos.some(o => o.tipo === "jefe") ? " · ⚔️ jefe vencido" : ""} ✔</p>
+        <p>${esc(nivel.titulo)}${nivel.obstaculos.length ? ":" : ""} ${nivel.obstaculos.filter(o => o.palabra).map(o => esc(o.palabra)).join(" y ")}${nivel.obstaculos.some(o => o.tipo === "jefe") ? " · ⚔️ jefe vencido" : ""} ✔</p>
         ${extra.join("")}
         <div class="ex-r-botones">
           ${hay ? `<button type="button" class="btn btn-verde" data-ex="siguiente" data-foco>▶ Siguiente nivel</button>` : ""}
@@ -567,6 +587,7 @@ PV.expedicion = (function () {
         pantallaCompleta();
         if (!estado.ayudaVista) ayuda.hidden = false;
         seguir();
+        if (partida.modoBarca) aviso(tactil ? "⬆️ Salta para coger la palabra de arriba. El joystick acelera o frena la barca." : "⬆️ Salta para coger la palabra de arriba. Las flechas aceleran o frenan la barca.");
       },
       seguir() { seguir(); },
       "jugar-asi"() { girarDescartado = true; seguir(); },
