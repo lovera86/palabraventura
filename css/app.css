@@ -577,6 +577,40 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 .ex-tarjeta p { margin: 0 0 14px; }
 .ex-tarjeta .btn { width: 100%; margin-top: 8px; touch-action: manipulation; }
 .ex-icono-grande { font-size: 3rem; line-height: 1; }
+.ex-tarjeta.ancha { width: min(560px, 100%); }
+/* Reto de la palabra: fichas grandes, fáciles de tocar */
+.ex-r-enunciado { font-weight: 800; margin: 0 0 10px !important; }
+.ex-r-huecos, .ex-r-banco { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.ex-r-hueco, .ex-r-ficha { width: 52px; height: 56px; border-radius: 14px; font: inherit; font-size: 1.7rem; font-weight: 900; display: grid; place-items: center;
+  touch-action: manipulation; cursor: pointer; padding: 0; }
+.ex-r-hueco { border: 3px dashed #a9c7d8; background: #f3f8fb; color: #7a4b00; }
+.ex-r-hueco.llena { border: 3px solid #fff; background: #ffcc33; box-shadow: 0 4px 0 #e0a400; }
+.ex-r-hueco.fija { background: #ffe17a; opacity: 1; cursor: default; }
+.ex-r-hueco.llena.mal { animation: ex-temblor .4s ease; background: #ffd9a8; box-shadow: 0 4px 0 #ff9b2f; }
+.ex-r-hueco.bien { background: var(--verde); color: #fff; box-shadow: 0 4px 0 var(--verde-osc); }
+.ex-r-final .ex-r-hueco { animation: ex-brilla .5s ease calc(var(--i) * .09s) both; }
+.ex-r-ficha { border: 0; background: #fff3c4; color: #7a4b00; box-shadow: 0 4px 0 #e8cf7a; }
+.ex-r-ficha:active { translate: 0 3px; box-shadow: 0 1px 0 #e8cf7a; }
+.ex-r-ficha:disabled { background: #eef0f4; box-shadow: none; cursor: default; }
+.ex-r-msg { min-height: 1.4em; margin: 8px 0 !important; font-weight: 800; color: var(--tinta); }
+.ex-r-msg.mal { color: #d8711a; }
+.ex-r-msg.bien { color: var(--verde-osc); }
+.ex-r-pista { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; padding: 6px 12px; border-radius: 14px; background: #eaf6ff; font-weight: 700; }
+.ex-r-imagen { font-size: 2.2rem; line-height: 1; }
+.ex-r-nota { margin: 6px 0 0 !important; font-weight: 700; }
+.ex-r-botones { display: flex; gap: 8px; margin-top: 10px; }
+.ex-r-botones .btn { flex: 1; margin-top: 0; }
+@media (max-width: 420px) { .ex-r-huecos, .ex-r-banco { gap: 6px; flex-wrap: nowrap; } .ex-r-hueco, .ex-r-ficha { width: 42px; height: 48px; font-size: 1.4rem; } .ex-tarjeta { padding: 14px 12px; } }
+@keyframes ex-temblor { 0%, 100% { translate: 0; } 25% { translate: -5px 0; } 75% { translate: 5px 0; } }
+@keyframes ex-brilla { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@media (max-height: 420px) {
+  .ex-r-hueco, .ex-r-ficha { width: 46px; height: 46px; font-size: 1.45rem; border-radius: 12px; }
+  .ex-r-enunciado { margin-bottom: 6px !important; font-size: .95rem; }
+  .ex-r-msg { margin: 4px 0 !important; }
+  .ex-r-pista { margin-top: 6px; padding: 4px 10px; }
+  .ex-r-imagen { font-size: 1.6rem; }
+  .ex-r-botones { margin-top: 6px; }
+}
 .ex-girar { display: inline-block; animation: ex-girar 1.6s ease-in-out infinite; }
 @keyframes ex-girar { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
 @media (max-height: 420px) { .ex-tarjeta { padding: 12px 18px; } .ex-icono-grande { font-size: 2.2rem; } .ex-tarjeta p { margin-bottom: 8px; } }

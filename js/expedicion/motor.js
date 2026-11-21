@@ -52,7 +52,8 @@ PV.expedicionMotor = (function () {
     // Copias propias: lo que cambia en la partida (letras cogidas, barrera del río) no toca los datos del nivel.
     const solidos = nivel.solidos.map(s => Object.assign({}, s));
     const rio = nivel.rio || null;
-    const barrera = rio ? { x: rio.x - 10, y: -600, w: 10, h: 900, invisible: true } : null;
+    let barrera = rio ? { x: rio.x - 10, y: -600, w: 10, h: 900, invisible: true } : null;
+    let puenteHecho = false;
     if (barrera) solidos.push(barrera);
     const letras = (nivel.letras || []).map((l, i) => Object.assign({ i, cogida: false }, l));
     const RADIO_LETRA = 44;
@@ -173,6 +174,16 @@ PV.expedicionMotor = (function () {
       m.fiesta = Math.max(0, m.fiesta - dt);
     }
 
+    // Al resolver el reto: el puente vuelve, la barrera desaparece y se puede cruzar.
+    function construirPuente() {
+      if (!rio || puenteHecho) return;
+      puenteHecho = true;
+      if (barrera) { solidos.splice(solidos.indexOf(barrera), 1); barrera = null; }
+      solidos.push({ x: rio.x - 14, y: 300, w: rio.w + 28, h: 14, invisible: true });
+      m.fiesta = 2.2;
+      dibujar();
+    }
+
     function aPantalla(x, y) {
       const r = lienzo.getBoundingClientRect();
       return { x: r.left + (x - vista.camX) * vista.escala, y: r.top + (y - vista.camY) * vista.escala };
@@ -253,6 +264,20 @@ PV.expedicionMotor = (function () {
           if (x === rio.x) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
+      }
+      if (puenteHecho) {
+        // Puente reconstruido: tablones y barandillas de cuerda.
+        ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(rio.x - 8, 262); ctx.quadraticCurveTo(rio.x + rio.w / 2, 282, rio.x + rio.w + 8, 262); ctx.stroke();
+        for (let x = rio.x - 14; x < rio.x + rio.w + 14; x += 22) {
+          ctx.fillStyle = "#a8693d"; redondo(x + 1, 300, 20, 12, 3); ctx.fill();
+          ctx.fillStyle = "#c98c5a"; ctx.fillRect(x + 3, 301, 16, 3);
+          ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 2;
+          const yc = 262 + 20 * (1 - Math.pow((x + 11 - rio.x - rio.w / 2) / (rio.w / 2 + 14), 2));
+          ctx.beginPath(); ctx.moveTo(x + 11, yc); ctx.lineTo(x + 11, 300); ctx.stroke();
+        }
+        for (const px of [rio.x - 14, rio.x + rio.w + 2]) { ctx.fillStyle = "#8a5a35"; redondo(px, 256, 12, 52, 4); ctx.fill(); }
+        return;
       }
       // Lo que queda del puente: postes y cuerdas rotas, y su silueta punteada.
       ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 3;
@@ -357,7 +382,7 @@ PV.expedicionMotor = (function () {
 
     medir();
     return {
-      iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m,
+      iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, construirPuente,
       letrasCogidas: () => letras.filter(l => l.cogida).map(l => l.l),
       get corriendo() { return corriendo; }
     };

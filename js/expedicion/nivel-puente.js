@@ -36,13 +36,14 @@ PV.EXPEDICION_NIVELES.puente = {
     { x: 2190, y: 205, w: 150 },
     { x: 2860, y: 210, w: 140 }
   ],
+  // Repartidas en desorden: el marcador las muestra en el orden en que se recogen y no debe dar la palabra hecha.
   letras: [
-    { l: "P", x: 435, y: 168 },
-    { l: "U", x: 600, y: 104 },
-    { l: "E", x: 1215, y: 200 },
-    { l: "N", x: 1675, y: 94 },
-    { l: "T", x: 1960, y: 252 },
-    { l: "E", x: 2265, y: 160 }
+    { l: "T", x: 435, y: 168 },
+    { l: "E", x: 600, y: 104 },
+    { l: "N", x: 1215, y: 200 },
+    { l: "U", x: 1675, y: 94 },
+    { l: "E", x: 1960, y: 252 },
+    { l: "P", x: 2265, y: 160 }
   ],
   deco: [
     { x: 40, y: 300, e: "🌳", tam: 120, capa: 0 }, { x: 300, y: 300, e: "🌲", tam: 96, capa: 0 },
@@ -57,6 +58,17 @@ PV.EXPEDICION_NIVELES.puente = {
     { x: 200, y: 60, e: "☁️", tam: 54, capa: 0, nube: true }, { x: 900, y: 40, e: "☁️", tam: 64, capa: 0, nube: true },
     { x: 1700, y: 70, e: "☁️", tam: 50, capa: 0, nube: true }, { x: 2500, y: 45, e: "☁️", tam: 60, capa: 0, nube: true },
     { x: 3200, y: 65, e: "☁️", tam: 52, capa: 0, nube: true }
-  ]
-  // Fase 3: reto { pistas }. Fase 4: puente y meta.
+  ],
+  // Reto lingüístico al llegar al río con todas las letras. Cambiar aquí la palabra, la imagen o las pistas
+  // no exige tocar el motor (las letras del escenario deben ser las de «palabra»).
+  reto: {
+    enunciado: "Ordena las letras para formar la palabra que arregla el río.",
+    imagen: "🌉",
+    definicion: "Sirve para cruzar el río sin mojarse.",
+    decir: "puente",                 // lo que lee la voz del navegador en la pista
+    intentosParaPista: 2,            // el botón de pista aparece tras estos intentos fallidos
+    animos: ["¡Casi! Prueba a cambiar alguna letra de sitio.", "¡Buen intento! Mira bien el orden.", "¡No pasa nada! Vuelve a probar."],
+    exito: "¡Has formado PUENTE! El puente vuelve a aparecer."
+  }
+  // Fase 4: animación del puente, meta y premio.
 };
