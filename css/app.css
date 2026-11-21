@@ -578,6 +578,12 @@ body.ex-abierta { overflow: hidden; overscroll-behavior: none; }
 .ex-tarjeta .btn { width: 100%; margin-top: 8px; touch-action: manipulation; }
 .ex-icono-grande { font-size: 3rem; line-height: 1; }
 .ex-tarjeta.ancha { width: min(560px, 100%); }
+.ex-premios { display: flex; justify-content: center; gap: 12px; margin: 4px 0 8px; }
+.ex-premios span { padding: 6px 14px; border-radius: 99px; background: #fff6d6; font-weight: 900; font-size: 1.1rem; }
+.ex-logro { margin: 4px 0 !important; font-weight: 800; color: var(--verde-osc); }
+.ex-meta-icono { display: inline-block; animation: ex-pop .5s ease; }
+.ex-confeti { position: absolute; top: -20px; z-index: 6; width: 10px; height: 16px; border-radius: 3px; pointer-events: none; animation: ex-caer linear forwards; }
+@keyframes ex-caer { to { transform: translateY(110vh) rotate(540deg); } }
 /* Reto de la palabra: fichas grandes, fáciles de tocar */
 .ex-r-enunciado { font-weight: 800; margin: 0 0 10px !important; }
 .ex-r-huecos, .ex-r-banco { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }

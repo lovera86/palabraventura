@@ -52,8 +52,11 @@ PV.expedicionMotor = (function () {
     // Copias propias: lo que cambia en la partida (letras cogidas, barrera del río) no toca los datos del nivel.
     const solidos = nivel.solidos.map(s => Object.assign({}, s));
     const rio = nivel.rio || null;
-    let barrera = rio ? { x: rio.x - 10, y: -600, w: 10, h: 900, invisible: true } : null;
-    let puenteHecho = false;
+    const meta = nivel.meta || null;
+    function nuevaBarrera() { return rio ? { x: rio.x - 10, y: -600, w: 10, h: 900, invisible: true } : null; }
+    let barrera = nuevaBarrera();
+    let puenteHecho = false, construyendo = false, puenteP = 0, enMeta = false;
+    const DURACION_PUENTE = 1.8;
     if (barrera) solidos.push(barrera);
     const letras = (nivel.letras || []).map((l, i) => Object.assign({ i, cogida: false }, l));
     const RADIO_LETRA = 44;
@@ -69,12 +72,13 @@ PV.expedicionMotor = (function () {
       vista.cssW = r.width; vista.cssH = r.height;
       vista.dpr = Math.min(window.devicePixelRatio || 1, 2);
       // Se ve siempre el alto completo; en vertical se limita el zoom para no ver un trozo diminuto del mundo.
-      vista.escala = Math.min(r.height / ALTO, r.width / 400);
+      // En pantallas grandes se ve más mundo (al menos ~900 de ancho) en lugar de ampliarlo todo.
+      vista.escala = Math.min(r.height / ALTO, r.width / 400, Math.max(r.width / 900, 1.2));
       vista.ancho = r.width / vista.escala;
       vista.alto = r.height / vista.escala;
       // Si sobra alto (móvil en vertical), se ve más cielo y el suelo sube para que los controles
       // queden debajo, sobre la tierra, sin tapar al personaje.
-      const sobra = vista.alto - ALTO, hueco = 180 / vista.escala;
+      const sobra = vista.alto - ALTO, hueco = op.tactil === false ? 60 : 180 / vista.escala;
       vista.camY = -sobra + Math.max(0, Math.min(sobra, hueco - 60));
       lienzo.width = Math.round(r.width * vista.dpr);
       lienzo.height = Math.round(r.height * vista.dpr);
@@ -155,6 +159,25 @@ PV.expedicionMotor = (function () {
         if (!enOrilla && j.x + j.w >= barrera.x - 6) { enOrilla = true; evento("orilla", { cogidas: letras.filter(x => x.cogida).length, total: letras.length }); }
         else if (enOrilla && j.x + j.w < barrera.x - 120) enOrilla = false;
       }
+      // Construcción del puente: los tablones aparecen uno a uno; al terminar se puede cruzar.
+      if (construyendo) {
+        puenteP = Math.min(1, puenteP + dt / DURACION_PUENTE);
+        if (animado && Math.random() < dt * 30) {
+          const x = rio.x - 14 + Math.random() * (rio.w + 28) * puenteP;
+          chispas.push({ x, y: 296, vx: (Math.random() - 0.5) * 120, vy: -120 - Math.random() * 160, vida: 0.6 });
+        }
+        if (puenteP >= 1) {
+          construyendo = false;
+          if (barrera) { solidos.splice(solidos.indexOf(barrera), 1); barrera = null; }
+          solidos.push({ x: rio.x - 14, y: 300, w: rio.w + 28, h: 14, invisible: true });
+          m.fiesta = 2.2;
+          evento("puente");
+        }
+      }
+      if (meta && puenteHecho && !construyendo && !enMeta && j.x + j.w >= meta.x - 10) {
+        enMeta = true; m.fiesta = 3;
+        evento("meta");
+      }
       actualizarMascota(dt);
       colocarCamara(false, dt);
     }
@@ -177,10 +200,25 @@ PV.expedicionMotor = (function () {
     // Al resolver el reto: el puente vuelve, la barrera desaparece y se puede cruzar.
     function construirPuente() {
       if (!rio || puenteHecho) return;
-      puenteHecho = true;
-      if (barrera) { solidos.splice(solidos.indexOf(barrera), 1); barrera = null; }
-      solidos.push({ x: rio.x - 14, y: 300, w: rio.w + 28, h: 14, invisible: true });
-      m.fiesta = 2.2;
+      puenteHecho = true; construyendo = true;
+      puenteP = animado ? 0 : 0.999;          // sin animaciones aparece casi de golpe
+      m.fiesta = 1.5;
+      dibujar();
+    }
+
+    // Volver a jugar: todo como al principio, sin crear otra partida.
+    function reiniciar() {
+      Object.assign(j, { x: nivel.inicio.x, y: 300 - j.h, vx: 0, vy: 0, suelo: true, mira: 1, coyote: 0, buffer: 0,
+        cortado: false, tSalto: 0, aterriza: 0, seguroX: nivel.inicio.x, parpadeo: 0 });
+      solidos.length = 0;
+      nivel.solidos.forEach(x => solidos.push(Object.assign({}, x)));
+      barrera = nuevaBarrera();
+      if (barrera) solidos.push(barrera);
+      puenteHecho = false; construyendo = false; puenteP = 0; enOrilla = false; enMeta = false;
+      letras.forEach(l => { l.cogida = false; });
+      chispas.length = 0; rastro.length = 0;
+      Object.assign(m, { x: j.x - 46, y: 300 - 34, fiesta: 0, quieto: 0 });
+      colocarCamara(true);
       dibujar();
     }
 
@@ -266,15 +304,22 @@ PV.expedicionMotor = (function () {
         ctx.stroke();
       }
       if (puenteHecho) {
-        // Puente reconstruido: tablones y barandillas de cuerda.
-        ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 3;
+        // Puente reconstruido: tablones y barandillas de cuerda. Mientras se construye, caen uno a uno.
+        const tablones = Math.ceil((rio.w + 28) / 22);
+        ctx.strokeStyle = "rgba(201,162,107," + Math.min(1, puenteP * 1.6) + ")"; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(rio.x - 8, 262); ctx.quadraticCurveTo(rio.x + rio.w / 2, 282, rio.x + rio.w + 8, 262); ctx.stroke();
-        for (let x = rio.x - 14; x < rio.x + rio.w + 14; x += 22) {
+        for (let k = 0, x = rio.x - 14; x < rio.x + rio.w + 14; x += 22, k++) {
+          const t = Math.max(0, Math.min(1, puenteP * tablones * 1.15 - k));   // avance de este tablón (0..1)
+          if (t <= 0) continue;
+          ctx.save();
+          ctx.globalAlpha = t;
+          ctx.translate(0, -(1 - t) * 60);
           ctx.fillStyle = "#a8693d"; redondo(x + 1, 300, 20, 12, 3); ctx.fill();
           ctx.fillStyle = "#c98c5a"; ctx.fillRect(x + 3, 301, 16, 3);
           ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = 2;
           const yc = 262 + 20 * (1 - Math.pow((x + 11 - rio.x - rio.w / 2) / (rio.w / 2 + 14), 2));
           ctx.beginPath(); ctx.moveTo(x + 11, yc); ctx.lineTo(x + 11, 300); ctx.stroke();
+          ctx.restore();
         }
         for (const px of [rio.x - 14, rio.x + rio.w + 2]) { ctx.fillStyle = "#8a5a35"; redondo(px, 256, 12, 52, 4); ctx.fill(); }
         return;
@@ -290,6 +335,19 @@ PV.expedicionMotor = (function () {
         ctx.fillStyle = "#8a5a35"; redondo(px, 256, 12, 52, 4); ctx.fill();
         ctx.fillStyle = "#6e4527"; ctx.fillRect(px, 256, 12, 6);
       }
+    }
+    function dibujarMeta() {
+      if (!meta || !visible(meta.x - 40, 140)) return;
+      const x = meta.x, onda = animado ? tiempo * 5 : 0;
+      ctx.fillStyle = "#8a5a35"; redondo(x - 4, 170, 8, 132, 4); ctx.fill();
+      ctx.fillStyle = "#ffcc33"; ctx.beginPath(); ctx.arc(x, 168, 8, 0, 6.3); ctx.fill();
+      ctx.fillStyle = enMeta ? "#4cc764" : "#ff7aa8";
+      ctx.beginPath(); ctx.moveTo(x + 4, 178);
+      for (let k = 0; k <= 10; k++) ctx.lineTo(x + 4 + k * 7, 178 + k * 1.6 + Math.sin(onda + k * 0.6) * 3);
+      for (let k = 10; k >= 0; k--) ctx.lineTo(x + 4 + k * 7, 214 - k * 1.6 + Math.sin(onda + k * 0.6) * 3);
+      ctx.closePath(); ctx.fill();
+      ctx.font = "900 18px Nunito, 'Segoe UI', system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff"; ctx.fillText("META", x + 38, 196 + Math.sin(onda + 3) * 2);
     }
     function dibujarLetras() {
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -353,6 +411,7 @@ PV.expedicionMotor = (function () {
       for (const p of nivel.plataformas) if (visible(p.x, p.w)) plataforma(p);
       dibujarRio();
       for (const s of solidos) if (!s.invisible && visible(s.x, s.w)) bloque(s);
+      dibujarMeta();
       dibujarLetras();
       dibujarMascota();
       dibujarJugador();
@@ -382,7 +441,7 @@ PV.expedicionMotor = (function () {
 
     medir();
     return {
-      iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, construirPuente,
+      iniciar, pausar, destruir, medir, entrada, jugador: j, mascota: m, construirPuente, reiniciar,
       letrasCogidas: () => letras.filter(l => l.cogida).map(l => l.l),
       get corriendo() { return corriendo; }
     };

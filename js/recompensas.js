@@ -92,7 +92,8 @@ PV.recompensas = (function () {
     { id: "constancia", icono: "📅", nombre: "Constancia", desc: "Juega en 3 días distintos." },
     { id: "superacion", icono: "💪", nombre: "Superación", desc: "Supera 5 palabras de tu lista de repaso." },
     { id: "coleccionista", icono: "🖼️", nombre: "Coleccionista", desc: "Reúne 10 objetos del álbum." },
-    { id: "rey-castillo", icono: "🏰", nombre: "Héroe del castillo", desc: "Supera el Gran Desafío del castillo." }
+    { id: "rey-castillo", icono: "🏰", nombre: "Héroe del castillo", desc: "Supera el Gran Desafío del castillo." },
+    { id: "puente-magico", icono: "🌉", nombre: "Puente mágico", desc: "Reconstruye el puente de la expedición." }
   ];
   const ESTRELLAS_POR_NIVEL = 25;
   const BONUS = { mision: { estrellas: 3, monedas: 5 }, jefe: { estrellas: 5, monedas: 10 }, decision: 6 };
@@ -111,6 +112,7 @@ PV.recompensas = (function () {
       else if (ins.id === "superacion") ok = (p.consolidadas || 0) >= 5;
       else if (ins.id === "coleccionista") ok = p.coleccion.length >= 10;
       else if (ins.id === "rey-castillo") ok = !!(p.misiones["castillo-jefe"] || {}).completada;
+      else if (ins.id === "puente-magico") ok = !!((p.expedicion || {}).puente || {}).completada;
       if (ok) { p.insignias.push(ins.id); nuevas.push(ins); }
     });
     return nuevas;
@@ -122,6 +124,7 @@ PV.recompensas = (function () {
     if (ins.publico) return ins.publico === t;
     if (ins.hab) return t === "nino";
     if (ins.id === "rey-castillo") return t === "nino";
+    if (ins.id === "puente-magico") return !!((p.expedicion || {}).puente || {}).completada;   // no adelanta la expedición
     return true;
   }
 
@@ -160,6 +163,21 @@ PV.recompensas = (function () {
       m.veces++; m.ultima = hoy;
     }
     if (diario && p.retoDiario.fecha !== hoy) { p.retoDiario.fecha = hoy; p.cofresPendientes += 1; r.cofres++; r.retoDiario = true; }
+    const etapa = PV.mundo.etapa(p);
+    if (etapa > (p.etapaVista || 0)) { r.etapaNueva = PV.ETAPAS[etapa]; p.etapaVista = etapa; }
+    r.insignias = revisarInsignias(p);
+    return r;
+  }
+
+  /* Al llegar a la meta de un nivel de la expedición. La primera vez da el premio completo y, al repetir,
+     uno menor: nunca se pierde lo ya ganado. */
+  function completarExpedicion(p, id, premio) {
+    const e = p.expedicion[id] || (p.expedicion[id] = { completada: false, veces: 0 });
+    const primeraVez = !e.completada;
+    const b = primeraVez ? premio.primera : premio.repetir;
+    p.estrellas += b.estrellas; p.monedas += b.monedas;
+    e.completada = true; e.veces++; e.ultima = U.hoy();
+    const r = { estrellas: b.estrellas, monedas: b.monedas, primeraVez, insignias: [], etapaNueva: null };
     const etapa = PV.mundo.etapa(p);
     if (etapa > (p.etapaVista || 0)) { r.etapaNueva = PV.ETAPAS[etapa]; p.etapaVista = etapa; }
     r.insignias = revisarInsignias(p);
@@ -216,7 +234,7 @@ PV.recompensas = (function () {
   function accesorio(id) { return ACCESORIOS.find(a => a.id === id) || null; }
   function nombreMascota(p) { return (p.mascota && p.mascota.nombre) || animal(p.avatar.animal).nombreDefecto; }
 
-  return { ANIMALES, ACCESORIOS, HUECOS, puestos, llevaPuesto, alternar, quitarTodo, INSIGNIAS, BONUS, insigniaVisible, nivelJugador, progresoNivel, revisarInsignias, completarMision,
+  return { ANIMALES, ACCESORIOS, HUECOS, puestos, llevaPuesto, alternar, quitarTodo, INSIGNIAS, BONUS, insigniaVisible, nivelJugador, progresoNivel, revisarInsignias, completarMision, completarExpedicion,
            abrirCofre, comprar, animal, accesorio, nombreMascota, sortearObjeto };
 })();
 

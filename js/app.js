@@ -809,6 +809,7 @@
         icono: R.animal(P.avatar.animal).icono, cabeza: cab ? cab.icono : null, mascota: mas ? mas.icono : "🐣",
         sonar, sonido: !!P.sonido, animaciones: animacionesOn(),
         estado: P.expedicion, guardarEstado: e => { P.expedicion = e; guardar(); },
+        alCompletar: (id, premio) => { const r = R.completarExpedicion(P, id, premio); guardar(); return r; },
         alSalir: () => pantallaCamino()
       });
     },

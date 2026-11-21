@@ -43,11 +43,13 @@ PV.expedicion = (function () {
     let reto = null, retoAbierto = false, retoResuelto = false;
 
     const partida = PV.expedicionMotor.crear($(".ex-lienzo"), nivel, {
-      icono: ctx.icono, cabeza: ctx.cabeza, mascota: ctx.mascota, animaciones: animado,
+      icono: ctx.icono, cabeza: ctx.cabeza, mascota: ctx.mascota, animaciones: animado, tactil,
       alEvento(tipo, d) {
         if (tipo === "salto") { ctx.sonar && ctx.sonar("salto"); saltos++; }
         if (tipo === "reaparece") ctx.sonar && ctx.sonar("toque");
         if (tipo === "letra") letraRecogida(d);
+        if (tipo === "puente") { ctx.sonar && ctx.sonar("cofre"); aviso("¡El puente ha vuelto! Crúzalo hasta la meta 🏁"); }
+        if (tipo === "meta") setTimeout(panelMeta, 500);
         if (tipo === "orilla") {
           if (d.cogidas < d.total) { const n = d.total - d.cogidas; aviso(`Te ${n === 1 ? "falta 1 letra" : `faltan ${n} letras`}. ¡Sigue buscando! 🔍`); }
           else if (!retoResuelto) abrirReto();
@@ -231,6 +233,52 @@ PV.expedicion = (function () {
       panel.querySelector(".ex-tarjeta").classList.add("ancha");
     }
 
+    /* ---------- Meta: celebración, premio y volver a jugar ---------- */
+    function panelMeta() {
+      if (!abierta) return;
+      pausar();
+      const r = ctx.alCompletar ? ctx.alCompletar(nivel.id, nivel.premio) : null;
+      ctx.sonar && ctx.sonar("fin");
+      if (animado) confeti();
+      const extra = [];
+      if (r) {
+        extra.push(`<div class="ex-premios"><span>⭐ +${r.estrellas}</span><span>🪙 +${r.monedas}</span></div>`);
+        r.insignias.forEach(i => extra.push(`<p class="ex-logro">${i.icono} Nueva insignia: <b>${esc(i.nombre)}</b></p>`));
+        if (r.etapaNueva) extra.push(`<p class="ex-logro">✨ ¡Tu compañero ha evolucionado!</p>`);
+        if (!r.primeraVez) extra.push(`<p class="ex-r-nota">Premio por volver a completar la expedición.</p>`);
+      }
+      mostrarPanel(`<div class="ex-icono-grande ex-meta-icono">🏁</div>
+        <h2>¡Expedición completada!</h2>
+        <p>Has encontrado las letras y has reconstruido el PUENTE.</p>
+        ${extra.join("")}
+        <div class="ex-r-botones">
+          <button type="button" class="btn btn-verde" data-ex="otra-vez" data-foco>🔁 Volver a jugar</button>
+          <button type="button" class="btn btn-gris" data-ex="confirmar-salir">Salir</button>
+        </div>`);
+    }
+    function confeti() {
+      const colores = ["#ffcc33", "#ff7aa8", "#4fb3e8", "#6cc070", "#a68cff", "#ff9b2f"];
+      for (let i = 0; i < 40; i++) {
+        const c = document.createElement("span");
+        c.className = "ex-confeti";
+        c.style.left = Math.random() * 100 + "%";
+        c.style.background = colores[i % colores.length];
+        c.style.animationDuration = (1.6 + Math.random() * 1.4) + "s";
+        c.style.animationDelay = (Math.random() * 0.5) + "s";
+        raiz.appendChild(c);
+        setTimeout(() => c.remove(), 3600);
+      }
+    }
+    function volverAJugar() {
+      partida.reiniciar();
+      reto = null; retoAbierto = false; retoResuelto = false;
+      [...tiraLetras.children].forEach(h => { h.textContent = ""; h.classList.remove("llena"); });
+      tiraLetras.setAttribute("aria-label", `Letras recogidas: 0 de ${nivel.letras.length}`);
+      clearTimeout(avisoT); avisoEl.hidden = true;
+      raiz.querySelectorAll(".ex-confeti").forEach(c => c.remove());
+      seguir();
+    }
+
     /* ---------- Orientación y pantalla completa ---------- */
     const vertical = window.matchMedia("(orientation: portrait)");
     function necesitaGirar() { return tactil && vertical.matches && !girarDescartado; }
@@ -299,8 +347,8 @@ PV.expedicion = (function () {
         retoAbierto = false;
         partida.construirPuente();
         seguir();
-        aviso("¡El puente ha vuelto! Crúzalo 🎉");
-      }
+      },
+      "otra-vez"() { volverAJugar(); }
     };
     raiz.addEventListener("click", e => {
       const b = e.target.closest("[data-ex]");

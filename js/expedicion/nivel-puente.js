@@ -18,6 +18,8 @@ PV.EXPEDICION_NIVELES.puente = {
   limites: [210, 3390],
   cielo: ["#bfe7ff", "#eaf8ff"],
   rio: { x: 2440, w: 220 },
+  meta: { x: 3270 },               // bandera de llegada, al otro lado del río
+  premio: { primera: { estrellas: 10, monedas: 20 }, repetir: { estrellas: 3, monedas: 5 } },
   solidos: [
     { x: 0, y: 300, w: 2440, h: 60, tipo: "suelo" },
     { x: 2660, y: 300, w: 940, h: 60, tipo: "suelo" },
@@ -70,5 +72,4 @@ PV.EXPEDICION_NIVELES.puente = {
     animos: ["¡Casi! Prueba a cambiar alguna letra de sitio.", "¡Buen intento! Mira bien el orden.", "¡No pasa nada! Vuelve a probar."],
     exito: "¡Has formado PUENTE! El puente vuelve a aparecer."
   }
-  // Fase 4: animación del puente, meta y premio.
 };
