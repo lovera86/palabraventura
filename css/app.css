@@ -498,3 +498,23 @@ body.sin-animaciones .fondo { display: none; }
 @keyframes estreno-cae { 0% { transform: translate(-50%, -260%) scale(1.6) rotate(-20deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0) rotate(15deg); opacity: 0; } }
 @keyframes estreno-salto { 0%, 100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-22px) scale(1.08); } 60% { transform: translateY(0) scale(.96); } }
 .tarjeta.centro { text-align: center; }
+
+/* ===== Celebración «6 7» ===== */
+.seis-siete { position: fixed; left: 50%; translate: -50% 0; bottom: 210px; z-index: 65; pointer-events: none;
+  display: flex; align-items: center; gap: 46px; animation: ss-aparece 1.9s ease both; }
+.ss-cuerpo { position: relative; display: inline-flex; align-items: center; }
+.ss-cuerpo .avatar { animation: ss-baila .36s ease-in-out infinite alternate; }
+.ss-mano { position: absolute; top: 34%; font-size: 2.4rem; z-index: 6; filter: drop-shadow(0 2px 2px rgba(0,0,0,.2)); }
+.ss-izq { left: -40px; transform: scaleX(-1); animation: ss-mano-a .36s ease-in-out infinite alternate; }
+.ss-der { right: -40px; animation: ss-mano-b .36s ease-in-out infinite alternate; }
+.ss-num { font-size: 3rem; font-weight: 900; color: #fff; line-height: 1; padding: 6px 14px; border-radius: 18px;
+  text-shadow: 0 3px 0 rgba(0,0,0,.2); box-shadow: 0 5px 0 rgba(0,0,0,.18); }
+.ss-6 { background: linear-gradient(135deg, #ff7aa8, #ff9b2f); animation: ss-num-a .36s ease-in-out infinite alternate; }
+.ss-7 { background: linear-gradient(135deg, #3fa9f5, #9b6cff); animation: ss-num-b .36s ease-in-out infinite alternate; }
+@keyframes ss-aparece { 0% { opacity: 0; transform: scale(.5) translateY(30px); } 14% { opacity: 1; transform: scale(1.08); } 22% { transform: scale(1); } 84% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9) translateY(-24px); } }
+@keyframes ss-mano-a { from { translate: 0 -16px; } to { translate: 0 16px; } }
+@keyframes ss-mano-b { from { translate: 0 16px; } to { translate: 0 -16px; } }
+@keyframes ss-num-a { from { translate: 0 -8px; rotate: -6deg; } to { translate: 0 8px; rotate: 4deg; } }
+@keyframes ss-num-b { from { translate: 0 8px; rotate: 6deg; } to { translate: 0 -8px; rotate: -4deg; } }
+@keyframes ss-baila { from { rotate: -5deg; } to { rotate: 5deg; } }
+@media (max-width: 420px) { .seis-siete { bottom: 230px; gap: 40px; } .ss-num { font-size: 2.3rem; } }

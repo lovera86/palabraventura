@@ -108,6 +108,34 @@
     }
   }
 
+  /* Celebración «6 7»: el compañero aparece sobre el pie de la lección moviendo las dos manos
+     con la palma hacia arriba, una arriba y otra abajo, mientras saltan un 6 y un 7. */
+  function seisSieteActivo() {
+    if (!animacionesOn()) return false;
+    return P.seisSiete === undefined ? P.tipo !== "adulto" : !!P.seisSiete;
+  }
+  function seisSieteActivoAjuste() { return P.seisSiete === undefined ? P.tipo !== "adulto" : !!P.seisSiete; }
+  function seisSiete() {
+    document.querySelectorAll(".seis-siete").forEach(x => x.remove());
+    const d = document.createElement("div");
+    d.className = "seis-siete";
+    d.setAttribute("aria-hidden", "true");
+    d.innerHTML = `<span class="ss-num ss-6">6</span>
+      <span class="ss-cuerpo"><span class="ss-mano ss-izq">🫴</span>${avatarHTML("l")}<span class="ss-mano ss-der">🫴</span></span>
+      <span class="ss-num ss-7">7</span>`;
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 1900);
+    // Voz del navegador (sin archivos ni servicios externos), solo si el sonido está activado.
+    if (P.sonido && "speechSynthesis" in window) {
+      try {
+        const u = new SpeechSynthesisUtterance("six seven");
+        u.lang = "en-US"; u.rate = 1.05; u.pitch = 1.25; u.volume = 0.9;
+        window.speechSynthesis.cancel();
+        setTimeout(() => window.speechSynthesis.speak(u), 180);
+      } catch (e) { /* sin voz */ }
+    }
+  }
+
   /* ---------- Estructura común: menú lateral (ordenador), barra superior, panel derecho, barra inferior (móvil) ---------- */
   const SECCIONES = [["camino", "🗺️", "Aventura"], ["ir-coleccion", "🎒", "Colección"], ["ajustes", "⚙️", "Ajustes"]];
   function marco(contenido, seccion) {
@@ -404,7 +432,10 @@
     guardar();
     sonar(acierto ? "acierto" : "fallo");
     pantallaReto();
-    if (acierto) chispas(app.querySelector(".opcion.correcta") || app.querySelector(".casillas") || app.querySelector(".token.error") || app.querySelector(".pie-titulo"));
+    if (acierto) {
+      chispas(app.querySelector(".opcion.correcta") || app.querySelector(".casillas") || app.querySelector(".token.error") || app.querySelector(".pie-titulo"));
+      if (seisSieteActivo()) seisSiete();
+    }
   }
 
   function siguiente() {
@@ -569,6 +600,7 @@
         <h1 class="titulo">Ajustes</h1>
         <section class="tarjeta lista-ajustes">
           <button type="button" class="interruptor" role="switch" aria-checked="${P.sonido}" data-accion="sonido"><span>🔊 Sonido</span><span class="mando ${P.sonido ? "on" : ""}"></span></button>
+          <button type="button" class="interruptor" role="switch" aria-checked="${seisSieteActivoAjuste()}" data-accion="seis-siete"><span>🫴 Celebración «6 7» al acertar</span><span class="mando ${seisSieteActivoAjuste() ? "on" : ""}"></span></button>
           <button type="button" class="interruptor" role="switch" aria-checked="${!!P.reducirAnimaciones}" data-accion="animaciones"><span>🌀 Menos animaciones</span><span class="mando ${P.reducirAnimaciones ? "on" : ""}"></span></button>
         </section>
         <section class="tarjeta lista-ajustes">
@@ -757,6 +789,7 @@
     "ajustes": () => pantallaAjustes(),
     "guardar-apodo": () => { P.apodo = (document.getElementById("nuevo-apodo").value || "").trim().slice(0, 16); guardar(); aviso("Apodo guardado."); pantallaAjustes(); },
     "sonido": () => { P.sonido = !P.sonido; guardar(); pantallaAjustes(); },
+    "seis-siete": () => { P.seisSiete = !seisSieteActivoAjuste(); guardar(); pantallaAjustes(); if (P.seisSiete && animacionesOn()) seisSiete(); },
     "animaciones": () => { P.reducirAnimaciones = !P.reducirAnimaciones; guardar(); aplicarAjustes(); pantallaAjustes(); },
     "adultos": () => abrirAdultos(),
     "comprobar-adulto": () => comprobarAdulto(),
