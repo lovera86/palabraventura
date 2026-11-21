@@ -18,10 +18,11 @@
   const ANIMO = ["¡A mí también me pasa!", "¡Juntos lo sacamos!", "¡La próxima es nuestra!", "¡Equivocarse es parte de la aventura!"];
   const ZIGZAG = [0, 52, 78, 52, 0, -52, -78, -52];
   const N_MISION = 7, N_JEFE = 8;
-  // La expedición está en construcción: solo se ve en este dispositivo si se activa en Zona de adultos
-  // («Probar la expedición») o abriendo la app con «?expedicion» («?expedicion=0» la oculta).
+  // La expedición se ve siempre en los perfiles de niño. En los de adulto, solo si se activa en este dispositivo
+  // desde Zona de adultos («Mostrar también a adultos») o abriendo la app con «?expedicion» («?expedicion=0» lo quita).
   const K_EXPEDICION = "palabraventura.expedicion";
-  function expedicionVisible() { try { return localStorage.getItem(K_EXPEDICION) === "1"; } catch (e) { return false; } }
+  function expedicionAdultos() { try { return localStorage.getItem(K_EXPEDICION) === "1"; } catch (e) { return false; } }
+  function expedicionVisible() { return !!P && (P.tipo !== "adulto" || expedicionAdultos()); }
   function mostrarExpedicion(si) { try { if (si) localStorage.setItem(K_EXPEDICION, "1"); else localStorage.removeItem(K_EXPEDICION); } catch (e) { /* nada */ } }
   try {
     const q = new URLSearchParams(location.search);
@@ -238,9 +239,10 @@
     const sig = W.siguiente(P);
     let html = `<main class="camino">`;
     if (expedicionVisible() && PV.expedicion) {
+      const nueva = !(P.expedicion && P.expedicion.puente);
       html += `<button type="button" class="tarjeta-expedicion" data-accion="expedicion">
         <span class="te-icono">🌉</span><span><strong>La expedición de las palabras perdidas</strong><small>Explora, salta y recupera las letras</small></span>
-        <span class="te-nuevo">NUEVO</span></button>`;
+        ${nueva ? `<span class="te-nuevo">NUEVO</span>` : ""}</button>`;
     }
     W.zonas(P).forEach((z, ui) => {
       const ab = W.abierta(P, z);
@@ -272,8 +274,8 @@
     html += `</main>`;
     render(marco(html, "camino"), () => pantallaCamino(true), conservar);
     if (!conservar) {
-      // Con la expedición activada, la pantalla empieza arriba para que su tarjeta se vea nada más entrar.
-      const n = app.querySelector(".tarjeta-expedicion") ? null : app.querySelector(".nodo.actual");
+      // Mientras la expedición sea nueva para el jugador, la pantalla empieza arriba para que se vea su tarjeta.
+      const n = app.querySelector(".tarjeta-expedicion .te-nuevo") ? null : app.querySelector(".nodo.actual");
       if (n) n.scrollIntoView({ block: "center" });
     }
   }
@@ -708,8 +710,8 @@
           ${pendientes.length ? `<ul class="lista lista-cols">${pendientes.map(e => `<li><b>${esc(e.palabra)}</b> <small>· ${PV.HABILIDADES[e.habilidad].nombre} · próximo repaso: ${fechaCorta(P.items[e.id].proximo)}</small></li>`).join("")}</ul>
             <p class="nota">Aparecen solas en las próximas lecciones: al día siguiente, a los pocos días y una semana después. Tras tres repasos acertados salen de la lista. Ya se han superado ${P.consolidadas || 0}.</p>` : `<p class="nota">No hay palabras pendientes de repaso.</p>`}</section>
         <section class="panel"><h2>🌉 La expedición de las palabras perdidas</h2>
-          <p class="nota">Juego de exploración en construcción. Actívalo para probarlo en este dispositivo: aparece arriba del todo en Aventura, para todos los jugadores.</p>
-          <button type="button" class="interruptor" role="switch" aria-checked="${expedicionVisible()}" data-accion="probar-expedicion"><span>Probar la expedición</span><span class="mando ${expedicionVisible() ? "on" : ""}"></span></button>
+          <p class="nota">Juego de exploración que aparece arriba del todo en Aventura. Los niños lo ven siempre; actívalo aquí si también quieres verlo con perfiles de adulto en este dispositivo.</p>
+          <button type="button" class="interruptor" role="switch" aria-checked="${expedicionAdultos()}" data-accion="probar-expedicion"><span>Mostrar también a adultos</span><span class="mando ${expedicionAdultos() ? "on" : ""}"></span></button>
         </section>
         <section class="panel"><h2>Copia de seguridad</h2>
           <p class="nota">El progreso se guarda solo en este navegador. Conviene exportar una copia de vez en cuando. Importar sustituye el progreso de este jugador.</p>
@@ -833,7 +835,7 @@
       if (!/^\d{4,6}$/.test(v)) { alert("El PIN debe tener entre 4 y 6 cifras."); return; }
       A.ponerPin(v); P.pin = null; guardar(); aviso("PIN guardado."); pantallaAdultos();
     },
-    "probar-expedicion": () => { mostrarExpedicion(!expedicionVisible()); pantallaAdultos(); aviso(expedicionVisible() ? "Expedición visible en Aventura." : "Expedición oculta."); },
+    "probar-expedicion": () => { mostrarExpedicion(!expedicionAdultos()); pantallaAdultos(); aviso(expedicionAdultos() ? "Expedición visible también para adultos." : "Expedición solo para niños."); },
     "quitar-pin": () => { A.ponerPin(null); P.pin = null; guardar(); aviso("PIN quitado."); pantallaAdultos(); },
     "reiniciar": () => {
       if (!confirm(`¿Borrar todo el progreso de ${P.apodo || "este jugador"}?`)) return;

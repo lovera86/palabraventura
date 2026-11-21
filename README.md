@@ -49,9 +49,9 @@ En el móvil la navegación está abajo; en el ordenador hay un menú lateral y 
 
 Los datos de la versión 1 se migran solos al primer perfil al abrir la nueva versión, y la clave antigua se conserva como copia (`palabraventura.progreso`).
 
-## La expedición de las palabras perdidas (en pruebas)
+## La expedición de las palabras perdidas
 
-Primer juego de exploración y plataformas, pensado para el móvil en horizontal. **Está oculto** mientras se prueba: se activa en cada dispositivo desde **Ajustes → Zona de adultos → «Probar la expedición»** (o abriendo la app con `?expedicion`; `?expedicion=0` lo oculta). Entonces aparece una tarjeta arriba del todo en Aventura, para todos los jugadores.
+Primer juego de exploración y plataformas, pensado para el móvil en horizontal. Aparece como una tarjeta arriba del todo en Aventura para los perfiles de niño (con la etiqueta NUEVO y la pantalla empezando arriba hasta que se juega por primera vez). En los perfiles de adulto solo se ve si se activa en el dispositivo desde **Ajustes → Zona de adultos → «Mostrar también a adultos»** (o abriendo la app con `?expedicion`; `?expedicion=0` lo quita).
 
 - **Cómo se juega:** el compañero del jugador (con su accesorio de la cabeza) recorre un bosque con un joystick abajo a la izquierda y un botón de salto abajo a la derecha (se puede correr y saltar a la vez). En el ordenador, flechas o A/D y espacio. Le acompaña su mascota (la del hueco «mascota» o un pollito 🐣).
 - **Letras:** las seis letras de PUENTE están repartidas en desorden; se recogen solas al pasar cerca y vuelan al marcador de arriba.
